@@ -1,0 +1,47 @@
+# Yii2
+/vendor/
+/runtime/
+/web/assets/
+/web/index-test.php
+/web/assets/*
+!/web/assets/.gitkeep
+
+/config/db.php
+/config/params.php
+# Environment files
+.env
+.env.local
+.env.*.local
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+
+# Cache
+/cache/
+/tmp/
+
+# Tests
+/tests/codeception/_output/
+/tests/codeception/_support/_generated/
+/tests/codeception/_support/Helper/
+/tests/codeception/acceptance.suite.yml
+/tests/codeception/functional.suite.yml
+/tests/codeception/unit.suite.yml
+/tests/codeception.yml
+/tests/acceptance/
+/tests/functional/
+/tests/unit/
+
+# Composer
+composer.lock
