@@ -2,7 +2,12 @@
 /vendor/
 /runtime/
 /web/assets/
+/web/uploads/*
+!/web/uploads/products/
+/web/uploads/products/*
+!/web/uploads/products/.gitkeep
 /web/index-test.php
+/web/env-dump.php
 /web/assets/*
 !/web/assets/.gitkeep
 

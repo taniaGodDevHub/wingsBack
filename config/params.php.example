@@ -1,0 +1,21 @@
+<?php
+
+return [
+    'adminEmail' => 'admin@example.com',
+    'senderEmail' => 'noreply@example.com',
+    'senderName' => 'Wings',
+
+    'smsRuApiId' => '',
+    'jwtSecret' => 'change-me-to-random-secret-key',
+    'jwtAccessTtl' => 3600,
+    'jwtRefreshTtl' => 86400,
+    'exposeActivationCode' => true,
+    'authCodeEmailFrom' => 'noreply@example.com',
+    'authCodeEmailSubject' => 'Код подтверждения',
+    'authChallengeTtl' => 600,
+    'authChallengeThrottleSeconds' => 60,
+
+    'dadataApiKey' => '',
+    'orderDraftTtl' => 1800,
+    'paymentBaseUrl' => 'https://pay.example.com',
+];

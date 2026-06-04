@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace app\models;
 
+use Yii;
 use yii\base\Model;
 use yii\mail\MailerInterface;
 
@@ -38,7 +39,11 @@ class ContactForm extends Model
     public function attributeLabels(): array
     {
         return [
-            'verifyCode' => 'Verification Code',
+            'name' => Yii::t('app', 'Name'),
+            'email' => Yii::t('app', 'Email'),
+            'subject' => Yii::t('app', 'Subject'),
+            'body' => Yii::t('app', 'Message'),
+            'verifyCode' => Yii::t('app', 'Verification Code'),
         ];
     }
 

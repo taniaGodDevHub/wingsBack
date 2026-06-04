@@ -9,7 +9,7 @@ services:
     healthcheck:
       test: [
         "CMD-SHELL",
-        "if [ \"$(stat -c '%U' /app/runtime)\" != 'www-data' ] || [ \"$(stat -c '%U' /app/web/assets)\" != 'www-data' ]; then chown -R www-data:www-data /app/runtime /app/web/assets && chmod -R ug+rwX /app/runtime /app/web/assets; fi && runuser -u www-data -- touch /app/runtime/test_write && rm /app/runtime/test_write && exit 0 || exit 1",
+        "if [ \"$(stat -c '%U' /app/runtime)\" != 'www-data' ] || [ \"$(stat -c '%U' /app/web/assets)\" != 'www-data' ] || [ \"$(stat -c '%U' /app/web/uploads/products)\" != 'www-data' ]; then chown -R www-data:www-data /app/runtime /app/web/assets /app/web/uploads/products && chmod -R ug+rwX /app/runtime /app/web/assets /app/web/uploads/products; fi && runuser -u www-data -- touch /app/runtime/test_write && rm /app/runtime/test_write && runuser -u www-data -- touch /app/web/uploads/products/.write-test && rm /app/web/uploads/products/.write-test && exit 0 || exit 1",
       ]
       interval: 30s
       timeout: 10s

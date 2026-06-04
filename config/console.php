@@ -3,16 +3,21 @@
 $params = require __DIR__ . '/params.php';
 $db = require __DIR__ . '/db.php';
 
+$i18n = require __DIR__ . '/i18n.php';
+
 $config = [
     'id' => 'basic-console',
     'basePath' => dirname(__DIR__),
+    'language' => $i18n['language'],
+    'sourceLanguage' => $i18n['sourceLanguage'],
     'bootstrap' => ['log'],
     'controllerNamespace' => 'app\commands',
-    'aliases' => [
-        '@bower' => '@vendor/bower-asset',
-        '@npm'   => '@vendor/npm-asset',
-        '@tests' => '@app/tests',
-    ],
+    'aliases' => array_merge(
+        require __DIR__ . '/aliases.php',
+        [
+            '@tests' => '@app/tests',
+        ],
+    ),
     'components' => [
         'cache' => [
             'class' => \yii\caching\FileCache::class,
@@ -27,7 +32,7 @@ $config = [
         ],
         'db' => $db,
         'authManager' => require __DIR__ . '/authManager.php',
-    ],
+    ] + $i18n['components'],
     'params' => $params,
     /*
     'controllerMap' => [

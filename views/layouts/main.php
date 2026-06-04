@@ -10,30 +10,70 @@ use yii\bootstrap5\Breadcrumbs;
 use yii\helpers\Html;
 
 $this->render('_head');
+
+$initialTheme = 'light';
 ?>
 <?php $this->beginPage() ?>
 <!DOCTYPE html>
-<html lang="<?= Yii::$app->language ?>" class="h-100" data-bs-theme="light">
+<html lang="<?= Yii::$app->language ?>"
+      data-bs-theme="<?= Html::encode($initialTheme) ?>"
+      data-layout-mode="fluid"
+      data-menu-color="dark"
+      data-topbar-color="light"
+      data-layout-position="fixed"
+      data-sidenav-size="default"
+      class="menuitem-active">
 <head>
-    <?php $this->head() ?>
+    <script>
+        try {
+            var t = localStorage.getItem('wings-theme');
+            if (t === 'dark' || t === 'light') {
+                document.documentElement.setAttribute('data-bs-theme', t);
+            }
+        } catch (e) {}
+    </script>
     <title><?= Html::encode($this->title) ?></title>
+    <?php $this->head() ?>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@200..800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.3/font/bootstrap-icons.css">
+    <link href="https://cdn.jsdelivr.net/npm/remixicon@4.5.0/fonts/remixicon.css" rel="stylesheet">
 </head>
-<body class="d-flex flex-column h-100">
+<body>
 <?php $this->beginBody() ?>
 
-<?= $this->render('_header') ?>
-
-<main id="main" class="flex-grow-1" role="main">
-    <div class="container">
-        <?php if (!empty($this->params['breadcrumbs'])): ?>
-            <?= Breadcrumbs::widget(['links' => $this->params['breadcrumbs']]) ?>
-        <?php endif ?>
-        <?= Alert::widget() ?>
-        <?= $content ?>
+<div class="wrapper">
+    <div class="container-fluid">
+        <?= $this->render('_hyper_topbar') ?>
     </div>
-</main>
 
-<?= $this->render('_footer') ?>
+    <?= $this->render('_hyper_sidebar') ?>
+
+    <main id="main" class="flex-shrink-0" role="main">
+        <div class="content-page">
+            <div class="content">
+                <div class="container-fluid">
+                    <?php if (!empty($this->params['breadcrumbs'])): ?>
+                        <?= Breadcrumbs::widget(['links' => $this->params['breadcrumbs']]) ?>
+                    <?php endif ?>
+                    <?= Alert::widget() ?>
+                    <?= $content ?>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <footer class="footer footer-alt">
+        <div class="container-fluid">
+            <div class="row">
+                <div class="col-12 text-center text-md-start">
+                    &copy; <?= Html::encode(Yii::$app->name) ?> <?= date('Y') ?>
+                </div>
+            </div>
+        </div>
+    </footer>
+</div>
 
 <?php $this->endBody() ?>
 </body>

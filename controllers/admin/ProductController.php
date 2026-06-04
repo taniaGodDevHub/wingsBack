@@ -1,0 +1,296 @@
+<?php
+
+declare(strict_types=1);
+
+namespace app\controllers\admin;
+
+use app\models\CartItem;
+use app\models\CatalogFeature;
+use app\models\CatalogFeatureValue;
+use app\models\Category;
+use app\models\FavoriteItem;
+use app\models\Gender;
+use app\models\Product;
+use app\services\ProductImageUploadService;
+use Yii;
+use yii\data\ActiveDataProvider;
+use yii\filters\VerbFilter;
+use yii\web\ForbiddenHttpException;
+use yii\web\NotFoundHttpException;
+use yii\web\Response;
+use yii\web\UploadedFile;
+
+class ProductController extends BaseAdminController
+{
+    private ?ProductImageUploadService $imageUploadService = null;
+
+    public function behaviors(): array
+    {
+        $behaviors = parent::behaviors();
+        $behaviors['access']['rules'] = [
+            [
+                'allow' => true,
+                'roles' => ['@'],
+                'matchCallback' => static fn (): bool => static::canManageCatalog(),
+            ],
+        ];
+        $behaviors['access']['denyCallback'] = static function (): void {
+            throw new ForbiddenHttpException(Yii::t('app', 'Access denied.'));
+        };
+        $behaviors['verbs'] = [
+            'class' => VerbFilter::class,
+            'actions' => [
+                'delete' => ['POST'],
+                'delete-image' => ['POST'],
+                'upload-images' => ['POST'],
+            ],
+        ];
+
+        return $behaviors;
+    }
+
+    public function actionIndex(): string
+    {
+        $this->view->title = Yii::t('app', 'Products');
+
+        return $this->render('index', [
+            'dataProvider' => new ActiveDataProvider([
+                'query' => Product::find()->with('images')->orderBy(['id' => SORT_DESC]),
+                'pagination' => ['pageSize' => 20],
+            ]),
+        ]);
+    }
+
+    public function actionView(int $id): string
+    {
+        $model = $this->findModel($id);
+        $this->view->title = Yii::t('app', 'Product #{id}', ['id' => $id]);
+
+        return $this->render('view', ['model' => $model]);
+    }
+
+    public function actionCreate(): string|Response
+    {
+        $model = new Product();
+        $model->is_available = true;
+
+        if ($model->load(Yii::$app->request->post()) && $model->save()) {
+            $this->saveProductCategory($model);
+            $this->saveProductFeatureValues($model);
+            $this->processImageUploads($model);
+            Yii::$app->session->setFlash('success', Yii::t('app', 'Saved successfully.'));
+
+            return $this->redirect(['index']);
+        }
+
+        $this->view->title = Yii::t('app', 'Create product');
+
+        return $this->render('form', $this->formViewParams($model));
+    }
+
+    public function actionDelete(int $id): Response
+    {
+        $model = $this->findModel($id);
+
+        foreach ($model->images as $image) {
+            $this->imageUpload()->deleteImage($image);
+        }
+
+        CartItem::deleteAll(['product_id' => $id]);
+        FavoriteItem::deleteAll(['product_id' => $id]);
+        $model->delete();
+
+        Yii::$app->session->setFlash('success', Yii::t('app', 'Product deleted.'));
+
+        return $this->redirect(['index']);
+    }
+
+    public function actionUpdate(int $id): string|Response
+    {
+        $model = $this->findModel($id);
+
+        if ($model->load(Yii::$app->request->post()) && $model->save()) {
+            $this->saveProductCategory($model);
+            $this->saveProductFeatureValues($model);
+            $this->processImageUploads($model);
+            Yii::$app->session->setFlash('success', Yii::t('app', 'Saved successfully.'));
+
+            return $this->redirect(['index']);
+        }
+
+        $this->view->title = Yii::t('app', 'Edit product');
+
+        return $this->render('form', $this->formViewParams($model));
+    }
+
+    public function actionUploadImages(int $id): Response
+    {
+        $model = $this->findModel($id);
+        $files = UploadedFile::getInstancesByName('productImages');
+        $errors = $this->imageUpload()->uploadMany($model, $files);
+
+        if (Yii::$app->request->isAjax) {
+            Yii::$app->response->format = Response::FORMAT_JSON;
+
+            if ($errors !== []) {
+                return $this->asJson(['success' => false, 'errors' => $errors]);
+            }
+
+            return $this->asJson([
+                'success' => true,
+                'carouselHtml' => $this->renderCarouselPartial($id),
+            ]);
+        }
+
+        if ($errors !== []) {
+            Yii::$app->session->setFlash('error', implode(' ', $errors));
+        } else {
+            Yii::$app->session->setFlash('success', Yii::t('app', 'Images uploaded.'));
+        }
+
+        return $this->redirect(['update', 'id' => $model->id]);
+    }
+
+    public function actionDeleteImage(int $productId = 0, int $imageId = 0): Response
+    {
+        $request = Yii::$app->request;
+        $productId = $productId > 0
+            ? $productId
+            : (int) $request->post('productId', $request->get('productId', $request->post('id', $request->get('id', 0))));
+        $imageId = $imageId > 0
+            ? $imageId
+            : (int) $request->post('imageId', $request->get('imageId', 0));
+
+        if ($productId <= 0 || $imageId <= 0) {
+            Yii::$app->response->format = Response::FORMAT_JSON;
+
+            return $this->asJson([
+                'success' => false,
+                'message' => Yii::t('app', 'Image not found.'),
+                'error' => Yii::t('app', 'Image not found.'),
+                'carouselHtml' => null,
+            ]);
+        }
+
+        $model = $this->findModel($productId);
+        $image = $this->imageUpload()->findImageForProduct((int) $model->id, $imageId);
+
+        if ($image !== null) {
+            $this->imageUpload()->deleteImage($image);
+        }
+
+        return $this->deleteImageJsonResponse($productId, true, Yii::t('app', 'Image deleted.'));
+    }
+
+    private function deleteImageJsonResponse(int $productId, bool $success, string $message): Response
+    {
+        if (!Yii::$app->request->isAjax) {
+            Yii::$app->session->setFlash($success ? 'success' : 'error', $message);
+            $redirect = (string) Yii::$app->request->post('redirect', 'update');
+
+            return $this->redirect($redirect === 'view'
+                ? ['view', 'id' => $productId]
+                : ['update', 'id' => $productId]);
+        }
+
+        Yii::$app->response->format = Response::FORMAT_JSON;
+
+        return $this->asJson([
+            'success' => $success,
+            'message' => $message,
+            'error' => $success ? null : $message,
+            'carouselHtml' => $this->renderCarouselPartial($productId),
+        ]);
+    }
+
+    private function renderCarouselPartial(int $productId): string
+    {
+        $redirect = (string) Yii::$app->request->post('redirect', 'update');
+        if (!in_array($redirect, ['update', 'view'], true)) {
+            $redirect = 'update';
+        }
+
+        return $this->renderPartial('_imageCarousel', [
+            'model' => $this->findModel($productId),
+            'carouselId' => 'product-images-carousel',
+            'allowDelete' => true,
+            'redirectAction' => $redirect,
+            'ajaxDelete' => true,
+        ]);
+    }
+
+    private function saveProductCategory(Product $product): void
+    {
+        $product->unlinkAll('categories', true);
+
+        $categoryId = $product->categoryId;
+        if ($categoryId === null || $categoryId <= 0) {
+            return;
+        }
+
+        $category = Category::findOne(['id' => $categoryId]);
+        if ($category !== null) {
+            $product->link('categories', $category);
+        }
+    }
+
+    private function saveProductFeatureValues(Product $product): void
+    {
+        $product->unlinkAll('featureValues', true);
+
+        foreach ($product->featureValueByFeatureId as $featureId => $valueId) {
+            $featureId = (int) $featureId;
+            $valueId = (int) $valueId;
+            if ($featureId <= 0 || $valueId <= 0) {
+                continue;
+            }
+
+            $value = CatalogFeatureValue::findOne(['id' => $valueId, 'feature_id' => $featureId]);
+            if ($value !== null) {
+                $product->link('featureValues', $value);
+            }
+        }
+    }
+
+    /** @return array<string, mixed> */
+    private function formViewParams(Product $model): array
+    {
+        return [
+            'model' => $model,
+            'categoryOptions' => Category::getDropdownOptions(),
+            'genderOptions' => Gender::getDropdownOptions(),
+            'catalogFeatures' => CatalogFeature::findAllForAdminForm(),
+        ];
+    }
+
+    private function processImageUploads(Product $model): void
+    {
+        $files = UploadedFile::getInstancesByName('productImages');
+        $errors = $this->imageUpload()->uploadMany($model, $files);
+        if ($errors !== []) {
+            Yii::$app->session->setFlash('error', implode(' ', $errors));
+        }
+    }
+
+    private function imageUpload(): ProductImageUploadService
+    {
+        if ($this->imageUploadService === null) {
+            $this->imageUploadService = new ProductImageUploadService();
+        }
+
+        return $this->imageUploadService;
+    }
+
+    private function findModel(int $id): Product
+    {
+        $model = Product::find()
+            ->with(['images', 'categories', 'colors', 'sizes', 'featureValues'])
+            ->where(['id' => $id])
+            ->one();
+        if ($model === null) {
+            throw new NotFoundHttpException(Yii::t('app', 'Product not found.'));
+        }
+
+        return $model;
+    }
+}

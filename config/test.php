@@ -12,11 +12,8 @@ return [
     'bootstrap' => [
         \app\tests\Support\MailerBootstrap::class,
     ],
-    'aliases' => [
-        '@bower' => '@vendor/bower-asset',
-        '@npm'   => '@vendor/npm-asset',
-    ],
-    'language' => 'en-US',
+    'aliases' => require __DIR__ . '/aliases.php',
+    'language' => 'ru-RU',
     'components' => [
         'db' => $db,
         'mailer' => [

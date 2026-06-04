@@ -18,16 +18,6 @@ final class UserTest extends \Codeception\Test\Unit
         verify(User::findIdentity(999))->empty();
     }
 
-    public function testFindUserByAccessToken()
-    {
-        /** @var User $user */
-        $user = User::findIdentityByAccessToken('100-token');
-
-        verify($user)->notEmpty();
-        verify($user->username)->equals('admin');
-        verify(User::findIdentityByAccessToken('non-existing'))->empty();
-    }
-
     public function testFindUserByUsername()
     {
         /** @var User $user */

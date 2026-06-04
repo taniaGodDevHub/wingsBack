@@ -1,38 +1,34 @@
 <?php
 
-/**
- * @link https://www.yiiframework.com/
- * @copyright Copyright (c) 2008 Yii Software LLC
- * @license https://www.yiiframework.com/license/
- */
-
 declare(strict_types=1);
 
 namespace app\assets;
 
 use yii\bootstrap5\BootstrapAsset;
 use yii\web\AssetBundle;
-use yii\web\View;
 use yii\web\YiiAsset;
 
 /**
- * Main application asset bundle.
- *
- * @author Qiang Xue <qiang.xue@gmail.com>
- * @since 2.0
+ * Hyper admin theme (Coderthemes) + application styles.
  */
 class AppAsset extends AssetBundle
 {
     public $basePath = '@webroot';
     public $baseUrl = '@web';
     public $css = [
-        'css/site.css',
+        ['css/main.css', 'id' => 'main-css'],
+        ['css/vendor.css', 'id' => 'vendor-css'],
+        ['css/unicons.css', 'id' => 'unicons-css'],
+        ['css/materialdesignicons.min.css', 'id' => 'material-icons-css'],
+        ['css/remixicon.css', 'id' => 'remix-icon-css'],
+        ['css/site.css', 'id' => 'site-css'],
     ];
     public $js = [
-        'js/color-mode.js',
-    ];
-    public $jsOptions = [
-        'position' => View::POS_HEAD,
+        'js/helpers/windowHelper.js',
+        'js/hyper-config.js',
+        'https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js',
+        'js/app.js',
+        'js/hyper-theme.js',
     ];
     public $depends = [
         YiiAsset::class,

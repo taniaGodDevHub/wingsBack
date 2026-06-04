@@ -4,37 +4,81 @@ declare(strict_types=1);
 
 /** @var yii\web\View $this */
 
+use app\controllers\admin\BaseAdminController;
 use yii\bootstrap5\Nav;
 use yii\bootstrap5\NavBar;
 use yii\helpers\Html;
 
 $items = [
     [
-        'label' => 'Home',
-        'url' => ['/site/index'],
-    ],
-    [
-        'label' => 'About',
-        'url' => ['/site/about'],
-    ],
-    [
-        'label' => 'Contact',
+        'label' => Yii::t('app', 'Contact'),
         'url' => ['/site/contact'],
     ],
-    [
-        'label' => 'Login',
-        'url' => ['/site/login'],
-        'visible' => Yii::$app->user->isGuest,
-    ],
-    [
-        'label' => 'Logout (' . Html::encode(Yii::$app->user->identity?->username ?? '') . ')',
-        'url' => ['/site/logout'],
-        'linkOptions' => [
-            'data-method' => 'post',
-            'class' => 'nav-link logout',
+];
+
+if (BaseAdminController::canManageCatalog()) {
+    $items[] = [
+        'label' => Yii::t('app', 'Products'),
+        'url' => ['/admin/product/index'],
+    ];
+
+    $items[] = [
+        'label' => Yii::t('app', 'Settings'),
+        'items' => [
+            ['label' => Yii::t('app', 'Categories'), 'url' => ['/admin/settings/categories']],
+            ['label' => Yii::t('app', 'Colors'), 'url' => ['/admin/settings/colors']],
+            ['label' => Yii::t('app', 'Attributes'), 'url' => ['/admin/settings/features']],
+            ['label' => Yii::t('app', 'Attribute values'), 'url' => ['/admin/settings/feature-values']],
+            ['label' => Yii::t('app', 'Home banners'), 'url' => ['/admin/settings/banners']],
         ],
-        'visible' => !Yii::$app->user->isGuest,
+    ];
+}
+
+if (BaseAdminController::canAccess()) {
+    $adminItems = [];
+    if (BaseAdminController::canManageUsers()) {
+        $adminItems[] = [
+            'label' => Yii::t('app', 'Users list'),
+            'url' => ['/admin/user/index'],
+        ];
+    }
+    if (BaseAdminController::canManageRbac()) {
+        $adminItems[] = [
+            'label' => Yii::t('app', 'Roles'),
+            'url' => ['/admin/rbac/roles'],
+        ];
+        $adminItems[] = [
+            'label' => Yii::t('app', 'Permissions'),
+            'url' => ['/admin/rbac/permissions'],
+        ];
+        $adminItems[] = [
+            'label' => Yii::t('app', 'Role assignments'),
+            'url' => ['/admin/rbac/assignments'],
+        ];
+    }
+    if ($adminItems !== []) {
+        $items[] = [
+            'label' => Yii::t('app', 'Users'),
+            'items' => $adminItems,
+        ];
+    }
+}
+
+$items[] = [
+    'label' => Yii::t('app', 'Login'),
+    'url' => ['/site/login'],
+    'visible' => Yii::$app->user->isGuest,
+];
+$items[] = [
+    'label' => Yii::t('app', 'Logout ({username})', [
+        'username' => Html::encode(Yii::$app->user->identity?->username ?? ''),
+    ]),
+    'url' => ['/site/logout'],
+    'linkOptions' => [
+        'data-method' => 'post',
+        'class' => 'nav-link logout',
     ],
+    'visible' => !Yii::$app->user->isGuest,
 ];
 
 ?>
@@ -43,7 +87,7 @@ $items = [
         [
             'brandLabel' => Yii::$app->name,
             'brandUrl' => Yii::$app->homeUrl,
-            'options' => ['class' => 'navbar-expand-md navbar-dark bg-dark fixed-top']
+            'options' => ['class' => 'navbar-expand-md navbar-dark bg-dark fixed-top'],
         ],
     ) ?>
     <?= Nav::widget(
@@ -58,7 +102,7 @@ $items = [
         [
             'id' => 'theme-toggle',
             'class' => 'btn btn-link nav-link fs-5',
-            'aria-label' => 'Switch to dark mode',
+            'aria-label' => Yii::t('app', 'Switch to dark mode'),
         ],
     ) ?>
     <?php NavBar::end() ?>

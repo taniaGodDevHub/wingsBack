@@ -42,3 +42,6 @@ $this->registerLinkTag(
         'href' => Yii::getAlias('@web/favicon.ico'),
     ],
 );
+$this->registerMetaTag(['http-equiv' => 'cache-control', 'content' => 'no-cache, no-store, must-revalidate']);
+$this->registerMetaTag(['http-equiv' => 'pragma', 'content' => 'no-cache']);
+$this->registerMetaTag(['http-equiv' => 'expires', 'content' => '0']);

@@ -92,6 +92,8 @@ class SiteController extends Controller
             return $this->goHome();
         }
 
+        $this->layout = 'guest';
+
         $model = new LoginForm($this->security);
 
         if ($model->load($this->request->post()) && $model->login()) {
@@ -134,7 +136,7 @@ class SiteController extends Controller
         if ($contact) {
             Yii::$app->session->setFlash(
                 'success',
-                'Thank you for contacting us. We will respond to you as soon as possible.',
+                Yii::t('app', 'Thank you for contacting us. We will respond to you as soon as possible.'),
             );
 
             return $this->refresh();
@@ -151,5 +153,29 @@ class SiteController extends Controller
     public function actionAbout(): string
     {
         return $this->render('about');
+    }
+
+    public function actionPaymentDone(): Response
+    {
+        Yii::$app->response->format = Response::FORMAT_JSON;
+
+        return $this->asJson([
+            'status' => 'ok',
+            'OutSum' => Yii::$app->request->get('OutSum'),
+            'InvId' => Yii::$app->request->get('InvId'),
+            'IsTest' => Yii::$app->request->get('IsTest'),
+        ]);
+    }
+
+    public function actionPaymentError(): Response
+    {
+        Yii::$app->response->format = Response::FORMAT_JSON;
+
+        return $this->asJson([
+            'status' => 'error',
+            'OutSum' => Yii::$app->request->get('OutSum'),
+            'InvId' => Yii::$app->request->get('InvId'),
+            'IsTest' => Yii::$app->request->get('IsTest'),
+        ]);
     }
 }

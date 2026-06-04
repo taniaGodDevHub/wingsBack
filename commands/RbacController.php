@@ -34,11 +34,16 @@ class RbacController extends Controller
         $manageRbac->description = 'Управление ролями и разрешениями';
         $auth->add($manageRbac);
 
+        $manageCatalog = $auth->createPermission('manageCatalog');
+        $manageCatalog->description = 'Управление каталогом и настройками магазина';
+        $auth->add($manageCatalog);
+
         $admin = $auth->createRole('admin');
         $admin->description = 'Администратор';
         $auth->add($admin);
         $auth->addChild($admin, $manageUsers);
         $auth->addChild($admin, $manageRbac);
+        $auth->addChild($admin, $manageCatalog);
 
         $user = $auth->createRole('user');
         $user->description = 'Зарегистрированный пользователь';
