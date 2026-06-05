@@ -7,11 +7,204 @@ namespace app\controllers\api;
 use app\components\api\BaseApiController;
 use app\services\DeliveryService;
 use app\services\OrderService;
+use OpenApi\Annotations as OA;
 use Yii;
 use yii\filters\auth\HttpBearerAuth;
 use yii\filters\VerbFilter;
 use yii\web\UnauthorizedHttpException;
 
+/**
+ * @OA\Tag(
+ *     name="Заказы",
+ *     description="Оформление заказов и история покупок"
+ * )
+ *
+ * @OA\Post(
+ *     path="/api/orders/create",
+ *     summary="Создать черновик заказа",
+ *     description="actionCreate — создаёт новый черновик заказа, предыдущий черновик пользователя удаляется",
+ *     operationId="actionCreate",
+ *     tags={"Заказы"},
+ *     security={{"bearerAuth": {}}},
+ *     @OA\RequestBody(
+ *         required=true,
+ *         @OA\MediaType(
+ *             mediaType="application/json",
+ *             @OA\Schema(ref="#/components/schemas/OrderCreateRequest")
+ *         )
+ *     ),
+ *     @OA\Response(
+ *         response=200,
+ *         description="Созданный заказ",
+ *         @OA\MediaType(
+ *             mediaType="application/json",
+ *             @OA\Schema(ref="#/components/schemas/OrderCreateResponse")
+ *         )
+ *     ),
+ *     @OA\Response(response=401, ref="#/components/responses/unauthorized")
+ * )
+ *
+ * @OA\Get(
+ *     path="/api/orders/active",
+ *     summary="Получить активный черновик заказа",
+ *     description="actionActive — возвращает текущий неоформленный заказ пользователя",
+ *     operationId="actionActive",
+ *     tags={"Заказы"},
+ *     security={{"bearerAuth": {}}},
+ *     @OA\Response(
+ *         response=200,
+ *         description="Активный заказ",
+ *         @OA\MediaType(
+ *             mediaType="application/json",
+ *             @OA\Schema(ref="#/components/schemas/OrderActiveResponse")
+ *         )
+ *     ),
+ *     @OA\Response(response=401, ref="#/components/responses/unauthorized")
+ * )
+ *
+ * @OA\Get(
+ *     path="/api/orders/{order_id}",
+ *     summary="Получить заказ по ID",
+ *     description="actionView — детальная информация о заказе",
+ *     operationId="actionView",
+ *     tags={"Заказы"},
+ *     security={{"bearerAuth": {}}},
+ *     @OA\Parameter(
+ *         name="order_id",
+ *         in="path",
+ *         description="ID заказа",
+ *         required=true,
+ *         @OA\Schema(type="integer")
+ *     ),
+ *     @OA\Response(
+ *         response=200,
+ *         description="Детали заказа",
+ *         @OA\MediaType(
+ *             mediaType="application/json",
+ *             @OA\Schema(ref="#/components/schemas/OrderDetailsResponse")
+ *         )
+ *     ),
+ *     @OA\Response(response=401, ref="#/components/responses/unauthorized")
+ * )
+ *
+ * @OA\Post(
+ *     path="/api/orders/{order_id}/confirm",
+ *     summary="Подтвердить оформление заказа",
+ *     description="actionConfirm — переводит черновик в статус ожидания оплаты и возвращает ссылку на оплату",
+ *     operationId="actionConfirm",
+ *     tags={"Заказы"},
+ *     security={{"bearerAuth": {}}},
+ *     @OA\Parameter(
+ *         name="order_id",
+ *         in="path",
+ *         description="ID заказа",
+ *         required=true,
+ *         @OA\Schema(type="integer")
+ *     ),
+ *     @OA\RequestBody(
+ *         required=true,
+ *         @OA\MediaType(
+ *             mediaType="application/json",
+ *             @OA\Schema(ref="#/components/schemas/OrderConfirmRequest")
+ *         )
+ *     ),
+ *     @OA\Response(
+ *         response=200,
+ *         description="Заказ оформлен",
+ *         @OA\MediaType(
+ *             mediaType="application/json",
+ *             @OA\Schema(ref="#/components/schemas/OrderConfirmResponse")
+ *         )
+ *     ),
+ *     @OA\Response(response=401, ref="#/components/responses/unauthorized")
+ * )
+ *
+ * @OA\Get(
+ *     path="/api/orders/{order_id}/delivery-options",
+ *     summary="Получить способы доставки для заказа",
+ *     description="actionDeliveryOptions — доступные методы доставки с учётом города",
+ *     operationId="actionDeliveryOptions",
+ *     tags={"Заказы"},
+ *     security={{"bearerAuth": {}}},
+ *     @OA\Parameter(
+ *         name="order_id",
+ *         in="path",
+ *         description="ID заказа",
+ *         required=true,
+ *         @OA\Schema(type="integer")
+ *     ),
+ *     @OA\Parameter(
+ *         name="city_fias_id",
+ *         in="query",
+ *         description="ФИАС ID города для расчёта",
+ *         required=false,
+ *         @OA\Schema(type="string")
+ *     ),
+ *     @OA\Response(
+ *         response=200,
+ *         description="Список способов доставки",
+ *         @OA\MediaType(
+ *             mediaType="application/json",
+ *             @OA\Schema(
+ *                 type="array",
+ *                 @OA\Items(
+ *                     @OA\Property(property="id", type="integer"),
+ *                     @OA\Property(property="name", type="string"),
+ *                     @OA\Property(property="code", type="string"),
+ *                     @OA\Property(property="is_pvz", type="boolean")
+ *                 )
+ *             )
+ *         )
+ *     ),
+ *     @OA\Response(response=401, ref="#/components/responses/unauthorized")
+ * )
+ *
+ * @OA\Get(
+ *     path="/api/orders/purchases",
+ *     summary="Получить историю покупок",
+ *     description="actionPurchases — список оформленных заказов пользователя",
+ *     operationId="actionPurchases",
+ *     tags={"Заказы"},
+ *     security={{"bearerAuth": {}}},
+ *     @OA\Parameter(name="page", in="query", description="Номер страницы", @OA\Schema(type="integer", default=1)),
+ *     @OA\Parameter(name="page_size", in="query", description="Записей на странице", @OA\Schema(type="integer", default=999)),
+ *     @OA\Response(
+ *         response=200,
+ *         description="Список заказов",
+ *         @OA\MediaType(
+ *             mediaType="application/json",
+ *             @OA\Schema(
+ *                 @OA\Property(property="orders", type="array", @OA\Items(type="object")),
+ *                 @OA\Property(property="available_filters", type="object")
+ *             )
+ *         )
+ *     ),
+ *     @OA\Response(response=401, ref="#/components/responses/unauthorized")
+ * )
+ *
+ * @OA\Get(
+ *     path="/api/orders/deliveries",
+ *     summary="Получить заказы в доставке",
+ *     description="actionDeliveries — список заказов со статусами доставки и трекингом",
+ *     operationId="actionDeliveries",
+ *     tags={"Заказы"},
+ *     security={{"bearerAuth": {}}},
+ *     @OA\Parameter(name="page", in="query", description="Номер страницы", @OA\Schema(type="integer", default=1)),
+ *     @OA\Parameter(name="page_size", in="query", description="Записей на странице", @OA\Schema(type="integer", default=999)),
+ *     @OA\Response(
+ *         response=200,
+ *         description="Заказы в доставке",
+ *         @OA\MediaType(
+ *             mediaType="application/json",
+ *             @OA\Schema(
+ *                 @OA\Property(property="orders", type="array", @OA\Items(type="object")),
+ *                 @OA\Property(property="available_filters", type="object")
+ *             )
+ *         )
+ *     ),
+ *     @OA\Response(response=401, ref="#/components/responses/unauthorized")
+ * )
+ */
 class OrdersController extends BaseApiController
 {
     private OrderService $orders;

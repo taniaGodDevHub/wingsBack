@@ -6,9 +6,82 @@ namespace app\controllers\api;
 
 use app\components\api\BaseApiController;
 use app\components\dadata\DaDataClient;
+use OpenApi\Annotations as OA;
 use Yii;
 use yii\filters\VerbFilter;
 
+/**
+ * @OA\Tag(
+ *     name="DaData",
+ *     description="Подсказки городов и адресов через DaData"
+ * )
+ *
+ * @OA\Post(
+ *     path="/api/dadata/suggest/city",
+ *     summary="Подсказки городов",
+ *     description="actionSuggestCity — поиск городов через DaData",
+ *     operationId="DaDataController.actionSuggestCity",
+ *     tags={"DaData"},
+ *     @OA\RequestBody(
+ *         required=true,
+ *         @OA\MediaType(
+ *             mediaType="application/json",
+ *             @OA\Schema(ref="#/components/schemas/DaDataSuggestRequest")
+ *         )
+ *     ),
+ *     @OA\Response(
+ *         response=200,
+ *         description="Список городов",
+ *         @OA\MediaType(
+ *             mediaType="application/json",
+ *             @OA\Schema(
+ *                 @OA\Property(property="data", type="array", @OA\Items(type="object"))
+ *             )
+ *         )
+ *     )
+ * )
+ *
+ * @OA\Post(
+ *     path="/api/dadata/suggest/address",
+ *     summary="Подсказки адресов",
+ *     description="actionSuggestAddress — поиск адресов через DaData с опциональным ограничением по городу",
+ *     operationId="DaDataController.actionSuggestAddress",
+ *     tags={"DaData"},
+ *     @OA\RequestBody(
+ *         required=true,
+ *         @OA\MediaType(
+ *             mediaType="application/json",
+ *             @OA\Schema(ref="#/components/schemas/DaDataSuggestRequest")
+ *         )
+ *     ),
+ *     @OA\Response(
+ *         response=200,
+ *         description="Список адресов",
+ *         @OA\MediaType(
+ *             mediaType="application/json",
+ *             @OA\Schema(
+ *                 @OA\Property(
+ *                     property="data",
+ *                     type="array",
+ *                     @OA\Items(
+ *                         @OA\Property(property="value", type="string"),
+ *                         @OA\Property(property="unrestricted_value", type="string"),
+ *                         @OA\Property(
+ *                             property="data",
+ *                             type="object",
+ *                             @OA\Property(property="address_fias_id", type="string", nullable=true),
+ *                             @OA\Property(property="house_fias_id", type="string", nullable=true),
+ *                             @OA\Property(property="postal_code", type="string", nullable=true),
+ *                             @OA\Property(property="geo_lat", type="string", nullable=true),
+ *                             @OA\Property(property="geo_lon", type="string", nullable=true)
+ *                         )
+ *                     )
+ *                 )
+ *             )
+ *         )
+ *     )
+ * )
+ */
 class DaDataController extends BaseApiController
 {
     public function behaviors(): array
