@@ -5,7 +5,8 @@ return [
     'senderEmail' => 'noreply@example.com',
     'senderName' => 'Wings',
 
-    'smsRuApiId' => '',
+    'smsRuApiId' => '', // API ID из ЛК SMS.ru → Программистам
+    'smsRuFrom' => '', // одобренное имя отправителя (необязательно)
     'jwtSecret' => 'change-me-to-random-secret-key',
     'jwtAccessTtl' => 3600,
     'jwtRefreshTtl' => 86400,
