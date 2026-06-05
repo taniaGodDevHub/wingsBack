@@ -20,7 +20,7 @@
         "yiisoft/yii2-symfonymailer": "~2.0.3",
         "zircote/swagger-php": "^4.8",
         "doctrine/annotations": "^2.0",
-        "firebase/php-jwt": "^6.0"
+        "firebase/php-jwt": "^7.0"
     },
     "require-dev": {
         "codeception/c3": "^2.8",
