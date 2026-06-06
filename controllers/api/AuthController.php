@@ -376,7 +376,7 @@ use yii\web\UnauthorizedHttpException;
  *         description="Код отправлен",
  *         @OA\MediaType(
  *             mediaType="application/json",
- *             @OA\Schema(ref="#/components/schemas/ChallengeOkResponse")
+ *             @OA\Schema(ref="#/components/schemas/EmailConfirmationResponse")
  *         )
  *     ),
  *     @OA\Response(response=401, ref="#/components/responses/unauthorized")
@@ -725,8 +725,6 @@ class AuthController extends BaseApiController
             'username' => $user->username,
             'email' => $profile?->email,
             'name' => $profile?->name,
-            'f' => $profile?->f,
-            'i' => $profile?->i,
             'phone_number' => $profile?->phone_number,
         ];
     }

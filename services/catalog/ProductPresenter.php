@@ -66,9 +66,7 @@ final class ProductPresenter
             'name' => $product->name,
             'images' => self::imagesUrls($product),
             'price' => (float) $product->price,
-            'blago' => (float) $product->blago,
             'currency' => 'RUB',
-            'is_available' => (bool) $product->is_available,
         ];
     }
 
@@ -81,7 +79,6 @@ final class ProductPresenter
             'images' => self::imagesUrls($product),
             'categories' => self::categories($product),
             'price' => (float) $product->price,
-            'blago' => (float) $product->blago,
             'currency' => 'RUB',
             'is_available' => (bool) $product->is_available,
         ];
@@ -103,7 +100,6 @@ final class ProductPresenter
             'price' => $price,
             'old_price' => $oldPrice,
             'discount_percent' => $discount,
-            'blago' => (float) $product->blago,
             'currency' => 'RUB',
             'is_available' => (bool) $product->is_available,
             'categories' => self::categories($product),

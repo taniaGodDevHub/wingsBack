@@ -90,6 +90,9 @@ class CartService
 
     public function list(ApiOwnerContext $owner, int $page, int $pageSize): array
     {
+        $page = max(1, $page);
+        $pageSize = min(200, max(1, $pageSize));
+
         $cart = $this->resolveCart($owner, null, false);
         if ($cart === null) {
             return [
@@ -129,13 +132,14 @@ class CartService
                 'unit_price' => $unitPrice,
                 'price_show' => $unitPrice,
                 'product_info' => ProductPresenter::cartProductInfo($product),
-                'product' => ProductPresenter::compact($product),
             ];
         }
 
+        $offset = ($page - 1) * $pageSize;
+
         return [
             'cart_id' => (int) $cart->id,
-            'items' => $responseItems,
+            'items' => array_slice($responseItems, $offset, $pageSize),
             'summary' => [
                 'items_count' => $totalQty,
                 'total_amount' => round($totalAmount, 2),

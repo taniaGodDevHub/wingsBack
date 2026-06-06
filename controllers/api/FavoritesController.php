@@ -87,7 +87,8 @@ use yii\web\UnauthorizedHttpException;
  *             mediaType="application/json",
  *             @OA\Schema(
  *                 required={"product_ids"},
- *                 @OA\Property(property="product_ids", type="array", @OA\Items(type="integer"))
+ *                 @OA\Property(property="product_ids", type="array", @OA\Items(type="integer")),
+ *                 @OA\Property(property="session_id", type="string", nullable=true, description="Для гостя, если не передан X-Session-ID")
  *             )
  *         )
  *     ),

@@ -107,6 +107,20 @@ use yii\web\UnauthorizedHttpException;
  *     operationId="CartClientController.actionList",
  *     tags={"Корзина"},
  *     security={{"bearerAuth": {}}, {"sessionId": {}}},
+ *     @OA\Parameter(
+ *         name="page",
+ *         in="query",
+ *         description="Номер страницы",
+ *         required=false,
+ *         @OA\Schema(type="integer", default=1)
+ *     ),
+ *     @OA\Parameter(
+ *         name="page_size",
+ *         in="query",
+ *         description="Количество позиций на странице (макс. 200)",
+ *         required=false,
+ *         @OA\Schema(type="integer", default=200)
+ *     ),
  *     @OA\Response(
  *         response=200,
  *         description="Корзина",
@@ -255,7 +269,10 @@ class CartClientController extends BaseApiController
     {
         $owner = ApiOwnerContext::resolve(false, true);
 
-        return $this->cart->list($owner, 1, 200);
+        $page = (int) Yii::$app->request->get('page', 1);
+        $pageSize = (int) Yii::$app->request->get('page_size', 200);
+
+        return $this->cart->list($owner, $page, $pageSize);
     }
 
     public function actionCount(): array

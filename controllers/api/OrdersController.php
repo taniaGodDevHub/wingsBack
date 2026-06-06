@@ -197,8 +197,7 @@ use yii\web\UnauthorizedHttpException;
  *         @OA\MediaType(
  *             mediaType="application/json",
  *             @OA\Schema(
- *                 @OA\Property(property="orders", type="array", @OA\Items(type="object")),
- *                 @OA\Property(property="available_filters", type="object")
+ *                 @OA\Property(property="orders", type="array", @OA\Items(type="object"))
  *             )
  *         )
  *     ),

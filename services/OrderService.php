@@ -134,7 +134,7 @@ class OrderService
             ShopOrder::STATUS_AWAITING_PAYMENT,
         ];
 
-        return $this->listOrders($userId, $statuses, $page, $pageSize, true);
+        return $this->listOrders($userId, $statuses, $page, $pageSize, true, true);
     }
 
     public function deliveries(int $userId, int $page, int $pageSize): array
@@ -145,11 +145,11 @@ class OrderService
             ShopOrder::STATUS_DELIVERED,
         ];
 
-        return $this->listOrders($userId, $statuses, $page, $pageSize, false);
+        return $this->listOrders($userId, $statuses, $page, $pageSize, false, false);
     }
 
     /** @param string[] $statuses */
-    private function listOrders(int $userId, array $statuses, int $page, int $pageSize, bool $fullItems): array
+    private function listOrders(int $userId, array $statuses, int $page, int $pageSize, bool $fullItems, bool $includeFilters): array
     {
         $query = ShopOrder::find()
             ->where(['user_id' => $userId])
@@ -214,10 +214,12 @@ class OrderService
             $result[] = $row;
         }
 
-        return [
-            'orders' => $result,
-            'available_filters' => ['filters' => []],
-        ];
+        $response = ['orders' => $result];
+        if ($includeFilters) {
+            $response['available_filters'] = ['filters' => []];
+        }
+
+        return $response;
     }
 
     private function findUserOrder(int $orderId, int $userId): ShopOrder

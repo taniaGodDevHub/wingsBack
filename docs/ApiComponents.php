@@ -41,6 +41,13 @@ use OpenApi\Annotations as OA;
  * )
  *
  * @OA\Schema(
+ *     schema="EmailConfirmationResponse",
+ *     @OA\Property(property="ok", type="boolean", example=true),
+ *     @OA\Property(property="record_id", type="string", format="uuid"),
+ *     @OA\Property(property="ttl_seconds", type="integer", example=300)
+ * )
+ *
+ * @OA\Schema(
  *     schema="EmailLoginCodeResponse",
  *     @OA\Property(property="record_id", type="string", format="uuid"),
  *     @OA\Property(property="code", type="string", example="123456", description="Только в dev-режиме")
@@ -52,8 +59,6 @@ use OpenApi\Annotations as OA;
  *     @OA\Property(property="username", type="string"),
  *     @OA\Property(property="email", type="string", nullable=true),
  *     @OA\Property(property="name", type="string", nullable=true),
- *     @OA\Property(property="f", type="string", nullable=true, description="Фамилия"),
- *     @OA\Property(property="i", type="string", nullable=true, description="Имя"),
  *     @OA\Property(property="phone_number", type="string", nullable=true)
  * )
  *
@@ -164,16 +169,33 @@ use OpenApi\Annotations as OA;
  * )
  *
  * @OA\Schema(
+ *     schema="ProductImageShowcase",
+ *     @OA\Property(property="id", type="integer"),
+ *     @OA\Property(property="image_url", type="string"),
+ *     @OA\Property(property="sort_order", type="integer")
+ * )
+ *
+ * @OA\Schema(
+ *     schema="CategoryRef",
+ *     @OA\Property(property="id", type="integer"),
+ *     @OA\Property(property="name", type="string"),
+ *     @OA\Property(property="slug", type="string")
+ * )
+ *
+ * @OA\Schema(
  *     schema="CatalogProductShowcase",
  *     @OA\Property(property="id", type="integer"),
  *     @OA\Property(property="slug", type="string"),
  *     @OA\Property(property="name", type="string"),
- *     @OA\Property(property="brand", type="string", nullable=true),
  *     @OA\Property(property="price", type="number", format="float"),
  *     @OA\Property(property="old_price", type="number", format="float", nullable=true),
- *     @OA\Property(property="images", type="array", @OA\Items(type="object")),
+ *     @OA\Property(property="discount_percent", type="integer", nullable=true),
+ *     @OA\Property(property="currency", type="string", example="RUB"),
+ *     @OA\Property(property="is_available", type="boolean"),
  *     @OA\Property(property="is_bestseller", type="boolean"),
- *     @OA\Property(property="is_featured_home", type="boolean")
+ *     @OA\Property(property="is_featured_home", type="boolean"),
+ *     @OA\Property(property="images", type="array", @OA\Items(ref="#/components/schemas/ProductImageShowcase")),
+ *     @OA\Property(property="categories", type="array", @OA\Items(ref="#/components/schemas/CategoryRef"))
  * )
  *
  * @OA\Schema(
@@ -190,7 +212,7 @@ use OpenApi\Annotations as OA;
  *     @OA\Property(property="id", type="integer"),
  *     @OA\Property(property="name", type="string"),
  *     @OA\Property(property="slug", type="string"),
- *     @OA\Property(property="is_related", type="boolean"),
+ *     @OA\Property(property="related", type="boolean"),
  *     @OA\Property(property="children", type="array", @OA\Items(ref="#/components/schemas/CategoryTreeNode"))
  * )
  *
@@ -210,13 +232,37 @@ use OpenApi\Annotations as OA;
  *     required={"product_id"},
  *     @OA\Property(property="product_id", type="integer"),
  *     @OA\Property(property="quantity", type="integer", default=1),
- *     @OA\Property(property="cart_id", type="integer", nullable=true)
+ *     @OA\Property(property="cart_id", type="integer", nullable=true),
+ *     @OA\Property(property="session_id", type="string", nullable=true, description="Для гостя, если не передан X-Session-ID")
+ * )
+ *
+ * @OA\Schema(
+ *     schema="CartProductInfo",
+ *     @OA\Property(property="id", type="integer"),
+ *     @OA\Property(property="slug", type="string"),
+ *     @OA\Property(property="name", type="string"),
+ *     @OA\Property(property="brand", type="string", nullable=true),
+ *     @OA\Property(
+ *         property="images",
+ *         type="array",
+ *         @OA\Items(@OA\Property(property="url", type="string"))
+ *     )
+ * )
+ *
+ * @OA\Schema(
+ *     schema="CartListItem",
+ *     @OA\Property(property="product_id", type="integer"),
+ *     @OA\Property(property="cart_id", type="integer"),
+ *     @OA\Property(property="quantity", type="integer"),
+ *     @OA\Property(property="unit_price", type="number", format="float"),
+ *     @OA\Property(property="price_show", type="number", format="float"),
+ *     @OA\Property(property="product_info", ref="#/components/schemas/CartProductInfo")
  * )
  *
  * @OA\Schema(
  *     schema="CartListResponse",
  *     @OA\Property(property="cart_id", type="integer", nullable=true),
- *     @OA\Property(property="items", type="array", @OA\Items(type="object")),
+ *     @OA\Property(property="items", type="array", @OA\Items(ref="#/components/schemas/CartListItem")),
  *     @OA\Property(
  *         property="summary",
  *         type="object",
@@ -234,11 +280,27 @@ use OpenApi\Annotations as OA;
  * )
  *
  * @OA\Schema(
+ *     schema="FavoriteProduct",
+ *     @OA\Property(property="id", type="integer"),
+ *     @OA\Property(property="slug", type="string"),
+ *     @OA\Property(property="name", type="string"),
+ *     @OA\Property(property="images", type="array", @OA\Items(type="string")),
+ *     @OA\Property(property="price", type="number", format="float"),
+ *     @OA\Property(property="currency", type="string", example="RUB")
+ * )
+ *
+ * @OA\Schema(
+ *     schema="FavoriteListItem",
+ *     @OA\Property(property="id", type="integer"),
+ *     @OA\Property(property="product", ref="#/components/schemas/FavoriteProduct")
+ * )
+ *
+ * @OA\Schema(
  *     schema="FavoritesListResponse",
  *     @OA\Property(property="page", type="integer"),
  *     @OA\Property(property="pages", type="integer"),
  *     @OA\Property(property="total", type="integer"),
- *     @OA\Property(property="items", type="array", @OA\Items(type="object"))
+ *     @OA\Property(property="items", type="array", @OA\Items(ref="#/components/schemas/FavoriteListItem"))
  * )
  *
  * @OA\Schema(
@@ -269,11 +331,13 @@ use OpenApi\Annotations as OA;
  * @OA\Schema(
  *     schema="OrderConfirmRequest",
  *     required={"city_fias_id","destination_id","destination_address"},
+ *     @OA\Property(property="order_id", type="integer"),
  *     @OA\Property(property="delivery_method_id", type="integer", default=1),
  *     @OA\Property(property="city_fias_id", type="string"),
  *     @OA\Property(property="destination_id", type="string"),
  *     @OA\Property(property="destination_address", type="string"),
- *     @OA\Property(property="payment_method", type="string", default="cash")
+ *     @OA\Property(property="payment_method", type="string", default="cash"),
+ *     @OA\Property(property="payment_time", type="string", nullable=true)
  * )
  *
  * @OA\Schema(
@@ -323,10 +387,34 @@ use OpenApi\Annotations as OA;
  *     description="Требуется авторизация",
  *     @OA\MediaType(
  *         mediaType="application/json",
+ *         @OA\Schema(@OA\Property(property="detail", type="string", example="Unauthorized"))
+ *     )
+ * )
+ *
+ * @OA\Response(
+ *     response="notFound",
+ *     description="Ресурс не найден",
+ *     @OA\MediaType(
+ *         mediaType="application/json",
+ *         @OA\Schema(@OA\Property(property="detail", type="string", example="Product not found"))
+ *     )
+ * )
+ *
+ * @OA\Response(
+ *     response="validationError",
+ *     description="Ошибка валидации",
+ *     @OA\MediaType(
+ *         mediaType="application/json",
  *         @OA\Schema(
- *             @OA\Property(property="name", type="string", example="Unauthorized"),
- *             @OA\Property(property="message", type="string"),
- *             @OA\Property(property="status", type="integer", example=401)
+ *             @OA\Property(
+ *                 property="detail",
+ *                 type="array",
+ *                 @OA\Items(
+ *                     @OA\Property(property="loc", type="array", @OA\Items(type="string")),
+ *                     @OA\Property(property="msg", type="string"),
+ *                     @OA\Property(property="type", type="string")
+ *                 )
+ *             )
  *         )
  *     )
  * )
