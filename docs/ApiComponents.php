@@ -189,8 +189,6 @@ use OpenApi\Annotations as OA;
  *     @OA\Property(property="name", type="string"),
  *     @OA\Property(property="price", type="number", format="float"),
  *     @OA\Property(property="old_price", type="number", format="float", nullable=true),
- *     @OA\Property(property="discount_percent", type="integer", nullable=true),
- *     @OA\Property(property="currency", type="string", example="RUB"),
  *     @OA\Property(property="is_available", type="boolean"),
  *     @OA\Property(property="is_bestseller", type="boolean"),
  *     @OA\Property(property="is_featured_home", type="boolean"),
@@ -230,8 +228,6 @@ use OpenApi\Annotations as OA;
  *     @OA\Property(property="name", type="string", example="Oversize Hoodie"),
  *     @OA\Property(property="price", type="number", format="float", example=5990),
  *     @OA\Property(property="old_price", type="number", format="float", nullable=true, example=7490),
- *     @OA\Property(property="discount_percent", type="integer", nullable=true, example=20),
- *     @OA\Property(property="currency", type="string", example="RUB"),
  *     @OA\Property(property="is_available", type="boolean", example=true),
  *     @OA\Property(property="images", type="array", @OA\Items(ref="#/components/schemas/ProductImageShowcase")),
  *     @OA\Property(property="categories", type="array", @OA\Items(ref="#/components/schemas/CategoryRef")),
@@ -253,7 +249,7 @@ use OpenApi\Annotations as OA;
  *
  * @OA\Schema(
  *     schema="CatalogFilterBlock",
- *     @OA\Property(property="id", type="string", enum={"category","color","size","gender"}),
+ *     @OA\Property(property="id", type="string", example="category", description="category, color, size, gender или feature_{id}"),
  *     @OA\Property(property="type", type="string", example="list"),
  *     @OA\Property(property="name_ru", type="string"),
  *     @OA\Property(property="values", type="array", @OA\Items(ref="#/components/schemas/CatalogFilterValue"))
@@ -321,16 +317,14 @@ use OpenApi\Annotations as OA;
  *         property="summary",
  *         type="object",
  *         @OA\Property(property="items_count", type="integer"),
- *         @OA\Property(property="total_amount", type="number", format="float"),
- *         @OA\Property(property="currency", type="string", example="RUB")
+ *         @OA\Property(property="total_amount", type="number", format="float")
  *     )
  * )
  *
  * @OA\Schema(
  *     schema="CartCountResponse",
  *     @OA\Property(property="selected_items_count", type="integer"),
- *     @OA\Property(property="selected_total_amount", type="number", format="float"),
- *     @OA\Property(property="currency", type="string", example="RUB")
+ *     @OA\Property(property="selected_total_amount", type="number", format="float")
  * )
  *
  * @OA\Schema(
@@ -339,8 +333,7 @@ use OpenApi\Annotations as OA;
  *     @OA\Property(property="slug", type="string"),
  *     @OA\Property(property="name", type="string"),
  *     @OA\Property(property="images", type="array", @OA\Items(type="string")),
- *     @OA\Property(property="price", type="number", format="float"),
- *     @OA\Property(property="currency", type="string", example="RUB")
+ *     @OA\Property(property="price", type="number", format="float")
  * )
  *
  * @OA\Schema(

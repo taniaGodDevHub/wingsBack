@@ -8,6 +8,7 @@ use app\models\CartItem;
 use app\models\CatalogFeature;
 use app\models\CatalogFeatureValue;
 use app\models\Category;
+use app\models\Color;
 use app\models\FavoriteItem;
 use app\models\Gender;
 use app\models\Product;
@@ -80,6 +81,7 @@ class ProductController extends BaseAdminController
             $this->saveProductCategory($model);
             $this->saveProductFeatureValues($model);
             $this->saveProductSizes($model);
+            $this->saveProductColors($model);
             $this->processImageUploads($model);
             Yii::$app->session->setFlash('success', Yii::t('app', 'Saved successfully.'));
 
@@ -116,6 +118,7 @@ class ProductController extends BaseAdminController
             $this->saveProductCategory($model);
             $this->saveProductFeatureValues($model);
             $this->saveProductSizes($model);
+            $this->saveProductColors($model);
             $this->processImageUploads($model);
             Yii::$app->session->setFlash('success', Yii::t('app', 'Saved successfully.'));
 
@@ -289,6 +292,9 @@ class ProductController extends BaseAdminController
         if (!isset($post['sizeValuesInStock'])) {
             $model->sizeValuesInStock = [];
         }
+        if (!isset($post['colorIds'])) {
+            $model->colorIds = [];
+        }
 
         return true;
     }
@@ -346,6 +352,25 @@ class ProductController extends BaseAdminController
         }
     }
 
+    private function saveProductColors(Product $product): void
+    {
+        $product->unlinkAll('colors', true);
+
+        $colorIds = is_array($product->colorIds) ? $product->colorIds : [];
+        $colorIds = array_values(array_unique(array_filter(array_map('intval', $colorIds))));
+
+        foreach ($colorIds as $colorId) {
+            if ($colorId <= 0) {
+                continue;
+            }
+
+            $color = Color::findOne($colorId);
+            if ($color !== null) {
+                $product->link('colors', $color);
+            }
+        }
+    }
+
     /** @return array<string, mixed> */
     private function formViewParams(Product $model): array
     {
@@ -378,7 +403,7 @@ class ProductController extends BaseAdminController
     private function findModel(int $id): Product
     {
         $model = Product::find()
-            ->with(['images', 'categories', 'colors', 'sizes', 'featureValues'])
+            ->with(['images', 'categories', 'colors', 'sizes', 'featureValues.feature'])
             ->where(['id' => $id])
             ->one();
         if ($model === null) {

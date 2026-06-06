@@ -78,6 +78,8 @@ $redirectAction = $model->isNewRecord ? 'create' : 'update';
                 </div>
 
                 <?= $this->render('_sizeField', ['model' => $model]) ?>
+
+                <?= $this->render('_colorField', ['form' => $form, 'model' => $model]) ?>
                 
                 <?= $this->render('_featureFields', [
                     'form' => $form,

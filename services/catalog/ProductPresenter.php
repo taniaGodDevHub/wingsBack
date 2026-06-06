@@ -66,7 +66,6 @@ final class ProductPresenter
             'name' => $product->name,
             'images' => self::imagesUrls($product),
             'price' => (float) $product->price,
-            'currency' => 'RUB',
         ];
     }
 
@@ -79,28 +78,18 @@ final class ProductPresenter
             'images' => self::imagesUrls($product),
             'categories' => self::categories($product),
             'price' => (float) $product->price,
-            'currency' => 'RUB',
             'is_available' => (bool) $product->is_available,
         ];
     }
 
     private static function baseItem(Product $product): array
     {
-        $price = (float) $product->price;
-        $oldPrice = $product->old_price !== null ? (float) $product->old_price : null;
-        $discount = null;
-        if ($oldPrice !== null && $oldPrice > $price && $oldPrice > 0) {
-            $discount = (int) round((1 - $price / $oldPrice) * 100);
-        }
-
         return [
             'id' => (int) $product->id,
             'slug' => $product->slug,
             'name' => $product->name,
-            'price' => $price,
-            'old_price' => $oldPrice,
-            'discount_percent' => $discount,
-            'currency' => 'RUB',
+            'price' => (float) $product->price,
+            'old_price' => $product->old_price !== null ? (float) $product->old_price : null,
             'is_available' => (bool) $product->is_available,
             'categories' => self::categories($product),
         ];

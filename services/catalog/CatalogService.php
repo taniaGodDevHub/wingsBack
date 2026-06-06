@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace app\services\catalog;
 
 use app\components\api\ApiHttpException;
+use app\models\CatalogFeature;
 use app\models\Category;
 use app\models\HomeBanner;
 use app\models\Product;
@@ -424,12 +425,15 @@ class CatalogService
             ->one();
 
         return [
-            'filters' => [
-                $this->filterBlockCategory($base, $params),
-                $this->filterBlockColor($base, $params),
-                $this->filterBlockSize($base, $params),
-                $this->filterBlockGender($base, $params),
-            ],
+            'filters' => array_merge(
+                [
+                    $this->filterBlockCategory($base, $params),
+                    $this->filterBlockColor($base, $params),
+                    $this->filterBlockSize($base, $params),
+                    $this->filterBlockGender($base, $params),
+                ],
+                $this->filterBlocksFeatures($base),
+            ),
             'price' => [
                 'min' => (float) ($priceRow['min'] ?? 0),
                 'max' => (float) ($priceRow['max'] ?? 0),
@@ -528,6 +532,43 @@ class CatalogService
                 'count' => (int) $r['cnt'],
             ], $rows),
         ];
+    }
+
+    /** @return array<int, array<string, mixed>> */
+    private function filterBlocksFeatures(ActiveQuery $base): array
+    {
+        $blocks = [];
+        $features = CatalogFeature::find()->orderBy(['name_ru' => SORT_ASC, 'id' => SORT_ASC])->all();
+
+        foreach ($features as $feature) {
+            $featureId = (int) $feature->id;
+            $rows = (new Query())
+                ->select(['fv.id', 'fv.name', 'cnt' => 'COUNT(DISTINCT p.id)'])
+                ->from(['p' => (clone $base)->select('p.id')->groupBy('p.id')])
+                ->innerJoin('{{%product_feature_value}} pfv', 'pfv.product_id = p.id')
+                ->innerJoin('{{%catalog_feature_value}} fv', 'fv.id = pfv.feature_value_id')
+                ->andWhere(['fv.feature_id' => $featureId])
+                ->groupBy(['fv.id', 'fv.name'])
+                ->orderBy(['fv.name' => SORT_ASC])
+                ->all();
+
+            if ($rows === []) {
+                continue;
+            }
+
+            $blocks[] = [
+                'id' => 'feature_' . $featureId,
+                'type' => 'list',
+                'name_ru' => $feature->name_ru,
+                'values' => array_map(static fn (array $r): array => [
+                    'id' => (int) $r['id'],
+                    'name' => $r['name'],
+                    'count' => (int) $r['cnt'],
+                ], $rows),
+            ];
+        }
+
+        return $blocks;
     }
 
     /** @return int[] */

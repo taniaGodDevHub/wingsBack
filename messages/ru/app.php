@@ -84,6 +84,8 @@ return [
     'Categories' => 'Категории',
     'Category' => 'Категория',
     'Colors' => 'Цвета',
+    'No colors in catalog yet.' => 'В справочнике пока нет цветов.',
+    'Used in catalog filters and product cards.' => 'Используются в фильтрах каталога и карточках товаров.',
     'Attributes' => 'Атрибуты',
     'Attribute values' => 'Значения атрибутов',
     'Home banners' => 'Баннеры главной',

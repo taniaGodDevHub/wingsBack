@@ -46,6 +46,9 @@ class Product extends ActiveRecord
 
     /** @var string[] */
     public array $sizeValuesInStock = [];
+
+    /** @var int[] */
+    public array $colorIds = [];
     public static function tableName(): string
     {
         return '{{%product}}';
@@ -82,7 +85,7 @@ class Product extends ActiveRecord
             [['brand', 'product_code'], 'string', 'max' => 255],
             [['slug'], 'unique'],
             [['categoryId'], 'integer'],
-            [['featureValueByFeatureId', 'sizeValuesInStock'], 'safe'],
+            [['featureValueByFeatureId', 'sizeValuesInStock', 'colorIds'], 'safe'],
         ];
     }
 
@@ -98,6 +101,12 @@ class Product extends ActiveRecord
         }
         if ($this->isRelationPopulated('sizes')) {
             $this->sizeValuesInStock = $this->getSizeValues();
+        }
+        if ($this->isRelationPopulated('colors')) {
+            $this->colorIds = array_map(
+                static fn (Color $color): int => (int) $color->id,
+                $this->colors,
+            );
         }
 
         $this->blago_unit = self::BLAGO_UNIT_RUB;
@@ -125,6 +134,7 @@ class Product extends ActiveRecord
             'gender' => Yii::t('app', 'Gender'),
             'categoryId' => Yii::t('app', 'Category'),
             'sizeValuesInStock' => Yii::t('app', 'Sizes in stock'),
+            'colorIds' => Yii::t('app', 'Colors'),
             'search_text' => Yii::t('app', 'Search text'),
             'created_at' => Yii::t('app', 'Created at'),
             'updated_at' => Yii::t('app', 'Updated at'),

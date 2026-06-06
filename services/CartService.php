@@ -101,7 +101,6 @@ class CartService
                 'summary' => [
                     'items_count' => 0,
                     'total_amount' => 0,
-                    'currency' => 'RUB',
                 ],
             ];
         }
@@ -143,7 +142,6 @@ class CartService
             'summary' => [
                 'items_count' => $totalQty,
                 'total_amount' => round($totalAmount, 2),
-                'currency' => 'RUB',
             ],
         ];
     }
@@ -156,7 +154,6 @@ class CartService
             return [
                 'selected_items_count' => 0,
                 'selected_total_amount' => 0,
-                'currency' => 'RUB',
             ];
         }
 
@@ -197,7 +194,6 @@ class CartService
         return [
             'selected_items_count' => $count,
             'selected_total_amount' => round($total, 2),
-            'currency' => 'RUB',
         ];
     }
 
