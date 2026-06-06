@@ -145,6 +145,11 @@ return [
     'Upload directory is not writable: {path}' => 'Каталог для загрузки недоступен для записи: {path}',
 
     'Product photos' => 'Фото товара',
+    'Main photo' => 'Главное фото',
+    'Drag to reorder' => 'Перетащите для сортировки',
+    'Drag photos to change display order. The first photo is shown in the catalog.' => 'Перетащите фото, чтобы изменить порядок отображения. Первое фото показывается в каталоге.',
+    'Image order saved.' => 'Порядок фото сохранён.',
+    'Invalid image order.' => 'Некорректный порядок фото.',
     'No photos yet.' => 'Фото пока нет.',
     'Photo {n}' => 'Фото {n}',
     'Previous' => 'Назад',

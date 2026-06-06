@@ -33,7 +33,7 @@ final class ProductPresenter
     {
         return array_map(static function (Product $product): array {
             $item = self::baseItem($product);
-            $item['images'] = self::imagesUrls($product);
+            $item['images'] = self::imagesDetailed($product);
             $item['sizes'] = $product->getSizeValues();
             $item['colors'] = $product->getColorsData();
             $item['gender'] = $product->gender;

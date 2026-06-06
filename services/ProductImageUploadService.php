@@ -107,6 +107,53 @@ final class ProductImageUploadService
         return ProductImage::findOne(['id' => $imageId, 'product_id' => $productId]);
     }
 
+    /**
+     * @param int[] $imageIds
+     */
+    public function reorderImages(int $productId, array $imageIds): ?string
+    {
+        $imageIds = array_values(array_unique(array_map(static fn ($id): int => (int) $id, $imageIds)));
+        $imageIds = array_values(array_filter($imageIds, static fn (int $id): bool => $id > 0));
+
+        $existing = ProductImage::find()
+            ->where(['product_id' => $productId])
+            ->indexBy('id')
+            ->all();
+
+        if ($existing === []) {
+            return null;
+        }
+
+        if (count($imageIds) !== count($existing)) {
+            return Yii::t('app', 'Invalid image order.');
+        }
+
+        foreach ($imageIds as $imageId) {
+            if (!isset($existing[$imageId])) {
+                return Yii::t('app', 'Image not found.');
+            }
+        }
+
+        $transaction = Yii::$app->db->beginTransaction();
+
+        try {
+            foreach ($imageIds as $position => $imageId) {
+                $image = $existing[$imageId];
+                $image->sort_order = $position;
+                $image->update(false, ['sort_order']);
+            }
+
+            $transaction->commit();
+        } catch (\Throwable $exception) {
+            $transaction->rollBack();
+            Yii::error($exception->getMessage(), __METHOD__);
+
+            return Yii::t('app', 'Something went wrong. Please try again.');
+        }
+
+        return null;
+    }
+
     private function ensureUploadDirectoryWritable(): ?string
     {
         $directory = $this->uploadDirectory();

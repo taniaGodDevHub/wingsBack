@@ -217,14 +217,68 @@ use OpenApi\Annotations as OA;
  * )
  *
  * @OA\Schema(
+ *     schema="CatalogProductColor",
+ *     @OA\Property(property="id", type="integer", example=1001),
+ *     @OA\Property(property="name", type="string", example="Черный"),
+ *     @OA\Property(property="hex", type="string", example="#111111")
+ * )
+ *
+ * @OA\Schema(
+ *     schema="CatalogSearchProduct",
+ *     @OA\Property(property="id", type="integer", example=101),
+ *     @OA\Property(property="slug", type="string", example="oversize-hoodie-black"),
+ *     @OA\Property(property="name", type="string", example="Oversize Hoodie"),
+ *     @OA\Property(property="price", type="number", format="float", example=5990),
+ *     @OA\Property(property="old_price", type="number", format="float", nullable=true, example=7490),
+ *     @OA\Property(property="discount_percent", type="integer", nullable=true, example=20),
+ *     @OA\Property(property="currency", type="string", example="RUB"),
+ *     @OA\Property(property="is_available", type="boolean", example=true),
+ *     @OA\Property(property="images", type="array", @OA\Items(ref="#/components/schemas/ProductImageShowcase")),
+ *     @OA\Property(property="categories", type="array", @OA\Items(ref="#/components/schemas/CategoryRef")),
+ *     @OA\Property(property="gender", type="string", enum={"male","female","unisex"}, example="unisex"),
+ *     @OA\Property(property="sizes", type="array", @OA\Items(type="string"), example={"S","M","L"}),
+ *     @OA\Property(property="colors", type="array", @OA\Items(ref="#/components/schemas/CatalogProductColor"))
+ * )
+ *
+ * @OA\Schema(
+ *     schema="CatalogFilterValue",
+ *     @OA\Property(property="id", description="ID категории/цвета или строковое значение (размер, пол)", oneOf={
+ *         @OA\Schema(type="integer"),
+ *         @OA\Schema(type="string")
+ *     }),
+ *     @OA\Property(property="name", type="string"),
+ *     @OA\Property(property="hex", type="string", description="Только для фильтра color"),
+ *     @OA\Property(property="count", type="integer")
+ * )
+ *
+ * @OA\Schema(
+ *     schema="CatalogFilterBlock",
+ *     @OA\Property(property="id", type="string", enum={"category","color","size","gender"}),
+ *     @OA\Property(property="type", type="string", example="list"),
+ *     @OA\Property(property="name_ru", type="string"),
+ *     @OA\Property(property="values", type="array", @OA\Items(ref="#/components/schemas/CatalogFilterValue"))
+ * )
+ *
+ * @OA\Schema(
+ *     schema="CatalogAvailableFilters",
+ *     @OA\Property(property="filters", type="array", @OA\Items(ref="#/components/schemas/CatalogFilterBlock")),
+ *     @OA\Property(
+ *         property="price",
+ *         type="object",
+ *         @OA\Property(property="min", type="number", format="float"),
+ *         @OA\Property(property="max", type="number", format="float")
+ *     )
+ * )
+ *
+ * @OA\Schema(
  *     schema="CatalogSearchResponse",
- *     @OA\Property(property="page", type="integer"),
- *     @OA\Property(property="pages", type="integer"),
- *     @OA\Property(property="total", type="integer"),
- *     @OA\Property(property="page_size", type="integer"),
- *     @OA\Property(property="items", type="array", @OA\Items(type="object")),
- *     @OA\Property(property="available_filters", type="object"),
- *     @OA\Property(property="category", type="object", nullable=true)
+ *     @OA\Property(property="page", type="integer", example=1),
+ *     @OA\Property(property="pages", type="integer", example=10),
+ *     @OA\Property(property="page_size", type="integer", example=60),
+ *     @OA\Property(property="total", type="integer", example=574),
+ *     @OA\Property(property="items", type="array", @OA\Items(ref="#/components/schemas/CatalogSearchProduct")),
+ *     @OA\Property(property="available_filters", ref="#/components/schemas/CatalogAvailableFilters"),
+ *     @OA\Property(property="category", ref="#/components/schemas/CategoryRef", nullable=true)
  * )
  *
  * @OA\Schema(

@@ -27,76 +27,51 @@ foreach ($images as $image) {
     ];
 }
 ?>
-<div class="product-image-carousel mb-3"
-     id="<?= Html::encode($carouselId) ?>-wrap"
+<div class="product-image-gallery mb-3"
+     id="product-images-carousel-wrap"
      data-carousel-id="<?= Html::encode($carouselId) ?>"
      data-product-id="<?= $model->isNewRecord ? '' : (int) $model->id ?>"
      data-allow-server-delete="<?= $allowDelete ? '1' : '0' ?>"
      data-ajax-delete="<?= $ajaxDelete ? '1' : '0' ?>"
+     data-allow-reorder="<?= (!$model->isNewRecord && $allowDelete) ? '1' : '0' ?>"
      data-redirect-action="<?= Html::encode($redirectAction) ?>"
      data-server-images="<?= Html::encode(Json::encode($serverImages)) ?>"
      data-label-delete="<?= Html::encode(Yii::t('app', 'Delete')) ?>"
      data-label-confirm="<?= Html::encode(Yii::t('app', 'Delete this photo?')) ?>"
      data-label-empty="<?= Html::encode(Yii::t('app', 'No photos yet.')) ?>"
-     data-label-prev="<?= Html::encode(Yii::t('app', 'Previous')) ?>"
-     data-label-next="<?= Html::encode(Yii::t('app', 'Next')) ?>"
-     data-label-photo="<?= Html::encode(Yii::t('app', 'Photo {n}')) ?>"
+     data-label-main="<?= Html::encode(Yii::t('app', 'Main photo')) ?>"
+     data-label-drag="<?= Html::encode(Yii::t('app', 'Drag to reorder')) ?>"
+     data-label-hint="<?= Html::encode(Yii::t('app', 'Drag photos to change display order. The first photo is shown in the catalog.')) ?>"
      data-label-error="<?= Html::encode(Yii::t('app', 'Something went wrong. Please try again.')) ?>"
+     data-label-order-saved="<?= Html::encode(Yii::t('app', 'Image order saved.')) ?>"
      <?php if (!$model->isNewRecord): ?>
      data-delete-url-pattern="<?= Html::encode(Url::to(['/admin/product/delete-image', 'productId' => (int) $model->id, 'imageId' => '__IMAGE_ID__'])) ?>"
+     data-reorder-url="<?= Html::encode(Url::to(['/admin/product/reorder-images', 'id' => (int) $model->id])) ?>"
      <?php endif ?>>
     <h2 class="h5"><?= Yii::t('app', 'Product photos') ?></h2>
-    <div id="<?= Html::encode($carouselId) ?>"
-         class="carousel slide product-image-carousel__slider"
-         data-bs-ride="false">
-        <?php $slideCount = count($images); ?>
-        <?php if ($slideCount > 1): ?>
-            <div class="carousel-indicators">
-                <?php foreach ($images as $index => $image): ?>
-                    <button type="button"
-                            data-bs-target="#<?= Html::encode($carouselId) ?>"
-                            data-bs-slide-to="<?= (int) $index ?>"
-                            class="<?= $index === 0 ? 'active' : '' ?>"
-                            <?= $index === 0 ? 'aria-current="true"' : '' ?>
-                            aria-label="<?= Html::encode(Yii::t('app', 'Photo {n}', ['n' => $index + 1])) ?>"></button>
-                <?php endforeach; ?>
+    <p class="text-muted small mb-3"><?= Yii::t('app', 'Drag photos to change display order. The first photo is shown in the catalog.') ?></p>
+    <div id="<?= Html::encode($carouselId) ?>" class="product-image-gallery__list<?= $hasImages ? '' : ' d-none' ?>">
+        <?php foreach ($images as $index => $image): ?>
+            <div class="product-image-gallery__item"
+                 data-server-image="1"
+                 data-image-id="<?= (int) $image->id ?>"
+                 draggable="<?= (!$model->isNewRecord && $allowDelete) ? 'true' : 'false' ?>">
+                <?php if ($index === 0): ?>
+                    <span class="product-image-gallery__badge"><?= Yii::t('app', 'Main photo') ?></span>
+                <?php endif ?>
+                <span class="product-image-gallery__drag" title="<?= Html::encode(Yii::t('app', 'Drag to reorder')) ?>" aria-hidden="true">⋮⋮</span>
+                <?php if ($allowDelete): ?>
+                    <?= $this->render('_deleteImageButton', [
+                        'deleteUrl' => Url::to(['delete-image', 'productId' => $model->id, 'imageId' => $image->id]),
+                    ]) ?>
+                <?php endif ?>
+                <img src="<?= Html::encode($image->publicUrl) ?>"
+                     class="product-image-gallery__img"
+                     alt="<?= Html::encode($model->name) ?>">
             </div>
-        <?php else: ?>
-            <div class="carousel-indicators"></div>
-        <?php endif ?>
-        <div class="carousel-inner">
-            <?php if ($hasImages): ?>
-                <?php foreach ($images as $index => $image): ?>
-                    <div class="carousel-item<?= $index === 0 ? ' active' : '' ?>"
-                         data-server-image="1"
-                         data-image-id="<?= (int) $image->id ?>">
-                        <div class="product-image-carousel__frame p-2">
-                            <?php if ($allowDelete): ?>
-                                <?= $this->render('_deleteImageButton', [
-                                    'deleteUrl' => Url::to(['delete-image', 'productId' => $model->id, 'imageId' => $image->id]),
-                                ]) ?>
-                            <?php endif ?>
-                            <img src="<?= Html::encode($image->publicUrl) ?>"
-                                 class="product-image-carousel__img"
-                                 alt="<?= Html::encode($model->name) ?>">
-                        </div>
-                    </div>
-                <?php endforeach; ?>
-            <?php else: ?>
-                <div class="carousel-item active product-image-carousel__empty-item">
-                    <div class="product-image-carousel__frame p-2 text-center">
-                        <span class="text-muted"><?= Yii::t('app', 'No photos yet.') ?></span>
-                    </div>
-                </div>
-            <?php endif ?>
-        </div>
-        <button class="carousel-control-prev<?= $slideCount > 1 ? '' : ' d-none' ?>" type="button" data-bs-target="#<?= Html::encode($carouselId) ?>" data-bs-slide="prev">
-            <span class="carousel-control-prev-icon" aria-hidden="true"></span>
-            <span class="visually-hidden"><?= Yii::t('app', 'Previous') ?></span>
-        </button>
-        <button class="carousel-control-next<?= $slideCount > 1 ? '' : ' d-none' ?>" type="button" data-bs-target="#<?= Html::encode($carouselId) ?>" data-bs-slide="next">
-            <span class="carousel-control-next-icon" aria-hidden="true"></span>
-            <span class="visually-hidden"><?= Yii::t('app', 'Next') ?></span>
-        </button>
+        <?php endforeach ?>
+    </div>
+    <div class="product-image-gallery__empty text-muted text-center py-4<?= $hasImages ? ' d-none' : '' ?>">
+        <?= Yii::t('app', 'No photos yet.') ?>
     </div>
 </div>

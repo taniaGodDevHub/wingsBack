@@ -44,6 +44,7 @@ class ProductController extends BaseAdminController
                 'delete' => ['POST'],
                 'delete-image' => ['POST'],
                 'upload-images' => ['POST'],
+                'reorder-images' => ['POST'],
             ],
         ];
 
@@ -183,6 +184,62 @@ class ProductController extends BaseAdminController
         }
 
         return $this->deleteImageJsonResponse($productId, true, Yii::t('app', 'Image deleted.'));
+    }
+
+    public function actionReorderImages(int $id = 0): Response
+    {
+        $request = Yii::$app->request;
+        $productId = $id > 0
+            ? $id
+            : (int) $request->post('productId', $request->get('productId', $request->post('id', 0)));
+
+        if ($productId <= 0) {
+            Yii::$app->response->format = Response::FORMAT_JSON;
+
+            return $this->asJson([
+                'success' => false,
+                'error' => Yii::t('app', 'Product not found.'),
+                'carouselHtml' => null,
+            ]);
+        }
+
+        $this->findModel($productId);
+        $imageIds = $request->post('imageIds', []);
+        if (!is_array($imageIds)) {
+            $imageIds = [];
+        }
+
+        $error = $this->imageUpload()->reorderImages($productId, $imageIds);
+
+        if ($request->isAjax) {
+            Yii::$app->response->format = Response::FORMAT_JSON;
+
+            if ($error !== null) {
+                return $this->asJson([
+                    'success' => false,
+                    'error' => $error,
+                    'carouselHtml' => null,
+                ]);
+            }
+
+            return $this->asJson([
+                'success' => true,
+                'message' => Yii::t('app', 'Image order saved.'),
+                'carouselHtml' => $this->renderCarouselPartial($productId),
+            ]);
+        }
+
+        if ($error !== null) {
+            Yii::$app->session->setFlash('error', $error);
+        } else {
+            Yii::$app->session->setFlash('success', Yii::t('app', 'Image order saved.'));
+        }
+
+        $redirect = (string) $request->post('redirect', 'update');
+
+        return $this->redirect($redirect === 'view'
+            ? ['view', 'id' => $productId]
+            : ['update', 'id' => $productId]);
     }
 
     private function deleteImageJsonResponse(int $productId, bool $success, string $message): Response

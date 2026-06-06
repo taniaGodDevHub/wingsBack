@@ -1,11 +1,11 @@
 (function () {
     'use strict';
 
-    const carouselWrapSelector = '#product-images-carousel-wrap';
+    const galleryWrapSelector = '#product-images-carousel-wrap';
 
     document.querySelectorAll('.product-images-file-input').forEach(function (input) {
         input.addEventListener('change', function () {
-            const wrap = document.querySelector(carouselWrapSelector);
+            const wrap = document.querySelector(galleryWrapSelector);
             if (!wrap) {
                 return;
             }
@@ -18,19 +18,12 @@
 
     initDeleteAjax();
     initUploadForm();
-    document.addEventListener('DOMContentLoaded', initCarouselControls);
+    document.addEventListener('DOMContentLoaded', initGallery);
 
-    function initCarouselControls() {
-        document.querySelectorAll(carouselWrapSelector).forEach(function (wrap) {
+    function initGallery() {
+        document.querySelectorAll(galleryWrapSelector).forEach(function (wrap) {
             const manager = new ProductImagesManager(wrap);
-            manager.updateControlsVisibility();
-            const carouselEl = document.getElementById(manager.carouselId);
-            if (carouselEl && typeof bootstrap !== 'undefined') {
-                const items = carouselEl.querySelectorAll('.carousel-inner .carousel-item');
-                if (items.length > 0) {
-                    bootstrap.Carousel.getOrCreateInstance(carouselEl, { ride: false });
-                }
-            }
+            manager.bindSortable();
         });
     }
 
@@ -50,26 +43,31 @@
         return null;
     }
 
-    function buildDeletePostParams(redirectAction, productId, imageId) {
+    function buildPostParams(extra) {
         const csrf = getCsrfPair();
         const params = new URLSearchParams();
         if (csrf) {
             params.append(csrf.name, csrf.value);
         }
-        params.append('redirect', redirectAction || 'update');
-        if (productId) {
-            params.append('productId', String(productId));
-        }
-        if (imageId) {
-            params.append('imageId', String(imageId));
-        }
+        Object.keys(extra).forEach(function (key) {
+            const value = extra[key];
+            if (Array.isArray(value)) {
+                value.forEach(function (item) {
+                    params.append(key, String(item));
+                });
+                return;
+            }
+            if (value !== undefined && value !== null && value !== '') {
+                params.append(key, String(value));
+            }
+        });
         return params;
     }
 
     function resolveDeleteIds(trigger) {
-        const slide = trigger.closest('[data-image-id]');
-        const imageId = slide ? slide.getAttribute('data-image-id') : '';
-        const wrap = document.querySelector(carouselWrapSelector);
+        const item = trigger.closest('[data-image-id]');
+        const imageId = item ? item.getAttribute('data-image-id') : '';
+        const wrap = document.querySelector(galleryWrapSelector);
         const productId = wrap ? wrap.dataset.productId : '';
         let parsedImageId = imageId;
         let parsedProductId = productId;
@@ -131,15 +129,15 @@
         container.prepend(alertEl);
     }
 
-    function applyCarouselResponse(data) {
+    function applyGalleryResponse(data) {
         if (data.carouselHtml) {
-            replaceCarousel(data.carouselHtml);
-            initCarouselControls();
+            replaceGallery(data.carouselHtml);
+            initGallery();
         }
     }
 
     function getDefaultErrorMessage() {
-        const wrap = document.querySelector(carouselWrapSelector);
+        const wrap = document.querySelector(galleryWrapSelector);
         return wrap ? wrap.dataset.labelError || 'Something went wrong. Please try again.' : 'Something went wrong. Please try again.';
     }
 
@@ -161,21 +159,25 @@
             }
             event.preventDefault();
             event.stopPropagation();
-            const wrapForConfirm = document.querySelector(carouselWrapSelector);
+            const wrapForConfirm = document.querySelector(galleryWrapSelector);
             const confirmMessage = trigger.getAttribute('data-confirm')
                 || (wrapForConfirm ? wrapForConfirm.dataset.labelConfirm : '');
             if (confirmMessage && !window.confirm(confirmMessage)) {
                 return;
             }
 
-            const wrap = document.querySelector(carouselWrapSelector);
+            const wrap = document.querySelector(galleryWrapSelector);
             const redirectAction = wrap ? wrap.dataset.redirectAction || 'update' : 'update';
             const ids = resolveDeleteIds(trigger);
             if (!ids.imageId || !ids.productId || !ids.deleteUrl) {
                 showFlash('danger', getDefaultErrorMessage());
                 return;
             }
-            const params = buildDeletePostParams(redirectAction, ids.productId, ids.imageId);
+            const params = buildPostParams({
+                redirect: redirectAction,
+                productId: ids.productId,
+                imageId: ids.imageId,
+            });
             const csrf = getCsrfPair();
             if (!csrf) {
                 showFlash('danger', getDefaultErrorMessage());
@@ -201,7 +203,7 @@
                         return;
                     }
 
-                    applyCarouselResponse(data);
+                    applyGalleryResponse(data);
 
                     if (data.success) {
                         if (data.message) {
@@ -227,7 +229,7 @@
                 return;
             }
             event.preventDefault();
-            const wrap = document.querySelector(carouselWrapSelector);
+            const wrap = document.querySelector(galleryWrapSelector);
             if (!wrap) {
                 return;
             }
@@ -296,11 +298,11 @@
                         return;
                     }
                     if (data.carouselHtml) {
-                        replaceCarousel(data.carouselHtml);
-                        initCarouselControls();
+                        replaceGallery(data.carouselHtml);
+                        initGallery();
                     }
                     fileInput.value = '';
-                    const wrap = document.querySelector(carouselWrapSelector);
+                    const wrap = document.querySelector(galleryWrapSelector);
                     if (wrap) {
                         const manager = new ProductImagesManager(wrap);
                         manager.setPendingFiles([]);
@@ -315,8 +317,8 @@
         });
     }
 
-    function replaceCarousel(html) {
-        const wrap = document.querySelector(carouselWrapSelector);
+    function replaceGallery(html) {
+        const wrap = document.querySelector(galleryWrapSelector);
         if (wrap) {
             wrap.outerHTML = html;
         }
@@ -348,8 +350,9 @@
 
     function ProductImagesManager(wrap) {
         this.wrap = wrap;
-        this.carouselId = wrap.dataset.carouselId || 'product-images-carousel';
-        this.carouselEl = document.getElementById(this.carouselId);
+        this.galleryId = wrap.dataset.carouselId || 'product-images-carousel';
+        this.galleryEl = document.getElementById(this.galleryId);
+        this.emptyEl = wrap.querySelector('.product-image-gallery__empty');
         this.pendingFiles = [];
         this.pendingUrls = [];
         this.serverImages = [];
@@ -361,14 +364,16 @@
         this.labels = {
             delete: wrap.dataset.labelDelete || 'Delete',
             empty: wrap.dataset.labelEmpty || 'No photos yet.',
-            prev: wrap.dataset.labelPrev || 'Previous',
-            next: wrap.dataset.labelNext || 'Next',
-            photo: wrap.dataset.labelPhoto || 'Photo {n}',
+            main: wrap.dataset.labelMain || 'Main photo',
+            drag: wrap.dataset.labelDrag || 'Drag to reorder',
+            orderSaved: wrap.dataset.labelOrderSaved || 'Image order saved.',
         };
         this.allowServerDelete = wrap.dataset.allowServerDelete === '1';
-        this.ajaxDelete = wrap.dataset.ajaxDelete === '1';
+        this.allowReorder = wrap.dataset.allowReorder === '1';
         this.productId = wrap.dataset.productId || '';
         this.redirectAction = wrap.dataset.redirectAction || 'update';
+        this.reorderUrl = wrap.dataset.reorderUrl || '';
+        this.draggedItem = null;
     }
 
     ProductImagesManager.prototype.setPendingFiles = function (files) {
@@ -399,49 +404,217 @@
     };
 
     ProductImagesManager.prototype.render = function () {
-        if (!this.carouselEl) {
+        if (!this.galleryEl) {
             return;
         }
 
-        const inner = this.carouselEl.querySelector('.carousel-inner');
-        const indicators = this.carouselEl.querySelector('.carousel-indicators');
-        const slides = [];
-        let slideIndex = 0;
-
+        const items = [];
         const self = this;
-        this.serverImages.forEach(function (image) {
-            slides.push(self.buildServerSlide(image, slideIndex === 0, slideIndex));
-            slideIndex += 1;
+
+        this.serverImages.forEach(function (image, index) {
+            items.push(self.buildServerItem(image, index === 0));
         });
 
         this.pendingUrls.forEach(function (url, pendingIndex) {
-            slides.push(self.buildPendingSlide(url, pendingIndex, slideIndex === 0, slideIndex));
-            slideIndex += 1;
+            items.push(self.buildPendingItem(url, pendingIndex, items.length === 0));
         });
 
-        if (slides.length === 0) {
-            inner.innerHTML = '<div class="carousel-item active product-image-carousel__empty-item">'
-                + '<div class="product-image-carousel__frame p-2 text-center">'
-                + '<span class="text-muted">' + escapeHtml(self.labels.empty) + '</span>'
-                + '</div></div>';
-            indicators.innerHTML = '';
-        } else {
-            inner.innerHTML = slides.join('');
-            indicators.innerHTML = '';
-            if (slides.length > 1) {
-                for (let i = 0; i < slides.length; i += 1) {
-                    const label = self.labels.photo.replace('{n}', String(i + 1));
-                    indicators.innerHTML += '<button type="button" data-bs-target="#' + self.carouselId + '" data-bs-slide-to="' + i + '"'
-                        + (i === 0 ? ' class="active" aria-current="true"' : '')
-                        + ' aria-label="' + escapeHtml(label) + '"></button>';
-                }
+        if (items.length === 0) {
+            this.galleryEl.innerHTML = '';
+            this.galleryEl.classList.add('d-none');
+            if (this.emptyEl) {
+                this.emptyEl.classList.remove('d-none');
             }
+            return;
         }
 
-        this.updateControlsVisibility();
-        if (slides.length > 0 && typeof bootstrap !== 'undefined') {
-            bootstrap.Carousel.getOrCreateInstance(this.carouselEl, { ride: false });
+        this.galleryEl.innerHTML = items.join('');
+        this.galleryEl.classList.remove('d-none');
+        if (this.emptyEl) {
+            this.emptyEl.classList.add('d-none');
         }
+
+        this.bindSortable();
+    };
+
+    ProductImagesManager.prototype.bindSortable = function () {
+        if (!this.galleryEl) {
+            return;
+        }
+
+        const self = this;
+        const canDrag = this.allowReorder || this.pendingUrls.length > 0;
+
+        this.galleryEl.querySelectorAll('.product-image-gallery__item').forEach(function (item) {
+            const isPending = item.hasAttribute('data-pending-image');
+            item.setAttribute('draggable', canDrag && (self.allowReorder || isPending) ? 'true' : 'false');
+        });
+
+        if (this._sortableBound) {
+            return;
+        }
+        this._sortableBound = true;
+
+        this.galleryEl.addEventListener('dragstart', function (event) {
+            const item = event.target.closest('.product-image-gallery__item');
+            if (!item || !self.galleryEl.contains(item)) {
+                return;
+            }
+            if (item.getAttribute('draggable') !== 'true') {
+                event.preventDefault();
+                return;
+            }
+            self.draggedItem = item;
+            item.classList.add('product-image-gallery__item--dragging');
+            event.dataTransfer.effectAllowed = 'move';
+            event.dataTransfer.setData('text/plain', item.getAttribute('data-image-id') || item.getAttribute('data-pending-index') || '');
+        });
+
+        this.galleryEl.addEventListener('dragover', function (event) {
+            if (!self.draggedItem) {
+                return;
+            }
+            event.preventDefault();
+            const target = event.target.closest('.product-image-gallery__item');
+            if (!target || target === self.draggedItem || !self.galleryEl.contains(target)) {
+                return;
+            }
+
+            const draggedIsPending = self.draggedItem.hasAttribute('data-pending-image');
+            const targetIsPending = target.hasAttribute('data-pending-image');
+            if (draggedIsPending !== targetIsPending) {
+                return;
+            }
+
+            const rect = target.getBoundingClientRect();
+            const insertBefore = event.clientX < rect.left + rect.width / 2;
+            if (insertBefore) {
+                target.parentNode.insertBefore(self.draggedItem, target);
+            } else {
+                target.parentNode.insertBefore(self.draggedItem, target.nextSibling);
+            }
+        });
+
+        this.galleryEl.addEventListener('dragend', function () {
+            if (!self.draggedItem) {
+                return;
+            }
+
+            const draggedWasPending = self.draggedItem.hasAttribute('data-pending-image');
+            self.draggedItem.classList.remove('product-image-gallery__item--dragging');
+            self.draggedItem = null;
+            self.updateMainBadges();
+
+            if (draggedWasPending) {
+                self.syncPendingOrderFromDom();
+                document.querySelectorAll('.product-images-file-input').forEach(function (input) {
+                    syncInputFromPending(input, self.getPendingFiles());
+                });
+                return;
+            }
+
+            if (self.allowReorder && self.reorderUrl) {
+                self.persistServerOrder();
+            }
+        });
+    };
+
+    ProductImagesManager.prototype.updateMainBadges = function () {
+        if (!this.galleryEl) {
+            return;
+        }
+        this.galleryEl.querySelectorAll('.product-image-gallery__badge').forEach(function (badge) {
+            badge.remove();
+        });
+        const firstItem = this.galleryEl.querySelector('.product-image-gallery__item');
+        if (!firstItem) {
+            return;
+        }
+        const badge = document.createElement('span');
+        badge.className = 'product-image-gallery__badge';
+        badge.textContent = this.labels.main;
+        firstItem.prepend(badge);
+    };
+
+    ProductImagesManager.prototype.collectServerImageIds = function () {
+        if (!this.galleryEl) {
+            return [];
+        }
+        return Array.from(this.galleryEl.querySelectorAll('[data-server-image="1"]'))
+            .map(function (item) {
+                return parseInt(item.getAttribute('data-image-id'), 10);
+            })
+            .filter(function (id) {
+                return !Number.isNaN(id) && id > 0;
+            });
+    };
+
+    ProductImagesManager.prototype.persistServerOrder = function () {
+        const imageIds = this.collectServerImageIds();
+        if (imageIds.length === 0 || !this.reorderUrl) {
+            return;
+        }
+
+        const params = buildPostParams({
+            redirect: this.redirectAction,
+            productId: this.productId,
+            imageIds: imageIds,
+        });
+
+        fetch(this.reorderUrl, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+                'Accept': 'application/json',
+                'X-Requested-With': 'XMLHttpRequest',
+            },
+            body: params.toString(),
+        })
+            .then(parseJsonResponse)
+            .then(function (data) {
+                if (!data) {
+                    showFlash('danger', getDefaultErrorMessage());
+                    return;
+                }
+                if (data.success) {
+                    applyGalleryResponse(data);
+                    showFlash('success', data.message || self.labels.orderSaved);
+                    return;
+                }
+                showFlash('danger', data.error || getDefaultErrorMessage());
+            })
+            .catch(function () {
+                showFlash('danger', getDefaultErrorMessage());
+            });
+    };
+
+    ProductImagesManager.prototype.syncPendingOrderFromDom = function () {
+        if (!this.galleryEl) {
+            return;
+        }
+        const orderedIndexes = Array.from(this.galleryEl.querySelectorAll('[data-pending-image="1"]'))
+            .map(function (item) {
+                return parseInt(item.getAttribute('data-pending-index'), 10);
+            })
+            .filter(function (index) {
+                return !Number.isNaN(index);
+            });
+
+        if (orderedIndexes.length === 0) {
+            return;
+        }
+
+        const files = orderedIndexes.map(function (index) {
+            return this.pendingFiles[index];
+        }, this).filter(Boolean);
+
+        const urls = orderedIndexes.map(function (index) {
+            return this.pendingUrls[index];
+        }, this).filter(Boolean);
+
+        this.pendingFiles = files;
+        this.pendingUrls = urls;
+        this.render();
     };
 
     function deleteIconSvg() {
@@ -455,7 +628,7 @@
         return ' title="' + escapeHtml(label) + '" aria-label="' + escapeHtml(label) + '"';
     }
 
-    ProductImagesManager.prototype.buildServerSlide = function (image, isActive, index) {
+    ProductImagesManager.prototype.buildServerItem = function (image, isMain) {
         let deleteHtml = '';
         if (this.allowServerDelete && this.productId) {
             const pattern = this.wrap.dataset.deleteUrlPattern || '';
@@ -467,35 +640,33 @@
                 + deleteButtonAttrs(this.labels.delete) + '>'
                 + deleteIconSvg() + '</button>';
         }
-        return '<div class="carousel-item' + (isActive ? ' active' : '') + '" data-server-image="1" data-image-id="' + image.id + '">'
-            + '<div class="product-image-carousel__frame p-2">'
+
+        const badgeHtml = isMain
+            ? '<span class="product-image-gallery__badge">' + escapeHtml(this.labels.main) + '</span>'
+            : '';
+
+        return '<div class="product-image-gallery__item" data-server-image="1" data-image-id="' + image.id + '" draggable="' + (this.allowReorder ? 'true' : 'false') + '">'
+            + badgeHtml
+            + '<span class="product-image-gallery__drag" title="' + escapeHtml(this.labels.drag) + '" aria-hidden="true">⋮⋮</span>'
             + deleteHtml
-            + '<img src="' + escapeHtml(image.url) + '" class="product-image-carousel__img" alt="">'
-            + '</div></div>';
+            + '<img src="' + escapeHtml(image.url) + '" class="product-image-gallery__img" alt="">'
+            + '</div>';
     };
 
-    ProductImagesManager.prototype.buildPendingSlide = function (url, pendingIndex, isActive, index) {
-        return '<div class="carousel-item' + (isActive ? ' active' : '') + '" data-pending-image="1">'
-            + '<div class="product-image-carousel__frame p-2">'
+    ProductImagesManager.prototype.buildPendingItem = function (url, pendingIndex, isMain) {
+        const badgeHtml = isMain
+            ? '<span class="product-image-gallery__badge">' + escapeHtml(this.labels.main) + '</span>'
+            : '';
+
+        return '<div class="product-image-gallery__item" data-pending-image="1" data-pending-index="' + pendingIndex + '" draggable="true">'
+            + badgeHtml
+            + '<span class="product-image-gallery__drag" title="' + escapeHtml(this.labels.drag) + '" aria-hidden="true">⋮⋮</span>'
             + '<button type="button" class="btn btn-sm btn-danger product-image-delete-btn product-image-delete--pending"'
             + ' data-pending-index="' + pendingIndex + '"'
             + deleteButtonAttrs(this.labels.delete) + '>'
             + deleteIconSvg() + '</button>'
-            + '<img src="' + escapeHtml(url) + '" class="product-image-carousel__img" alt="">'
-            + '</div></div>';
-    };
-
-    ProductImagesManager.prototype.updateControlsVisibility = function () {
-        if (!this.carouselEl) {
-            return;
-        }
-        const count = this.carouselEl.querySelectorAll('.carousel-inner .carousel-item:not(.product-image-carousel__empty-item)').length
-            || this.carouselEl.querySelectorAll('.carousel-inner .carousel-item').length;
-        const realCount = this.serverImages.length + this.pendingFiles.length;
-        const showControls = realCount > 1;
-        this.carouselEl.querySelectorAll('.carousel-control-prev, .carousel-control-next').forEach(function (btn) {
-            btn.classList.toggle('d-none', !showControls);
-        });
+            + '<img src="' + escapeHtml(url) + '" class="product-image-gallery__img" alt="">'
+            + '</div>';
     };
 
     function escapeHtml(value) {
