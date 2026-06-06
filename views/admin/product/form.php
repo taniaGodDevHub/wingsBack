@@ -14,6 +14,8 @@ $this->params['breadcrumbs'][] = ['label' => Yii::t('app', 'Products'), 'url' =>
 $this->params['breadcrumbs'][] = $this->title;
 
 $this->registerJsFile('@web/js/admin-product-images.js', ['depends' => [\yii\bootstrap5\BootstrapPluginAsset::class], 'position' => View::POS_END]);
+$this->registerJsFile('@web/js/admin-product-slug.js', ['depends' => [\yii\web\JqueryAsset::class], 'position' => View::POS_END]);
+$this->registerJsFile('@web/js/admin-product-blago.js', ['depends' => [\yii\web\JqueryAsset::class], 'position' => View::POS_END]);
 
 $canManageImages = !$model->isNewRecord;
 $redirectAction = $model->isNewRecord ? 'create' : 'update';
@@ -73,8 +75,7 @@ $redirectAction = $model->isNewRecord ? 'create' : 'update';
                         <?= $form->field($model, 'old_price')->input('number', ['step' => '0.01']) ?>
                     </div>
                     <div class="col-12 col-md-6 col-lg-3">
-                        <?= $form->field($model, 'blago')
-                            ->input('number', ['step' => '0.01', 'min' => '0']) ?>
+                        <?= $this->render('_blagoField', ['form' => $form, 'model' => $model]) ?>
                     </div>
                 </div>
                 

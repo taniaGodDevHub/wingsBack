@@ -31,7 +31,14 @@ use yii\db\ActiveRecord;
  */
 class Product extends ActiveRecord
 {
+    public const BLAGO_UNIT_RUB = 'rub';
+    public const BLAGO_UNIT_PERCENT = 'percent';
+
     public ?int $categoryId = null;
+
+    public string $blago_unit = self::BLAGO_UNIT_RUB;
+
+    public string $blago_input = '';
 
     /** @var array<int, int|string> */
     public array $featureValueByFeatureId = [];
@@ -45,11 +52,25 @@ class Product extends ActiveRecord
         return [TimestampBehavior::class];
     }
 
+    public function setAttributes($values, $safeOnly = true): void
+    {
+        if (is_array($values) && array_key_exists('categoryId', $values)) {
+            $categoryId = $values['categoryId'];
+            $values['categoryId'] = $categoryId === '' || $categoryId === null ? null : (int) $categoryId;
+        }
+
+        parent::setAttributes($values, $safeOnly);
+    }
+
     public function rules(): array
     {
         return [
             [['slug', 'name', 'price'], 'required'],
             [['price', 'old_price', 'blago'], 'number', 'min' => 0],
+            [['blago_input'], 'number', 'min' => 0, 'skipOnEmpty' => true],
+            [['blago_input'], 'number', 'max' => 100, 'when' => static fn (self $model): bool => $model->blago_unit === self::BLAGO_UNIT_PERCENT],
+            [['blago_unit'], 'in', 'range' => [self::BLAGO_UNIT_RUB, self::BLAGO_UNIT_PERCENT]],
+            [['blago_unit', 'blago_input'], 'safe'],
             [['is_available', 'is_bestseller', 'is_featured_home'], 'boolean'],
             [['featured_sort', 'bestseller_rank'], 'integer'],
             [['gender'], 'string', 'max' => 16],
@@ -71,6 +92,9 @@ class Product extends ActiveRecord
         if ($this->isRelationPopulated('featureValues')) {
             $this->syncFeatureValueSelectionsFromRelation();
         }
+
+        $this->blago_unit = self::BLAGO_UNIT_RUB;
+        $this->blago_input = (float) $this->blago > 0 ? (string) (float) $this->blago : '';
     }
 
     public function attributeLabels(): array
@@ -84,6 +108,8 @@ class Product extends ActiveRecord
             'price' => Yii::t('app', 'Price'),
             'old_price' => Yii::t('app', 'Old price'),
             'blago' => Yii::t('app', 'Blago'),
+            'blago_unit' => Yii::t('app', 'Blago unit'),
+            'blago_input' => Yii::t('app', 'Blago'),
             'is_available' => Yii::t('app', 'Available'),
             'is_bestseller' => Yii::t('app', 'Bestseller'),
             'is_featured_home' => Yii::t('app', 'Featured on home'),
@@ -169,11 +195,36 @@ class Product extends ActiveRecord
         return $result;
     }
 
+    /** @return array<string, string> */
+    public static function getBlagoUnitOptions(): array
+    {
+        return [
+            self::BLAGO_UNIT_RUB => '₽',
+            self::BLAGO_UNIT_PERCENT => '%',
+        ];
+    }
+
+    public function resolveBlagoAmount(): float
+    {
+        if ($this->blago_input === '' || $this->blago_input === null) {
+            return 0.0;
+        }
+
+        $input = (float) $this->blago_input;
+        if ($this->blago_unit === self::BLAGO_UNIT_PERCENT) {
+            return round((float) $this->price * $input / 100, 2);
+        }
+
+        return round($input, 2);
+    }
+
     public function beforeSave($insert): bool
     {
         if (!parent::beforeSave($insert)) {
             return false;
         }
+
+        $this->blago = $this->resolveBlagoAmount();
         $this->search_text = mb_strtolower($this->name . ' ' . $this->slug);
 
         return true;

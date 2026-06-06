@@ -18,7 +18,10 @@ $this->params['breadcrumbs'][] = $this->title;
             <tr><th><?= Yii::t('app', 'Product name') ?></th><td><?= Html::encode($model->name) ?></td></tr>
             <tr><th>Slug</th><td><?= Html::encode($model->slug) ?></td></tr>
             <tr><th><?= Yii::t('app', 'Price') ?></th><td><?= (float) $model->price ?> ₽</td></tr>
-            <tr><th><?= Yii::t('app', 'Blago') ?></th><td><?= (float) $model->blago ?> ₽</td></tr>
+            <tr>
+                <th><?= Yii::t('app', 'Blago') ?></th>
+                <td><?= (float) $model->blago > 0 ? (float) $model->blago . ' ₽' : '—' ?></td>
+            </tr>
             <tr><th><?= Yii::t('app', 'Brand') ?></th><td><?= Html::encode($model->brand ?? '—') ?></td></tr>
             <tr><th>SKU</th><td><?= Html::encode($model->product_code ?? '—') ?></td></tr>
         </table>

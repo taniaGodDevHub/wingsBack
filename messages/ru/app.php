@@ -127,6 +127,8 @@ return [
     'Old price' => 'Старая цена',
     'Blago' => 'Благо',
     'Charity amount from each sale' => 'Сумма благотворительности с продажи',
+    'Blago unit' => 'Единица благо',
+    'of price' => 'от цены',
     'Available' => 'В наличии',
     'Bestseller' => 'Хит продаж',
     'Featured on home' => 'На главной',
