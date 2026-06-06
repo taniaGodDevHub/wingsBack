@@ -58,7 +58,7 @@ class ProductController extends BaseAdminController
 
         return $this->render('index', [
             'dataProvider' => new ActiveDataProvider([
-                'query' => Product::find()->with('images')->orderBy(['id' => SORT_DESC]),
+                'query' => Product::find()->with(['images', 'sizes'])->orderBy(['id' => SORT_DESC]),
                 'pagination' => ['pageSize' => 20],
             ]),
         ]);
@@ -81,7 +81,6 @@ class ProductController extends BaseAdminController
             $this->saveProductCategory($model);
             $this->saveProductFeatureValues($model);
             $this->saveProductSizes($model);
-            $this->saveProductColors($model);
             $this->processImageUploads($model);
             Yii::$app->session->setFlash('success', Yii::t('app', 'Saved successfully.'));
 
@@ -118,7 +117,6 @@ class ProductController extends BaseAdminController
             $this->saveProductCategory($model);
             $this->saveProductFeatureValues($model);
             $this->saveProductSizes($model);
-            $this->saveProductColors($model);
             $this->processImageUploads($model);
             Yii::$app->session->setFlash('success', Yii::t('app', 'Saved successfully.'));
 
@@ -182,9 +180,15 @@ class ProductController extends BaseAdminController
         $model = $this->findModel($productId);
         $image = $this->imageUpload()->findImageForProduct((int) $model->id, $imageId);
 
-        if ($image !== null) {
-            $this->imageUpload()->deleteImage($image);
+        if ($image === null) {
+            return $this->deleteImageJsonResponse(
+                $productId,
+                false,
+                Yii::t('app', 'Image not found.'),
+            );
         }
+
+        $this->imageUpload()->deleteImage($image);
 
         return $this->deleteImageJsonResponse($productId, true, Yii::t('app', 'Image deleted.'));
     }
@@ -209,12 +213,13 @@ class ProductController extends BaseAdminController
         $this->findModel($productId);
         $imageIds = $request->post('imageIds', []);
         if (!is_array($imageIds)) {
-            $imageIds = [];
+            $imageIds = $imageIds !== '' && $imageIds !== null ? [(int) $imageIds] : [];
         }
+        $imageIds = array_values(array_filter(array_map('intval', $imageIds)));
 
         $error = $this->imageUpload()->reorderImages($productId, $imageIds);
 
-        if ($request->isAjax) {
+        if ($this->isJsonDeleteRequest()) {
             Yii::$app->response->format = Response::FORMAT_JSON;
 
             if ($error !== null) {
@@ -247,7 +252,7 @@ class ProductController extends BaseAdminController
 
     private function deleteImageJsonResponse(int $productId, bool $success, string $message): Response
     {
-        if (!Yii::$app->request->isAjax) {
+        if (!$this->isJsonDeleteRequest()) {
             Yii::$app->session->setFlash($success ? 'success' : 'error', $message);
             $redirect = (string) Yii::$app->request->post('redirect', 'update');
 
@@ -264,6 +269,18 @@ class ProductController extends BaseAdminController
             'error' => $success ? null : $message,
             'carouselHtml' => $this->renderCarouselPartial($productId),
         ]);
+    }
+
+    private function isJsonDeleteRequest(): bool
+    {
+        $request = Yii::$app->request;
+        if ($request->isAjax) {
+            return true;
+        }
+
+        $accept = (string) $request->headers->get('Accept', '');
+
+        return str_contains($accept, 'application/json');
     }
 
     private function renderCarouselPartial(int $productId): string
@@ -291,9 +308,6 @@ class ProductController extends BaseAdminController
         $post = Yii::$app->request->post('Product', []);
         if (!isset($post['sizeValuesInStock'])) {
             $model->sizeValuesInStock = [];
-        }
-        if (!isset($post['colorIds'])) {
-            $model->colorIds = [];
         }
 
         return true;
@@ -325,6 +339,20 @@ class ProductController extends BaseAdminController
                 continue;
             }
 
+            $feature = CatalogFeature::findOne($featureId);
+            if ($feature !== null && $feature->isColor()) {
+                $color = Color::findOne($valueId);
+                if ($color === null) {
+                    continue;
+                }
+
+                $value = CatalogFeatureValue::ensureForColor($color);
+                if ($value !== null) {
+                    $product->link('featureValues', $value);
+                }
+                continue;
+            }
+
             $value = CatalogFeatureValue::findOne(['id' => $valueId, 'feature_id' => $featureId]);
             if ($value !== null) {
                 $product->link('featureValues', $value);
@@ -337,7 +365,7 @@ class ProductController extends BaseAdminController
         ProductSize::deleteAll(['product_id' => $product->id]);
 
         $values = is_array($product->sizeValuesInStock) ? $product->sizeValuesInStock : [];
-        $allowed = array_flip(ProductSize::getDistinctSizeValues());
+        $allowed = array_flip(ProductSize::getStandardSizeValues());
 
         foreach (array_unique($values) as $sizeValue) {
             $sizeValue = trim((string) $sizeValue);
@@ -349,25 +377,6 @@ class ProductController extends BaseAdminController
             $size->product_id = (int) $product->id;
             $size->size_value = $sizeValue;
             $size->save(false);
-        }
-    }
-
-    private function saveProductColors(Product $product): void
-    {
-        $product->unlinkAll('colors', true);
-
-        $colorIds = is_array($product->colorIds) ? $product->colorIds : [];
-        $colorIds = array_values(array_unique(array_filter(array_map('intval', $colorIds))));
-
-        foreach ($colorIds as $colorId) {
-            if ($colorId <= 0) {
-                continue;
-            }
-
-            $color = Color::findOne($colorId);
-            if ($color !== null) {
-                $product->link('colors', $color);
-            }
         }
     }
 
@@ -403,7 +412,7 @@ class ProductController extends BaseAdminController
     private function findModel(int $id): Product
     {
         $model = Product::find()
-            ->with(['images', 'categories', 'colors', 'sizes', 'featureValues.feature'])
+            ->with(['images', 'categories', 'sizes', 'featureValues.feature'])
             ->where(['id' => $id])
             ->one();
         if ($model === null) {

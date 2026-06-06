@@ -46,9 +46,6 @@ class Product extends ActiveRecord
 
     /** @var string[] */
     public array $sizeValuesInStock = [];
-
-    /** @var int[] */
-    public array $colorIds = [];
     public static function tableName(): string
     {
         return '{{%product}}';
@@ -85,7 +82,7 @@ class Product extends ActiveRecord
             [['brand', 'product_code'], 'string', 'max' => 255],
             [['slug'], 'unique'],
             [['categoryId'], 'integer'],
-            [['featureValueByFeatureId', 'sizeValuesInStock', 'colorIds'], 'safe'],
+            [['featureValueByFeatureId', 'sizeValuesInStock'], 'safe'],
         ];
     }
 
@@ -101,12 +98,6 @@ class Product extends ActiveRecord
         }
         if ($this->isRelationPopulated('sizes')) {
             $this->sizeValuesInStock = $this->getSizeValues();
-        }
-        if ($this->isRelationPopulated('colors')) {
-            $this->colorIds = array_map(
-                static fn (Color $color): int => (int) $color->id,
-                $this->colors,
-            );
         }
 
         $this->blago_unit = self::BLAGO_UNIT_RUB;
@@ -134,7 +125,6 @@ class Product extends ActiveRecord
             'gender' => Yii::t('app', 'Gender'),
             'categoryId' => Yii::t('app', 'Category'),
             'sizeValuesInStock' => Yii::t('app', 'Sizes in stock'),
-            'colorIds' => Yii::t('app', 'Colors'),
             'search_text' => Yii::t('app', 'Search text'),
             'created_at' => Yii::t('app', 'Created at'),
             'updated_at' => Yii::t('app', 'Updated at'),
@@ -150,12 +140,6 @@ class Product extends ActiveRecord
     {
         return $this->hasMany(Category::class, ['id' => 'category_id'])
             ->viaTable('{{%product_category}}', ['product_id' => 'id']);
-    }
-
-    public function getColors(): \yii\db\ActiveQuery
-    {
-        return $this->hasMany(Color::class, ['id' => 'color_id'])
-            ->viaTable('{{%product_color}}', ['product_id' => 'id']);
     }
 
     public function getSizes(): \yii\db\ActiveQuery
@@ -174,9 +158,20 @@ class Product extends ActiveRecord
         $this->featureValueByFeatureId = [];
         foreach ($this->featureValues as $value) {
             $featureId = (int) $value->feature_id;
-            if (!isset($this->featureValueByFeatureId[$featureId])) {
-                $this->featureValueByFeatureId[$featureId] = (int) $value->id;
+            if (isset($this->featureValueByFeatureId[$featureId])) {
+                continue;
             }
+
+            $feature = $value->feature ?? CatalogFeature::findOne($featureId);
+            if ($feature !== null && $feature->isColor()) {
+                $color = CatalogFeatureValue::findColorForValue($value);
+                if ($color !== null) {
+                    $this->featureValueByFeatureId[$featureId] = (int) $color->id;
+                    continue;
+                }
+            }
+
+            $this->featureValueByFeatureId[$featureId] = (int) $value->id;
         }
     }
 
@@ -198,19 +193,36 @@ class Product extends ActiveRecord
         return $values;
     }
 
-    /** @return array<int, array<string, mixed>> */
-    public function getColorsData(): array
+    /** @return array{id: int, name: string, hex: string}|null */
+    public function getColorData(): ?array
     {
-        $result = [];
-        foreach ($this->colors as $color) {
-            $result[] = [
-                'id' => (int) $color->id,
-                'name' => $color->name,
-                'hex' => $color->hex,
+        if (!$this->isRelationPopulated('featureValues')) {
+            return null;
+        }
+
+        foreach ($this->featureValues as $value) {
+            $feature = $value->feature;
+            if ($feature === null || !$feature->isColor()) {
+                continue;
+            }
+
+            $color = CatalogFeatureValue::findColorForValue($value);
+            if ($color !== null) {
+                return [
+                    'id' => (int) $color->id,
+                    'name' => $color->name,
+                    'hex' => $color->hex,
+                ];
+            }
+
+            return [
+                'id' => (int) $value->id,
+                'name' => $value->name,
+                'hex' => $value->hex ?? '',
             ];
         }
 
-        return $result;
+        return null;
     }
 
     /** @return array<string, string> */

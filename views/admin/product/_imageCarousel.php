@@ -41,7 +41,7 @@ foreach ($images as $image) {
      data-label-empty="<?= Html::encode(Yii::t('app', 'No photos yet.')) ?>"
      data-label-main="<?= Html::encode(Yii::t('app', 'Main photo')) ?>"
      data-label-drag="<?= Html::encode(Yii::t('app', 'Drag to reorder')) ?>"
-     data-label-hint="<?= Html::encode(Yii::t('app', 'Drag photos to change display order. The first photo is shown in the catalog.')) ?>"
+     data-label-hint="<?= Html::encode(Yii::t('app', 'After uploading images, drag photos to change display order. The first photo is shown in the catalog.')) ?>"
      data-label-error="<?= Html::encode(Yii::t('app', 'Something went wrong. Please try again.')) ?>"
      data-label-order-saved="<?= Html::encode(Yii::t('app', 'Image order saved.')) ?>"
      <?php if (!$model->isNewRecord): ?>
@@ -49,7 +49,7 @@ foreach ($images as $image) {
      data-reorder-url="<?= Html::encode(Url::to(['/admin/product/reorder-images', 'id' => (int) $model->id])) ?>"
      <?php endif ?>>
     <h2 class="h5"><?= Yii::t('app', 'Product photos') ?></h2>
-    <p class="text-muted small mb-3"><?= Yii::t('app', 'Drag photos to change display order. The first photo is shown in the catalog.') ?></p>
+    <p class="text-muted small mb-3"><?= Yii::t('app', 'After uploading images, drag photos to change display order. The first photo is shown in the catalog.') ?></p>
     <div id="<?= Html::encode($carouselId) ?>" class="product-image-gallery__list<?= $hasImages ? '' : ' d-none' ?>">
         <?php foreach ($images as $index => $image): ?>
             <div class="product-image-gallery__item"
@@ -62,7 +62,7 @@ foreach ($images as $image) {
                 <span class="product-image-gallery__drag" title="<?= Html::encode(Yii::t('app', 'Drag to reorder')) ?>" aria-hidden="true">⋮⋮</span>
                 <?php if ($allowDelete): ?>
                     <?= $this->render('_deleteImageButton', [
-                        'deleteUrl' => Url::to(['delete-image', 'productId' => $model->id, 'imageId' => $image->id]),
+                        'deleteUrl' => Url::to(['/admin/product/delete-image', 'productId' => $model->id, 'imageId' => $image->id]),
                     ]) ?>
                 <?php endif ?>
                 <img src="<?= Html::encode($image->publicUrl) ?>"

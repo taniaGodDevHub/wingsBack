@@ -10,6 +10,7 @@
                 return;
             }
             const manager = new ProductImagesManager(wrap);
+            manager.syncServerImagesFromDom();
             manager.setPendingFiles(Array.from(input.files));
             manager.render();
             syncInputFromPending(input, manager.getPendingFiles());
@@ -18,7 +19,27 @@
 
     initDeleteAjax();
     initUploadForm();
-    document.addEventListener('DOMContentLoaded', initGallery);
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', initGallery);
+    } else {
+        initGallery();
+    }
+
+    function initDeleteInteractionGuards() {
+        document.addEventListener('mousedown', function (event) {
+            if (event.target.closest('.product-image-delete-btn')) {
+                event.stopPropagation();
+            }
+        }, true);
+
+        document.addEventListener('dragstart', function (event) {
+            if (event.target.closest('.product-image-delete-btn')) {
+                event.preventDefault();
+            }
+        }, true);
+    }
+
+    initDeleteInteractionGuards();
 
     function initGallery() {
         document.querySelectorAll(galleryWrapSelector).forEach(function (wrap) {
@@ -53,7 +74,7 @@
             const value = extra[key];
             if (Array.isArray(value)) {
                 value.forEach(function (item) {
-                    params.append(key, String(item));
+                    params.append(key + '[]', String(item));
                 });
                 return;
             }
@@ -69,22 +90,33 @@
         const imageId = item ? item.getAttribute('data-image-id') : '';
         const wrap = document.querySelector(galleryWrapSelector);
         const productId = wrap ? wrap.dataset.productId : '';
+        let deleteUrl = trigger.getAttribute('data-delete-url') || trigger.href || '';
+
+        if ((!deleteUrl || deleteUrl === '#') && wrap && imageId) {
+            const pattern = wrap.dataset.deleteUrlPattern || '';
+            if (pattern) {
+                deleteUrl = pattern.replace('__IMAGE_ID__', String(imageId));
+            }
+        }
+
         let parsedImageId = imageId;
         let parsedProductId = productId;
-        const deleteUrl = trigger.getAttribute('data-delete-url') || trigger.href || '';
-        try {
-            const url = new URL(deleteUrl, window.location.origin);
-            if (!parsedImageId) {
-                parsedImageId = url.searchParams.get('imageId') || '';
+        if (deleteUrl) {
+            try {
+                const url = new URL(deleteUrl, window.location.origin);
+                if (!parsedImageId) {
+                    parsedImageId = url.searchParams.get('imageId') || '';
+                }
+                if (!parsedProductId) {
+                    parsedProductId = url.searchParams.get('productId')
+                        || url.searchParams.get('id')
+                        || '';
+                }
+            } catch (e) {
+                // keep attributes from DOM
             }
-            if (!parsedProductId) {
-                parsedProductId = url.searchParams.get('productId')
-                    || url.searchParams.get('id')
-                    || '';
-            }
-        } catch (e) {
-            // keep attributes from DOM
         }
+
         return {
             imageId: parsedImageId,
             productId: parsedProductId,
@@ -153,20 +185,21 @@
             if (!trigger) {
                 return;
             }
-            const deleteUrl = trigger.getAttribute('data-delete-url') || trigger.href || '';
-            if (!deleteUrl) {
+
+            const wrap = document.querySelector(galleryWrapSelector);
+            if (wrap && wrap.dataset.ajaxDelete !== '1') {
                 return;
             }
+
             event.preventDefault();
             event.stopPropagation();
-            const wrapForConfirm = document.querySelector(galleryWrapSelector);
+
             const confirmMessage = trigger.getAttribute('data-confirm')
-                || (wrapForConfirm ? wrapForConfirm.dataset.labelConfirm : '');
+                || (wrap ? wrap.dataset.labelConfirm : '');
             if (confirmMessage && !window.confirm(confirmMessage)) {
                 return;
             }
 
-            const wrap = document.querySelector(galleryWrapSelector);
             const redirectAction = wrap ? wrap.dataset.redirectAction || 'update' : 'update';
             const ids = resolveDeleteIds(trigger);
             if (!ids.imageId || !ids.productId || !ids.deleteUrl) {
@@ -178,11 +211,6 @@
                 productId: ids.productId,
                 imageId: ids.imageId,
             });
-            const csrf = getCsrfPair();
-            if (!csrf) {
-                showFlash('danger', getDefaultErrorMessage());
-                return;
-            }
 
             trigger.classList.add('disabled');
             trigger.setAttribute('aria-disabled', 'true');
@@ -374,7 +402,31 @@
         this.redirectAction = wrap.dataset.redirectAction || 'update';
         this.reorderUrl = wrap.dataset.reorderUrl || '';
         this.draggedItem = null;
+        this._sortableBound = false;
     }
+
+    ProductImagesManager.prototype.syncServerImagesFromDom = function () {
+        if (!this.galleryEl) {
+            return;
+        }
+
+        const fromDom = Array.from(this.galleryEl.querySelectorAll('[data-server-image="1"]'))
+            .map(function (item) {
+                const imageEl = item.querySelector('.product-image-gallery__img');
+                return {
+                    id: parseInt(item.getAttribute('data-image-id'), 10),
+                    url: imageEl ? imageEl.getAttribute('src') || '' : '',
+                    sortOrder: 0,
+                };
+            })
+            .filter(function (image) {
+                return !Number.isNaN(image.id) && image.id > 0 && image.url !== '';
+            });
+
+        if (fromDom.length > 0) {
+            this.serverImages = fromDom;
+        }
+    };
 
     ProductImagesManager.prototype.setPendingFiles = function (files) {
         this.revokePendingUrls();
@@ -407,6 +459,8 @@
         if (!this.galleryEl) {
             return;
         }
+
+        this.syncServerImagesFromDom();
 
         const items = [];
         const self = this;
@@ -555,6 +609,7 @@
             return;
         }
 
+        const manager = this;
         const params = buildPostParams({
             redirect: this.redirectAction,
             productId: this.productId,
@@ -578,7 +633,7 @@
                 }
                 if (data.success) {
                     applyGalleryResponse(data);
-                    showFlash('success', data.message || self.labels.orderSaved);
+                    showFlash('success', data.message || manager.labels.orderSaved);
                     return;
                 }
                 showFlash('danger', data.error || getDefaultErrorMessage());

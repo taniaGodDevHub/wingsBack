@@ -216,7 +216,7 @@ use OpenApi\Annotations as OA;
  *
  * @OA\Schema(
  *     schema="CatalogProductColor",
- *     @OA\Property(property="id", type="integer", example=1001),
+ *     @OA\Property(property="id", type="integer", example=1001, description="ID из справочника color"),
  *     @OA\Property(property="name", type="string", example="Черный"),
  *     @OA\Property(property="hex", type="string", example="#111111")
  * )
@@ -233,12 +233,12 @@ use OpenApi\Annotations as OA;
  *     @OA\Property(property="categories", type="array", @OA\Items(ref="#/components/schemas/CategoryRef")),
  *     @OA\Property(property="gender", type="string", enum={"male","female","unisex"}, example="unisex"),
  *     @OA\Property(property="sizes", type="array", @OA\Items(type="string"), example={"S","M","L"}),
- *     @OA\Property(property="colors", type="array", @OA\Items(ref="#/components/schemas/CatalogProductColor"))
+ *     @OA\Property(property="color", ref="#/components/schemas/CatalogProductColor", nullable=true)
  * )
  *
  * @OA\Schema(
  *     schema="CatalogFilterValue",
- *     @OA\Property(property="id", description="ID категории/цвета или строковое значение (размер, пол)", oneOf={
+ *     @OA\Property(property="id", description="ID значения атрибута (цвет) или строковое значение (размер, пол)", oneOf={
  *         @OA\Schema(type="integer"),
  *         @OA\Schema(type="string")
  *     }),

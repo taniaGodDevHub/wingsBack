@@ -26,18 +26,25 @@ $this->params['breadcrumbs'][] = $this->title;
 
                 return Html::img($image->publicUrl, [
                     'alt' => $model->name,
-                    'style' => 'width:48px;height:48px;object-fit:cover;border-radius:4px',
+                    'style' => 'width:70px;height:70px;object-fit:cover;border-radius:4px',
                 ]);
             },
-            'contentOptions' => ['class' => 'text-center', 'style' => 'width:60px'],
+            'contentOptions' => ['class' => 'text-center', 'style' => 'width:82px'],
             'headerOptions' => ['class' => 'text-center'],
         ],
         'name',
         'slug',
         'price',
         [
-            'attribute' => 'is_available',
-            'value' => static fn ($m) => $m->is_available ? Yii::t('app', 'Yes') : Yii::t('app', 'No'),
+            'label' => Yii::t('app', 'Available'),
+            'value' => static function (Product $model): string {
+                $sizes = $model->getSizeValues();
+                if ($sizes === []) {
+                    return '—';
+                }
+
+                return implode(', ', $sizes);
+            },
         ],
         [
             'class' => yii\grid\ActionColumn::class,

@@ -6,7 +6,9 @@ namespace app\services\catalog;
 
 use app\components\api\ApiHttpException;
 use app\models\CatalogFeature;
+use app\models\CatalogFeatureValue;
 use app\models\Category;
+use app\models\Color;
 use app\models\HomeBanner;
 use app\models\Product;
 use Yii;
@@ -220,7 +222,7 @@ class CatalogService
         return Product::find()
             ->alias('p')
             ->where(['p.is_available' => true])
-            ->with(['images', 'categories', 'colors', 'sizes']);
+            ->with(['images', 'categories', 'sizes', 'featureValues.feature']);
     }
 
     /** @param array<string, mixed> $params */
@@ -230,12 +232,6 @@ class CatalogService
         if ($categoryIds !== []) {
             $query->innerJoin('{{%product_category}} pc_cat', 'pc_cat.product_id = p.id')
                 ->andWhere(['pc_cat.category_id' => $categoryIds]);
-        }
-
-        $colorIds = $this->parseCsvInts((string) ($params['color_ids'] ?? ''));
-        if ($colorIds !== []) {
-            $query->innerJoin('{{%product_color}} pcol', 'pcol.product_id = p.id')
-                ->andWhere(['pcol.color_id' => $colorIds]);
         }
 
         $sizes = $this->parseCsvStrings((string) ($params['size_values'] ?? ''));
@@ -258,7 +254,7 @@ class CatalogService
 
         $this->applyFeatureFilters($query, $params);
         // legacy params — safely ignored
-        unset($params['brand_ids'], $params['country_ids']);
+        unset($params['brand_ids'], $params['country_ids'], $params['color_ids']);
 
         $query->groupBy('p.id');
     }
@@ -277,7 +273,7 @@ class CatalogService
         }
 
         $index = 0;
-        foreach ($decoded as $featureId => $valueIds) {
+        foreach ($decoded as $featureKey => $valueIds) {
             if (!is_array($valueIds) || $valueIds === []) {
                 continue;
             }
@@ -286,10 +282,36 @@ class CatalogService
                 continue;
             }
 
+            if ((string) $featureKey === 'color') {
+                $valueIds = $this->resolveColorFilterValueIds($valueIds);
+                if ($valueIds === []) {
+                    continue;
+                }
+            }
+
             $alias = 'pfv' . $index++;
             $query->innerJoin("{{%product_feature_value}} {$alias}", "{$alias}.product_id = p.id")
                 ->andWhere(['in', "{$alias}.feature_value_id", $valueIds]);
         }
+    }
+
+    /** @param int[] $colorIds @return int[] */
+    private function resolveColorFilterValueIds(array $colorIds): array
+    {
+        $valueIds = [];
+        foreach ($colorIds as $colorId) {
+            $color = Color::findOne($colorId);
+            if ($color === null) {
+                continue;
+            }
+
+            $featureValue = CatalogFeatureValue::ensureForColor($color);
+            if ($featureValue !== null) {
+                $valueIds[] = (int) $featureValue->id;
+            }
+        }
+
+        return array_values(array_unique($valueIds));
     }
 
     /**
@@ -424,16 +446,28 @@ class CatalogService
             ->select(['min' => 'MIN(sub.price)', 'max' => 'MAX(sub.price)'])
             ->one();
 
+        $featureBlocks = $this->filterBlocksFeatures($base);
+        $colorBlock = null;
+        $otherFeatureBlocks = [];
+        foreach ($featureBlocks as $block) {
+            if ($block['id'] === 'color') {
+                $colorBlock = $block;
+                continue;
+            }
+            $otherFeatureBlocks[] = $block;
+        }
+
+        $filters = [
+            $this->filterBlockCategory($base, $params),
+        ];
+        if ($colorBlock !== null) {
+            $filters[] = $colorBlock;
+        }
+        $filters[] = $this->filterBlockSize($base, $params);
+        $filters[] = $this->filterBlockGender($base, $params);
+
         return [
-            'filters' => array_merge(
-                [
-                    $this->filterBlockCategory($base, $params),
-                    $this->filterBlockColor($base, $params),
-                    $this->filterBlockSize($base, $params),
-                    $this->filterBlockGender($base, $params),
-                ],
-                $this->filterBlocksFeatures($base),
-            ),
+            'filters' => array_merge($filters, $otherFeatureBlocks),
             'price' => [
                 'min' => (float) ($priceRow['min'] ?? 0),
                 'max' => (float) ($priceRow['max'] ?? 0),
@@ -465,27 +499,92 @@ class CatalogService
         ];
     }
 
-    /** @param array<string, mixed> $params */
-    private function filterBlockColor(ActiveQuery $base, array $params): array
+    /** @return array<int, array<string, mixed>> */
+    private function filterBlocksFeatures(ActiveQuery $base): array
     {
-        $rows = (new Query())
-            ->select(['col.id', 'col.name', 'col.hex', 'cnt' => 'COUNT(DISTINCT p.id)'])
-            ->from(['p' => (clone $base)->select('p.id')->groupBy('p.id')])
-            ->innerJoin('{{%product_color}} pcol', 'pcol.product_id = p.id')
-            ->innerJoin('{{%color}} col', 'col.id = pcol.color_id')
-            ->groupBy(['col.id', 'col.name', 'col.hex'])
-            ->all();
+        $blocks = [];
+        $features = CatalogFeature::find()->orderBy(['name_ru' => SORT_ASC, 'id' => SORT_ASC])->all();
+
+        foreach ($features as $feature) {
+            if ($feature->isDuplicateColorFeature()) {
+                continue;
+            }
+
+            $featureId = (int) $feature->id;
+            $isColor = $feature->isColor();
+            if ($isColor) {
+                $colorBlock = $this->filterBlockColor($base, $feature);
+                if ($colorBlock !== null) {
+                    $blocks[] = $colorBlock;
+                }
+                continue;
+            }
+
+            $rows = (new Query())
+                ->select(['fv.id', 'fv.name', 'fv.hex', 'cnt' => 'COUNT(DISTINCT p.id)'])
+                ->from(['p' => (clone $base)->select('p.id')->groupBy('p.id')])
+                ->innerJoin('{{%product_feature_value}} pfv', 'pfv.product_id = p.id')
+                ->innerJoin('{{%catalog_feature_value}} fv', 'fv.id = pfv.feature_value_id')
+                ->andWhere(['fv.feature_id' => $featureId])
+                ->groupBy(['fv.id', 'fv.name', 'fv.hex'])
+                ->orderBy(['fv.name' => SORT_ASC])
+                ->all();
+
+            if ($rows === []) {
+                continue;
+            }
+
+            $blocks[] = [
+                'id' => 'feature_' . $featureId,
+                'type' => 'list',
+                'name_ru' => $feature->name_ru,
+                'values' => array_map(static fn (array $row): array => [
+                    'id' => (int) $row['id'],
+                    'name' => $row['name'],
+                    'count' => (int) $row['cnt'],
+                ], $rows),
+            ];
+        }
+
+        return $blocks;
+    }
+
+    private function filterBlockColor(ActiveQuery $base, CatalogFeature $feature): ?array
+    {
+        $values = [];
+        foreach (Color::find()->orderBy(['name' => SORT_ASC])->all() as $color) {
+            $featureValue = CatalogFeatureValue::ensureForColor($color);
+            if ($featureValue === null) {
+                continue;
+            }
+
+            $count = (int) (new Query())
+                ->from(['p' => (clone $base)->select('p.id')->groupBy('p.id')])
+                ->innerJoin('{{%product_feature_value}} pfv', 'pfv.product_id = p.id')
+                ->where(['pfv.feature_value_id' => (int) $featureValue->id])
+                ->count('*', Yii::$app->db);
+
+            if ($count <= 0) {
+                continue;
+            }
+
+            $values[] = [
+                'id' => (int) $color->id,
+                'name' => $color->name,
+                'hex' => $color->hex,
+                'count' => $count,
+            ];
+        }
+
+        if ($values === []) {
+            return null;
+        }
 
         return [
             'id' => 'color',
             'type' => 'list',
-            'name_ru' => 'Цвет',
-            'values' => array_map(static fn (array $r): array => [
-                'id' => (int) $r['id'],
-                'name' => $r['name'],
-                'hex' => $r['hex'],
-                'count' => (int) $r['cnt'],
-            ], $rows),
+            'name_ru' => $feature->name_ru,
+            'values' => $values,
         ];
     }
 
@@ -532,43 +631,6 @@ class CatalogService
                 'count' => (int) $r['cnt'],
             ], $rows),
         ];
-    }
-
-    /** @return array<int, array<string, mixed>> */
-    private function filterBlocksFeatures(ActiveQuery $base): array
-    {
-        $blocks = [];
-        $features = CatalogFeature::find()->orderBy(['name_ru' => SORT_ASC, 'id' => SORT_ASC])->all();
-
-        foreach ($features as $feature) {
-            $featureId = (int) $feature->id;
-            $rows = (new Query())
-                ->select(['fv.id', 'fv.name', 'cnt' => 'COUNT(DISTINCT p.id)'])
-                ->from(['p' => (clone $base)->select('p.id')->groupBy('p.id')])
-                ->innerJoin('{{%product_feature_value}} pfv', 'pfv.product_id = p.id')
-                ->innerJoin('{{%catalog_feature_value}} fv', 'fv.id = pfv.feature_value_id')
-                ->andWhere(['fv.feature_id' => $featureId])
-                ->groupBy(['fv.id', 'fv.name'])
-                ->orderBy(['fv.name' => SORT_ASC])
-                ->all();
-
-            if ($rows === []) {
-                continue;
-            }
-
-            $blocks[] = [
-                'id' => 'feature_' . $featureId,
-                'type' => 'list',
-                'name_ru' => $feature->name_ru,
-                'values' => array_map(static fn (array $r): array => [
-                    'id' => (int) $r['id'],
-                    'name' => $r['name'],
-                    'count' => (int) $r['cnt'],
-                ], $rows),
-            ];
-        }
-
-        return $blocks;
     }
 
     /** @return int[] */

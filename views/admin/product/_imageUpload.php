@@ -26,6 +26,7 @@ $mode = $mode ?? 'embedded';
                            accept="image/jpeg,image/png,image/webp,image/gif"
                            multiple>
                     <div class="form-text"><?= Yii::t('app', 'JPEG, PNG, WebP or GIF, up to 5 MB each. You can select several files at once.') ?></div>
+                    <div class="form-text"><?= Yii::t('app', 'After uploading images, drag photos to change display order. The first photo is shown in the catalog.') ?></div>
                 </div>
                 <div id="product-images-upload-errors" class="alert alert-danger d-none" role="alert"></div>
                 <button type="button" class="btn btn-outline-primary" id="product-images-upload-btn">
@@ -44,6 +45,7 @@ $mode = $mode ?? 'embedded';
                        multiple
                        form="product-form">
                 <div class="form-text"><?= Yii::t('app', 'JPEG, PNG, WebP or GIF, up to 5 MB each. You can select several files at once.') ?></div>
+                <div class="form-text"><?= Yii::t('app', 'After uploading images, drag photos to change display order. The first photo is shown in the catalog.') ?></div>
             </div>
         <?php endif ?>
     </div>

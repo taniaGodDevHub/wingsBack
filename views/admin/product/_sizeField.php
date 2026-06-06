@@ -6,10 +6,7 @@
 use app\models\ProductSize;
 use yii\helpers\Html;
 
-$sizeOptions = array_values(array_unique(array_merge(
-    ProductSize::getDistinctSizeValues(),
-    $model->sizeValuesInStock,
-)));
+$sizeOptions = ProductSize::getStandardSizeValues();
 $inStock = array_flip($model->sizeValuesInStock);
 $inputName = Html::getInputName($model, 'sizeValuesInStock[]');
 
@@ -78,29 +75,25 @@ CSS);
 ?>
 <div class="mb-3 product-size-field" id="product-size-field">
     <span class="product-size-field__label"><?= Html::encode($model->getAttributeLabel('sizeValuesInStock')) ?></span>
-    <?php if ($sizeOptions === []): ?>
-        <p class="text-muted mb-0"><?= Yii::t('app', 'No sizes in catalog yet.') ?></p>
-    <?php else: ?>
-        <div class="product-size-field__buttons" role="group" aria-label="<?= Html::encode($model->getAttributeLabel('sizeValuesInStock')) ?>">
-            <?php foreach ($sizeOptions as $size): ?>
-                <?php
-                $isInStock = isset($inStock[$size]);
-                $buttonClass = 'product-size-btn' . ($isInStock ? ' product-size-btn--in-stock' : '');
-                ?>
-                <button
-                    type="button"
-                    class="<?= $buttonClass ?>"
-                    data-size="<?= Html::encode($size) ?>"
-                    aria-pressed="<?= $isInStock ? 'true' : 'false' ?>"
-                ><?= Html::encode($size) ?></button>
-            <?php endforeach ?>
-        </div>
-        <div id="product-size-inputs" class="d-none">
-            <?php foreach ($model->sizeValuesInStock as $size): ?>
-                <?php if (in_array($size, $sizeOptions, true)): ?>
-                    <input type="hidden" name="<?= Html::encode($inputName) ?>" value="<?= Html::encode($size) ?>">
-                <?php endif ?>
-            <?php endforeach ?>
-        </div>
-    <?php endif ?>
+    <div class="product-size-field__buttons" role="group" aria-label="<?= Html::encode($model->getAttributeLabel('sizeValuesInStock')) ?>">
+        <?php foreach ($sizeOptions as $size): ?>
+            <?php
+            $isInStock = isset($inStock[$size]);
+            $buttonClass = 'product-size-btn' . ($isInStock ? ' product-size-btn--in-stock' : '');
+            ?>
+            <button
+                type="button"
+                class="<?= $buttonClass ?>"
+                data-size="<?= Html::encode($size) ?>"
+                aria-pressed="<?= $isInStock ? 'true' : 'false' ?>"
+            ><?= Html::encode($size) ?></button>
+        <?php endforeach ?>
+    </div>
+    <div id="product-size-inputs" class="d-none">
+        <?php foreach ($model->sizeValuesInStock as $size): ?>
+            <?php if (in_array($size, $sizeOptions, true)): ?>
+                <input type="hidden" name="<?= Html::encode($inputName) ?>" value="<?= Html::encode($size) ?>">
+            <?php endif ?>
+        <?php endforeach ?>
+    </div>
 </div>

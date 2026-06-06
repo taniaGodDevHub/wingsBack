@@ -420,6 +420,7 @@ a.desc:after {
     justify-content: center;
     line-height: 1;
     opacity: 0.92;
+    pointer-events: auto;
 }
 
 #product-images-carousel-wrap .product-image-delete-btn svg {

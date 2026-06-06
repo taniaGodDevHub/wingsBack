@@ -173,12 +173,17 @@ final class ProductImageUploadService
 
     private function removeLocalFileIfOwned(string $imageUrl): void
     {
-        $path = parse_url($imageUrl, PHP_URL_PATH);
-        if (!is_string($path) || !str_contains($path, '/uploads/products/')) {
-            return;
+        if (str_contains($imageUrl, 'uploads/products/')) {
+            $filename = basename($imageUrl);
+        } else {
+            $path = parse_url($imageUrl, PHP_URL_PATH);
+            if (!is_string($path) || !str_contains($path, '/uploads/products/')) {
+                return;
+            }
+
+            $filename = basename($path);
         }
 
-        $filename = basename($path);
         if ($filename === '' || $filename === '.' || $filename === '..') {
             return;
         }

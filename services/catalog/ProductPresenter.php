@@ -35,7 +35,7 @@ final class ProductPresenter
             $item = self::baseItem($product);
             $item['images'] = self::imagesDetailed($product);
             $item['sizes'] = $product->getSizeValues();
-            $item['colors'] = $product->getColorsData();
+            $item['color'] = $product->getColorData();
             $item['gender'] = $product->gender;
 
             return $item;
