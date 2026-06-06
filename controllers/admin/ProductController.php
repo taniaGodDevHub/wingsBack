@@ -11,6 +11,7 @@ use app\models\Category;
 use app\models\FavoriteItem;
 use app\models\Gender;
 use app\models\Product;
+use app\models\ProductSize;
 use app\services\ProductImageUploadService;
 use Yii;
 use yii\data\ActiveDataProvider;
@@ -74,9 +75,10 @@ class ProductController extends BaseAdminController
         $model = new Product();
         $model->is_available = true;
 
-        if ($model->load(Yii::$app->request->post()) && $model->save()) {
+        if ($this->loadProductForm($model) && $model->save()) {
             $this->saveProductCategory($model);
             $this->saveProductFeatureValues($model);
+            $this->saveProductSizes($model);
             $this->processImageUploads($model);
             Yii::$app->session->setFlash('success', Yii::t('app', 'Saved successfully.'));
 
@@ -109,9 +111,10 @@ class ProductController extends BaseAdminController
     {
         $model = $this->findModel($id);
 
-        if ($model->load(Yii::$app->request->post()) && $model->save()) {
+        if ($this->loadProductForm($model) && $model->save()) {
             $this->saveProductCategory($model);
             $this->saveProductFeatureValues($model);
+            $this->saveProductSizes($model);
             $this->processImageUploads($model);
             Yii::$app->session->setFlash('success', Yii::t('app', 'Saved successfully.'));
 
@@ -219,6 +222,20 @@ class ProductController extends BaseAdminController
         ]);
     }
 
+    private function loadProductForm(Product $model): bool
+    {
+        if (!$model->load(Yii::$app->request->post())) {
+            return false;
+        }
+
+        $post = Yii::$app->request->post('Product', []);
+        if (!isset($post['sizeValuesInStock'])) {
+            $model->sizeValuesInStock = [];
+        }
+
+        return true;
+    }
+
     private function saveProductCategory(Product $product): void
     {
         $product->unlinkAll('categories', true);
@@ -249,6 +266,26 @@ class ProductController extends BaseAdminController
             if ($value !== null) {
                 $product->link('featureValues', $value);
             }
+        }
+    }
+
+    private function saveProductSizes(Product $product): void
+    {
+        ProductSize::deleteAll(['product_id' => $product->id]);
+
+        $values = is_array($product->sizeValuesInStock) ? $product->sizeValuesInStock : [];
+        $allowed = array_flip(ProductSize::getDistinctSizeValues());
+
+        foreach (array_unique($values) as $sizeValue) {
+            $sizeValue = trim((string) $sizeValue);
+            if ($sizeValue === '' || !isset($allowed[$sizeValue])) {
+                continue;
+            }
+
+            $size = new ProductSize();
+            $size->product_id = (int) $product->id;
+            $size->size_value = $sizeValue;
+            $size->save(false);
         }
     }
 

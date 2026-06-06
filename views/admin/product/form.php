@@ -16,6 +16,7 @@ $this->params['breadcrumbs'][] = $this->title;
 $this->registerJsFile('@web/js/admin-product-images.js', ['depends' => [\yii\bootstrap5\BootstrapPluginAsset::class], 'position' => View::POS_END]);
 $this->registerJsFile('@web/js/admin-product-slug.js', ['depends' => [\yii\web\JqueryAsset::class], 'position' => View::POS_END]);
 $this->registerJsFile('@web/js/admin-product-blago.js', ['depends' => [\yii\web\JqueryAsset::class], 'position' => View::POS_END]);
+$this->registerJsFile('@web/js/admin-product-sizes.js', ['depends' => [\yii\web\JqueryAsset::class], 'position' => View::POS_END]);
 
 $canManageImages = !$model->isNewRecord;
 $redirectAction = $model->isNewRecord ? 'create' : 'update';
@@ -41,13 +42,10 @@ $redirectAction = $model->isNewRecord ? 'create' : 'update';
                     <?php endif ?>
                 </div>
                 <div class="row">
-                    <div class="col-12 col-md-4">
-                        <?= $form->field($model, 'is_available')->checkbox() ?>
-                    </div>
-                    <div class="col-12 col-md-4">
+                    <div class="col-12 col-md-6">
                         <?= $form->field($model, 'is_bestseller')->checkbox() ?>
                     </div>
-                    <div class="col-12 col-md-4">
+                    <div class="col-12 col-md-6">
                         <?= $form->field($model, 'is_featured_home')->checkbox() ?>
                     </div>
                 </div>
@@ -78,6 +76,8 @@ $redirectAction = $model->isNewRecord ? 'create' : 'update';
                         <?= $this->render('_blagoField', ['form' => $form, 'model' => $model]) ?>
                     </div>
                 </div>
+
+                <?= $this->render('_sizeField', ['model' => $model]) ?>
                 
                 <?= $this->render('_featureFields', [
                     'form' => $form,

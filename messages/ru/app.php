@@ -135,6 +135,8 @@ return [
     'Featured sort order' => 'Порядок на главной',
     'Bestseller rank' => 'Рейтинг в хитах',
     'Gender' => 'Пол',
+    'Sizes in stock' => 'Размеры в наличии',
+    'No sizes in catalog yet.' => 'В каталоге пока нет размеров.',
     'Search text' => 'Текст для поиска',
     'Created at' => 'Дата создания',
     'Updated at' => 'Дата изменения',

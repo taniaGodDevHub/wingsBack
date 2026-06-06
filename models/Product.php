@@ -28,6 +28,7 @@ use yii\db\ActiveRecord;
  * @property int $updated_at
  * @property int|null $categoryId
  * @property array<int, int|string> $featureValueByFeatureId feature_id => feature_value_id
+ * @property string[] $sizeValuesInStock
  */
 class Product extends ActiveRecord
 {
@@ -42,6 +43,9 @@ class Product extends ActiveRecord
 
     /** @var array<int, int|string> */
     public array $featureValueByFeatureId = [];
+
+    /** @var string[] */
+    public array $sizeValuesInStock = [];
     public static function tableName(): string
     {
         return '{{%product}}';
@@ -78,7 +82,7 @@ class Product extends ActiveRecord
             [['brand', 'product_code'], 'string', 'max' => 255],
             [['slug'], 'unique'],
             [['categoryId'], 'integer'],
-            [['featureValueByFeatureId'], 'safe'],
+            [['featureValueByFeatureId', 'sizeValuesInStock'], 'safe'],
         ];
     }
 
@@ -91,6 +95,9 @@ class Product extends ActiveRecord
         }
         if ($this->isRelationPopulated('featureValues')) {
             $this->syncFeatureValueSelectionsFromRelation();
+        }
+        if ($this->isRelationPopulated('sizes')) {
+            $this->sizeValuesInStock = $this->getSizeValues();
         }
 
         $this->blago_unit = self::BLAGO_UNIT_RUB;
@@ -117,6 +124,7 @@ class Product extends ActiveRecord
             'bestseller_rank' => Yii::t('app', 'Bestseller rank'),
             'gender' => Yii::t('app', 'Gender'),
             'categoryId' => Yii::t('app', 'Category'),
+            'sizeValuesInStock' => Yii::t('app', 'Sizes in stock'),
             'search_text' => Yii::t('app', 'Search text'),
             'created_at' => Yii::t('app', 'Created at'),
             'updated_at' => Yii::t('app', 'Updated at'),
