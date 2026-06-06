@@ -13,6 +13,7 @@
 
 /config/db.php
 /config/params.php
+/config/env-local.php
 # Environment files
 .env
 .env.local
