@@ -11,11 +11,14 @@ use app\models\Category;
 use app\models\Color;
 use app\models\FavoriteItem;
 use app\models\Gender;
+use app\models\OrderItem;
 use app\models\Product;
 use app\models\ProductSize;
+use app\models\ShopOrder;
 use app\services\ProductImageUploadService;
 use Yii;
 use yii\data\ActiveDataProvider;
+use yii\db\IntegrityException;
 use yii\filters\VerbFilter;
 use yii\web\ForbiddenHttpException;
 use yii\web\NotFoundHttpException;
@@ -96,15 +99,19 @@ class ProductController extends BaseAdminController
     {
         $model = $this->findModel($id);
 
-        foreach ($model->images as $image) {
-            $this->imageUpload()->deleteImage($image);
+        try {
+            $this->deleteProduct($model);
+            Yii::$app->session->setFlash('success', Yii::t('app', 'Product deleted.'));
+        } catch (IntegrityException $e) {
+            Yii::error($e->getMessage(), __METHOD__);
+            Yii::$app->session->setFlash(
+                'error',
+                Yii::t('app', 'Cannot delete product: it is used in orders or other data.'),
+            );
+        } catch (\Throwable $e) {
+            Yii::error($e, __METHOD__);
+            Yii::$app->session->setFlash('error', Yii::t('app', 'Failed to delete product.'));
         }
-
-        CartItem::deleteAll(['product_id' => $id]);
-        FavoriteItem::deleteAll(['product_id' => $id]);
-        $model->delete();
-
-        Yii::$app->session->setFlash('success', Yii::t('app', 'Product deleted.'));
 
         return $this->redirect(['index']);
     }
@@ -398,6 +405,45 @@ class ProductController extends BaseAdminController
         if ($errors !== []) {
             Yii::$app->session->setFlash('error', implode(' ', $errors));
         }
+    }
+
+    private function deleteProduct(Product $product): void
+    {
+        $id = (int) $product->id;
+        $transaction = Yii::$app->db->beginTransaction();
+
+        try {
+            foreach ($product->images as $image) {
+                $this->imageUpload()->deleteImage($image);
+            }
+
+            CartItem::deleteAll(['product_id' => $id]);
+            FavoriteItem::deleteAll(['product_id' => $id]);
+            $this->removeProductFromDraftOrders($id);
+
+            if (!$product->delete()) {
+                throw new \RuntimeException('Product delete returned false.');
+            }
+
+            $transaction->commit();
+        } catch (\Throwable $e) {
+            $transaction->rollBack();
+            throw $e;
+        }
+    }
+
+    private function removeProductFromDraftOrders(int $productId): void
+    {
+        $draftOrderIds = ShopOrder::find()
+            ->select('id')
+            ->where(['status' => ShopOrder::STATUS_DRAFT])
+            ->column();
+
+        if ($draftOrderIds === []) {
+            return;
+        }
+
+        OrderItem::deleteAll(['and', ['product_id' => $productId], ['order_id' => $draftOrderIds]]);
     }
 
     private function imageUpload(): ProductImageUploadService

@@ -110,6 +110,8 @@ return [
     'Banner not found.' => 'Баннер не найден.',
     'Product not found.' => 'Товар не найден.',
     'Product deleted.' => 'Товар удалён.',
+    'Failed to delete product.' => 'Не удалось удалить товар.',
+    'Cannot delete product: it is used in orders or other data.' => 'Нельзя удалить товар: он используется в заказах или других данных.',
     'Are you sure you want to delete this product?' => 'Удалить этот товар?',
     'Yes' => 'Да',
     'No' => 'Нет',
