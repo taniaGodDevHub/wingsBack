@@ -76,7 +76,8 @@ class Product extends ActiveRecord
             [['blago_unit'], 'in', 'range' => [self::BLAGO_UNIT_RUB, self::BLAGO_UNIT_PERCENT]],
             [['blago_unit', 'blago_input'], 'safe'],
             [['is_available', 'is_bestseller', 'is_featured_home'], 'boolean'],
-            [['featured_sort', 'bestseller_rank'], 'integer'],
+            [['featured_sort', 'bestseller_rank'], 'default', 'value' => 0],
+            [['featured_sort', 'bestseller_rank'], 'integer', 'min' => 0],
             [['gender'], 'string', 'max' => 16],
             [['gender'], 'in', 'range' => static fn (): array => Gender::getActiveCodes(), 'skipOnEmpty' => true],
             [['brand', 'product_code'], 'string', 'max' => 255],
@@ -256,6 +257,8 @@ class Product extends ActiveRecord
 
         $this->blago = $this->resolveBlagoAmount();
         $this->search_text = mb_strtolower($this->name . ' ' . $this->slug);
+        $this->featured_sort = (int) ($this->featured_sort ?? 0);
+        $this->bestseller_rank = (int) ($this->bestseller_rank ?? 0);
 
         return true;
     }

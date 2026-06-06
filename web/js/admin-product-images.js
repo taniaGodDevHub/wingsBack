@@ -3,13 +3,20 @@
 
     const galleryWrapSelector = '#product-images-carousel-wrap';
 
+    function getGalleryManager(wrap) {
+        if (!wrap._productImagesManager) {
+            wrap._productImagesManager = new ProductImagesManager(wrap);
+        }
+        return wrap._productImagesManager;
+    }
+
     document.querySelectorAll('.product-images-file-input').forEach(function (input) {
         input.addEventListener('change', function () {
             const wrap = document.querySelector(galleryWrapSelector);
             if (!wrap) {
                 return;
             }
-            const manager = new ProductImagesManager(wrap);
+            const manager = getGalleryManager(wrap);
             manager.syncServerImagesFromDom();
             manager.setPendingFiles(Array.from(input.files));
             manager.render();
@@ -43,8 +50,7 @@
 
     function initGallery() {
         document.querySelectorAll(galleryWrapSelector).forEach(function (wrap) {
-            const manager = new ProductImagesManager(wrap);
-            manager.bindSortable();
+            getGalleryManager(wrap).bindSortable();
         });
     }
 
@@ -261,7 +267,7 @@
             if (!wrap) {
                 return;
             }
-            const manager = new ProductImagesManager(wrap);
+            const manager = getGalleryManager(wrap);
             const index = parseInt(btn.getAttribute('data-pending-index'), 10);
             if (Number.isNaN(index)) {
                 return;
@@ -332,8 +338,7 @@
                     fileInput.value = '';
                     const wrap = document.querySelector(galleryWrapSelector);
                     if (wrap) {
-                        const manager = new ProductImagesManager(wrap);
-                        manager.setPendingFiles([]);
+                        getGalleryManager(wrap).setPendingFiles([]);
                     }
                 })
                 .catch(function () {
@@ -504,9 +509,10 @@
             item.setAttribute('draggable', canDrag && (self.allowReorder || isPending) ? 'true' : 'false');
         });
 
-        if (this._sortableBound) {
+        if (this.galleryEl.dataset.sortableBound === '1') {
             return;
         }
+        this.galleryEl.dataset.sortableBound = '1';
         this._sortableBound = true;
 
         this.galleryEl.addEventListener('dragstart', function (event) {
@@ -666,6 +672,10 @@
         const urls = orderedIndexes.map(function (index) {
             return this.pendingUrls[index];
         }, this).filter(Boolean);
+
+        if (files.length !== this.pendingFiles.length || urls.length !== this.pendingUrls.length) {
+            return;
+        }
 
         this.pendingFiles = files;
         this.pendingUrls = urls;
