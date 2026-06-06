@@ -115,7 +115,29 @@ use yii\filters\VerbFilter;
  *         description="Дерево категорий",
  *         @OA\MediaType(
  *             mediaType="application/json",
- *             @OA\Schema(type="array", @OA\Items(ref="#/components/schemas/CategoryTreeNode"))
+ *             @OA\Schema(
+ *                 type="array",
+ *                 @OA\Items(ref="#/components/schemas/CategoryTreeNode"),
+ *                 example={{
+ *                     "id": 1,
+ *                     "name": "Women",
+ *                     "slug": "women",
+ *                     "related": true,
+ *                     "children": {{
+ *                         "id": 11,
+ *                         "name": "Dresses",
+ *                         "slug": "dresses",
+ *                         "related": true,
+ *                         "children": {{
+ *                             "id": 111,
+ *                             "name": "Evening Dresses",
+ *                             "slug": "evening-dresses",
+ *                             "related": false,
+ *                             "children": {}
+ *                         }}
+ *                     }}
+ *                 }}
+ *             )
  *         )
  *     )
  * )

@@ -124,14 +124,16 @@ class CatalogService
         }
 
         $relatedIds = null;
+        $contextCategoryId = null;
         if ($contextSlug !== null && $contextSlug !== '') {
             $context = Category::findBySlug($contextSlug);
             if ($context !== null) {
                 $relatedIds = $this->collectCategoryPathIds($context);
+                $contextCategoryId = (int) $context->id;
             }
         }
 
-        return $this->buildTreeNodes($byParent, 0, $relatedIds);
+        return $this->buildTreeNodes($byParent, 0, $relatedIds, $contextCategoryId);
     }
 
     /** @param array<string, mixed> $params */
@@ -172,16 +174,22 @@ class CatalogService
     }
 
     /** @param int[]|null $relatedIds */
-    private function buildTreeNodes(array $byParent, int $parentKey, ?array $relatedIds): array
-    {
+    private function buildTreeNodes(
+        array $byParent,
+        int $parentKey,
+        ?array $relatedIds,
+        ?int $contextCategoryId = null,
+    ): array {
         $nodes = [];
         foreach ($byParent[$parentKey] ?? [] as $category) {
-            $children = $this->buildTreeNodes($byParent, (int) $category->id, $relatedIds);
+            $categoryId = (int) $category->id;
+            $children = $this->buildTreeNodes($byParent, $categoryId, $relatedIds, $contextCategoryId);
             $nodes[] = [
-                'id' => (int) $category->id,
+                'id' => $categoryId,
                 'name' => $category->name,
                 'slug' => $category->slug,
-                'related' => $relatedIds === null ? true : in_array((int) $category->id, $relatedIds, true),
+                'related' => $relatedIds === null
+                    || (in_array($categoryId, $relatedIds, true) && $categoryId !== $contextCategoryId),
                 'children' => $children,
             ];
         }

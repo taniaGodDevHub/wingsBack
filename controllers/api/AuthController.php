@@ -725,6 +725,8 @@ class AuthController extends BaseApiController
             'username' => $user->username,
             'email' => $profile?->email,
             'name' => $profile?->name,
+            'f' => $profile?->f,
+            'i' => $profile?->i,
             'phone_number' => $profile?->phone_number,
         ];
     }

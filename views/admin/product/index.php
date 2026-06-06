@@ -3,6 +3,7 @@
 /** @var yii\web\View $this */
 /** @var yii\data\ActiveDataProvider $dataProvider */
 
+use app\models\Product;
 use yii\grid\GridView;
 use yii\helpers\Html;
 
@@ -14,6 +15,23 @@ $this->params['breadcrumbs'][] = $this->title;
     'dataProvider' => $dataProvider,
     'columns' => [
         'id',
+        [
+            'label' => Yii::t('app', 'Product photos'),
+            'format' => 'raw',
+            'value' => static function (Product $model): string {
+                $image = $model->images[0] ?? null;
+                if ($image === null) {
+                    return Html::tag('span', '—', ['class' => 'text-muted']);
+                }
+
+                return Html::img($image->publicUrl, [
+                    'alt' => $model->name,
+                    'style' => 'width:48px;height:48px;object-fit:cover;border-radius:4px',
+                ]);
+            },
+            'contentOptions' => ['class' => 'text-center', 'style' => 'width:60px'],
+            'headerOptions' => ['class' => 'text-center'],
+        ],
         'name',
         'slug',
         'price',
