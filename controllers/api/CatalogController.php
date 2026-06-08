@@ -157,7 +157,7 @@ use yii\filters\VerbFilter;
  *     @OA\Parameter(name="price_max", in="query", description="Максимальная цена", @OA\Schema(type="number")),
  *     @OA\Parameter(name="sort_by", in="query", description="Сортировка: price, created_at, popular", @OA\Schema(type="string", enum={"price","created_at","popular"})),
  *     @OA\Parameter(name="sort_order", in="query", description="Направление: asc или desc", @OA\Schema(type="string", default="desc", enum={"asc","desc"})),
- *     @OA\Parameter(name="feature_filters", in="query", description="JSON-объект фильтров по атрибутам: ключ — ID атрибута или color, значение — массив ID значений", @OA\Schema(type="string", example="{\"color\":[1001,1002],\"3\":[10,11]}")),
+ *     @OA\Parameter(name="feature_filters", in="query", description="JSON-объект фильтров по атрибутам: ключ — ID атрибута или color, значение — массив ID значений", @OA\Schema(type="string")),
  *     @OA\Response(
  *         response=200,
  *         description="Список товаров с фильтрами",
@@ -190,7 +190,7 @@ use yii\filters\VerbFilter;
  *     @OA\Parameter(name="price_max", in="query", description="Максимальная цена", @OA\Schema(type="number")),
  *     @OA\Parameter(name="sort_by", in="query", description="Сортировка: price, created_at, popular", @OA\Schema(type="string", enum={"price","created_at","popular"})),
  *     @OA\Parameter(name="sort_order", in="query", description="Направление: asc или desc", @OA\Schema(type="string", default="desc", enum={"asc","desc"})),
- *     @OA\Parameter(name="feature_filters", in="query", description="JSON-объект фильтров по атрибутам: ключ — ID атрибута или color, значение — массив ID значений", @OA\Schema(type="string", example="{\"color\":[1001,1002],\"3\":[10,11]}")),
+ *     @OA\Parameter(name="feature_filters", in="query", description="JSON-объект фильтров по атрибутам: ключ — ID атрибута или color, значение — массив ID значений", @OA\Schema(type="string")),
  *     @OA\Response(
  *         response=200,
  *         description="Список товаров категории",
