@@ -8,7 +8,9 @@ use app\controllers\admin\BaseAdminController;
 use yii\helpers\Html;
 use yii\helpers\Url;
 
-$settingsOpen = str_starts_with(Yii::$app->controller->route, 'admin/settings/');
+$pageSettingsOpen = str_starts_with(Yii::$app->controller->route, 'admin/settings/banner');
+$settingsOpen = str_starts_with(Yii::$app->controller->route, 'admin/settings/')
+    && !$pageSettingsOpen;
 $usersOpen = str_starts_with(Yii::$app->controller->route, 'admin/user/')
     || str_starts_with(Yii::$app->controller->route, 'admin/rbac/');
 
@@ -52,6 +54,13 @@ $usersOpen = str_starts_with(Yii::$app->controller->route, 'admin/user/')
                 ) ?>
             </li>
             <li class="side-nav-item">
+                <?= Html::a(
+                    '<i class="ri-pages-line"></i><span> ' . Yii::t('app', 'Page settings') . ' </span>',
+                    ['/admin/settings/banners'],
+                    ['class' => 'side-nav-link' . ($pageSettingsOpen ? ' active' : '')],
+                ) ?>
+            </li>
+            <li class="side-nav-item">
                 <a class="side-nav-link" data-bs-toggle="collapse" href="#sidebarSettings" aria-expanded="<?= $settingsOpen ? 'true' : 'false' ?>">
                     <i class="ri-settings-3-line"></i>
                     <span> <?= Yii::t('app', 'Settings') ?> </span>
@@ -70,9 +79,6 @@ $usersOpen = str_starts_with(Yii::$app->controller->route, 'admin/user/')
                         </li>
                         <li class="side-nav-item">
                             <?= Html::a(Yii::t('app', 'Attribute values'), ['/admin/settings/feature-values'], ['class' => 'side-nav-link']) ?>
-                        </li>
-                        <li class="side-nav-item">
-                            <?= Html::a(Yii::t('app', 'Home banners'), ['/admin/settings/banners'], ['class' => 'side-nav-link']) ?>
                         </li>
                     </ul>
                 </div>

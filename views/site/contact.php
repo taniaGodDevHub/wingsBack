@@ -9,7 +9,6 @@ use yii\bootstrap5\Html;
 use yii\captcha\Captcha;
 
 $this->title = Yii::t('app', 'Contact us');
-$this->params['breadcrumbs'][] = $this->title;
 $htmlIcon = <<<HTML
 {label}<div class="input-group"><span class="input-group-text" aria-hidden="true">%s</span>{input}</div>{error}{hint}
 HTML;

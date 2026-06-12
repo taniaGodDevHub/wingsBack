@@ -158,12 +158,6 @@
             return;
         }
 
-        const breadcrumb = container.querySelector('.breadcrumb');
-        if (breadcrumb) {
-            breadcrumb.insertAdjacentElement('afterend', alertEl);
-            return;
-        }
-
         container.prepend(alertEl);
     }
 

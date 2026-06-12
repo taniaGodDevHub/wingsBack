@@ -219,12 +219,79 @@ use OpenApi\Annotations as OA;
  * )
  *
  * @OA\Schema(
+ *     schema="HomePageContentResponse",
+ *     description="Визуальный контент главной страницы: баннеры, блок «О нас» и категории по полу",
+ *     @OA\Property(
+ *         property="banners",
+ *         type="array",
+ *         description="Активные баннеры слайд-шоу, отсортированные по sort_order",
+ *         @OA\Items(ref="#/components/schemas/ShowcaseBanner")
+ *     ),
+ *     @OA\Property(
+ *         property="about",
+ *         ref="#/components/schemas/ShowcaseAbout",
+ *         nullable=true,
+ *         description="Блок «О нас»; null, если не заполнены заголовок и изображение"
+ *     ),
+ *     @OA\Property(
+ *         property="categories",
+ *         type="array",
+ *         description="Блоки категорий по полу (мужское/женское) с изображениями",
+ *         @OA\Items(ref="#/components/schemas/ShowcaseHomeCategory")
+ *     )
+ * )
+ *
+ * @OA\Schema(
  *     schema="ShowcaseResponse",
  *     @OA\Property(property="page", type="integer"),
  *     @OA\Property(property="pages", type="integer"),
  *     @OA\Property(property="total", type="integer"),
  *     @OA\Property(property="items", type="array", @OA\Items(ref="#/components/schemas/CatalogProductShowcase")),
- *     @OA\Property(property="banners", type="array", @OA\Items(type="string"))
+ *     @OA\Property(
+ *         property="banners",
+ *         type="array",
+ *         description="Баннеры главной (дублирует `/api/catalog/home`)",
+ *         @OA\Items(ref="#/components/schemas/ShowcaseBanner")
+ *     ),
+ *     @OA\Property(
+ *         property="about",
+ *         ref="#/components/schemas/ShowcaseAbout",
+ *         nullable=true,
+ *         description="Блок «О нас»; присутствует только если заполнен"
+ *     ),
+ *     @OA\Property(
+ *         property="categories",
+ *         type="array",
+ *         description="Категории по полу с изображениями; присутствует только если есть загруженные изображения",
+ *         @OA\Items(ref="#/components/schemas/ShowcaseHomeCategory")
+ *     )
+ * )
+ *
+ * @OA\Schema(
+ *     schema="ShowcaseHomeCategory",
+ *     description="Блок категории на главной по полу",
+ *     @OA\Property(property="gender", type="string", enum={"male","female"}, example="male", description="Код пола"),
+ *     @OA\Property(property="name", type="string", example="Мужской", description="Отображаемое название из справочника пола"),
+ *     @OA\Property(property="image_url", type="string", format="uri", example="https://example.com/uploads/home-categories/category_male_a1b2c3d4.webp")
+ * )
+ *
+ * @OA\Schema(
+ *     schema="ShowcaseAbout",
+ *     description="Блок «О нас» на главной",
+ *     @OA\Property(property="title", type="string", example="О нас"),
+ *     @OA\Property(property="image_url", type="string", format="uri", example="https://example.com/uploads/about/about_a1b2c3d4.webp")
+ * )
+ *
+ * @OA\Schema(
+ *     schema="ShowcaseBanner",
+ *     description="Баннер слайд-шоу на главной",
+ *     @OA\Property(property="id", type="integer", example=1),
+ *     @OA\Property(property="image_url", type="string", format="uri", example="https://example.com/uploads/banners/banner_a1b2c3d4.webp"),
+ *     @OA\Property(property="title", type="string", nullable=true, example="Новая коллекция"),
+ *     @OA\Property(property="text", type="string", nullable=true, example="Скидки до 30% на весенние модели"),
+ *     @OA\Property(property="button_text", type="string", example="Перейти в каталог"),
+ *     @OA\Property(property="button_url", type="string", nullable=true, example="/catalog"),
+ *     @OA\Property(property="sort_order", type="integer", example=1)
  * )
  *
  * @OA\Schema(

@@ -6,7 +6,6 @@ declare(strict_types=1);
 /** @var string $content */
 
 use app\widgets\Alert;
-use yii\bootstrap5\Breadcrumbs;
 use yii\helpers\Html;
 
 $this->render('_head');
@@ -54,9 +53,6 @@ $initialTheme = 'light';
         <div class="content-page">
             <div class="content">
                 <div class="container-fluid">
-                    <?php if (!empty($this->params['breadcrumbs'])): ?>
-                        <?= Breadcrumbs::widget(['links' => $this->params['breadcrumbs']]) ?>
-                    <?php endif ?>
                     <?= Alert::widget() ?>
                     <?= $content ?>
                 </div>

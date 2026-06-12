@@ -16,10 +16,28 @@ use yii\filters\VerbFilter;
  *     description="Витрина, поиск и категории товаров"
  * )
  *
+ * @OA\Tag(
+ *     name="Главная страница",
+ *     description="Баннеры, блок «О нас» и изображения категорий по полу"
+ * )
+ *
+ * @OA\Get(
+ *     path="/api/catalog/home",
+ *     summary="Контент главной страницы",
+ *     description="Возвращает баннеры слайд-шоу, блок «О нас» и изображения категорий (мужское/женское). Авторизация не требуется. Для загрузки только визуального контента главной предпочтительнее этот эндпоинт; тот же набор полей также дублируется в ответе `/api/catalog/showcase`.",
+ *     operationId="catalogHomeContent",
+ *     tags={"Главная страница"},
+ *     @OA\Response(
+ *         response=200,
+ *         description="Баннеры, блок «О нас» и категории главной",
+ *         @OA\JsonContent(ref="#/components/schemas/HomePageContentResponse")
+ *     )
+ * )
+ *
  * @OA\Get(
  *     path="/api/catalog/showcase",
  *     summary="Получить витрину главной страницы",
- *     description="actionShowcase — постраничный список товаров для главной с баннерами",
+ *     description="Постраничный список товаров для главной. В ответе также могут присутствовать `banners`, `about` и `categories` — см. схему `ShowcaseResponse`. Только визуальный контент главной: `GET /api/catalog/home`.",
  *     operationId="actionShowcase",
  *     tags={"Каталог"},
  *     @OA\Parameter(
@@ -155,8 +173,14 @@ use yii\filters\VerbFilter;
  *     @OA\Parameter(name="gender", in="query", description="Пол: male, female, unisex", @OA\Schema(type="string", enum={"male","female","unisex"})),
  *     @OA\Parameter(name="price_min", in="query", description="Минимальная цена", @OA\Schema(type="number")),
  *     @OA\Parameter(name="price_max", in="query", description="Максимальная цена", @OA\Schema(type="number")),
- *     @OA\Parameter(name="sort_by", in="query", description="Сортировка: price, created_at, popular", @OA\Schema(type="string", enum={"price","created_at","popular"})),
- *     @OA\Parameter(name="sort_order", in="query", description="Направление: asc или desc", @OA\Schema(type="string", default="desc", enum={"asc","desc"})),
+ *     @OA\Parameter(
+ *         name="sort",
+ *         in="query",
+ *         description="Сортировка (приоритетнее sort_by): popular — по популярности; price_asc — по возрастанию цены; price_desc — по убыванию цены; blago — больше блага (product.blago DESC)",
+ *         @OA\Schema(type="string", default="popular", enum={"popular","price_asc","price_desc","blago"})
+ *     ),
+ *     @OA\Parameter(name="sort_by", in="query", description="Устаревший вариант: price, popular, blago, created_at", @OA\Schema(type="string", enum={"price","popular","blago","created_at"})),
+ *     @OA\Parameter(name="sort_order", in="query", description="Направление для sort_by=price или created_at", @OA\Schema(type="string", default="desc", enum={"asc","desc"})),
  *     @OA\Parameter(name="feature_filters", in="query", description="JSON-объект фильтров по атрибутам: ключ — ID атрибута или color, значение — массив ID значений", @OA\Schema(type="string")),
  *     @OA\Response(
  *         response=200,
@@ -188,8 +212,14 @@ use yii\filters\VerbFilter;
  *     @OA\Parameter(name="gender", in="query", description="Пол: male, female, unisex", @OA\Schema(type="string", enum={"male","female","unisex"})),
  *     @OA\Parameter(name="price_min", in="query", description="Минимальная цена", @OA\Schema(type="number")),
  *     @OA\Parameter(name="price_max", in="query", description="Максимальная цена", @OA\Schema(type="number")),
- *     @OA\Parameter(name="sort_by", in="query", description="Сортировка: price, created_at, popular", @OA\Schema(type="string", enum={"price","created_at","popular"})),
- *     @OA\Parameter(name="sort_order", in="query", description="Направление: asc или desc", @OA\Schema(type="string", default="desc", enum={"asc","desc"})),
+ *     @OA\Parameter(
+ *         name="sort",
+ *         in="query",
+ *         description="Сортировка (приоритетнее sort_by): popular — по популярности; price_asc — по возрастанию цены; price_desc — по убыванию цены; blago — больше блага (product.blago DESC)",
+ *         @OA\Schema(type="string", default="popular", enum={"popular","price_asc","price_desc","blago"})
+ *     ),
+ *     @OA\Parameter(name="sort_by", in="query", description="Устаревший вариант: price, popular, blago, created_at", @OA\Schema(type="string", enum={"price","popular","blago","created_at"})),
+ *     @OA\Parameter(name="sort_order", in="query", description="Направление для sort_by=price или created_at", @OA\Schema(type="string", default="desc", enum={"asc","desc"})),
  *     @OA\Parameter(name="feature_filters", in="query", description="JSON-объект фильтров по атрибутам: ключ — ID атрибута или color, значение — массив ID значений", @OA\Schema(type="string")),
  *     @OA\Response(
  *         response=200,
@@ -218,6 +248,7 @@ class CatalogController extends BaseApiController
         $behaviors['verbs'] = [
             'class' => VerbFilter::class,
             'actions' => [
+                'home' => ['GET'],
                 'showcase' => ['GET'],
                 'universal' => ['GET'],
                 'simple-tree' => ['GET'],
@@ -227,6 +258,11 @@ class CatalogController extends BaseApiController
         ];
 
         return $behaviors;
+    }
+
+    public function actionHome(): array
+    {
+        return $this->catalog->homePageContent();
     }
 
     public function actionShowcase(): array

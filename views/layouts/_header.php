@@ -23,13 +23,17 @@ if (BaseAdminController::canManageCatalog()) {
     ];
 
     $items[] = [
+        'label' => Yii::t('app', 'Page settings'),
+        'url' => ['/admin/settings/banners'],
+    ];
+
+    $items[] = [
         'label' => Yii::t('app', 'Settings'),
         'items' => [
             ['label' => Yii::t('app', 'Categories'), 'url' => ['/admin/settings/categories']],
             ['label' => Yii::t('app', 'Colors'), 'url' => ['/admin/settings/colors']],
             ['label' => Yii::t('app', 'Attributes'), 'url' => ['/admin/settings/features']],
             ['label' => Yii::t('app', 'Attribute values'), 'url' => ['/admin/settings/feature-values']],
-            ['label' => Yii::t('app', 'Home banners'), 'url' => ['/admin/settings/banners']],
         ],
     ];
 }

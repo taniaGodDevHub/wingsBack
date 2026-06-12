@@ -10,8 +10,6 @@ use yii\bootstrap5\Html;
 use yii\helpers\Url;
 
 $this->title = Yii::t('app', 'Edit profile');
-$this->params['breadcrumbs'][] = ['label' => Yii::t('app', 'Profile'), 'url' => ['edit']];
-$this->params['breadcrumbs'][] = $this->title;
 
 $profile = $user->profile;
 $displayName = trim(($profile?->i ?? $profile?->name ?? '') . ' ' . ($profile?->f ?? $profile?->surname ?? ''));

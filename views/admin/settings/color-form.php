@@ -6,8 +6,6 @@
 use yii\bootstrap5\ActiveForm;
 use yii\helpers\Html;
 
-$this->params['breadcrumbs'][] = ['label' => Yii::t('app', 'Colors'), 'url' => ['colors']];
-$this->params['breadcrumbs'][] = $this->title;
 ?>
 <h1 class="h3 mb-4"><?= Html::encode($this->title) ?></h1>
 <?php $form = ActiveForm::begin(); ?>

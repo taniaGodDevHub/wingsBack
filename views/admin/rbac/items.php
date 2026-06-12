@@ -6,8 +6,6 @@
 
 use yii\helpers\Html;
 
-$this->params['breadcrumbs'][] = Yii::t('app', 'Users');
-$this->params['breadcrumbs'][] = $title;
 ?>
 <div class="admin-rbac-items">
     <h1 class="h3 mb-4"><?= Html::encode($title) ?></h1>

@@ -9,7 +9,9 @@ use app\models\CatalogFeature;
 use app\models\CatalogFeatureValue;
 use app\models\Category;
 use app\models\Color;
+use app\models\HomeAbout;
 use app\models\HomeBanner;
+use app\models\HomeGenderBlock;
 use app\models\Product;
 use Yii;
 use yii\db\ActiveQuery;
@@ -358,23 +360,61 @@ class CatalogService
     /** @param array<string, mixed> $params */
     private function applySort(ActiveQuery $query, array $params): void
     {
-        $sortBy = (string) ($params['sort_by'] ?? '');
+        $sort = $this->resolveSort($params);
+
+        switch ($sort['by']) {
+            case 'price':
+                $query->orderBy(['p.price' => $sort['order'], 'p.id' => SORT_ASC]);
+                return;
+            case 'created_at':
+                $query->orderBy(['p.created_at' => $sort['order'], 'p.id' => SORT_ASC]);
+                return;
+            case 'blago':
+                $query->orderBy(['p.blago' => SORT_DESC, 'p.id' => SORT_ASC]);
+                return;
+            case 'popular':
+            default:
+                $query->orderBy([
+                    'p.is_bestseller' => SORT_DESC,
+                    'p.bestseller_rank' => SORT_ASC,
+                    'p.id' => SORT_ASC,
+                ]);
+        }
+    }
+
+    /**
+     * @param array<string, mixed> $params
+     * @return array{by: string, order: int}
+     */
+    private function resolveSort(array $params): array
+    {
+        $sort = strtolower(trim((string) ($params['sort'] ?? '')));
+        if ($sort !== '') {
+            return match ($sort) {
+                'price_asc' => ['by' => 'price', 'order' => SORT_ASC],
+                'price_desc' => ['by' => 'price', 'order' => SORT_DESC],
+                'blago' => ['by' => 'blago', 'order' => SORT_DESC],
+                'popular', 'popularity' => ['by' => 'popular', 'order' => SORT_DESC],
+                default => ['by' => 'popular', 'order' => SORT_DESC],
+            };
+        }
+
+        $sortBy = strtolower(trim((string) ($params['sort_by'] ?? '')));
+        if ($sortBy === '') {
+            return ['by' => 'popular', 'order' => SORT_DESC];
+        }
+
+        if ($sortBy === 'blago') {
+            return ['by' => 'blago', 'order' => SORT_DESC];
+        }
+
+        if ($sortBy === 'popular') {
+            return ['by' => 'popular', 'order' => SORT_DESC];
+        }
+
         $sortOrder = strtolower((string) ($params['sort_order'] ?? 'desc')) === 'asc' ? SORT_ASC : SORT_DESC;
 
-        if ($sortBy === 'price') {
-            $query->orderBy(['p.price' => $sortOrder]);
-            return;
-        }
-        if ($sortBy === 'created_at') {
-            $query->orderBy(['p.created_at' => $sortOrder]);
-            return;
-        }
-        if ($sortBy === 'popular') {
-            $query->orderBy(['p.is_bestseller' => SORT_DESC, 'p.bestseller_rank' => SORT_ASC]);
-            return;
-        }
-
-        $query->orderBy(['p.is_bestseller' => SORT_DESC, 'p.created_at' => SORT_DESC]);
+        return ['by' => $sortBy, 'order' => $sortOrder];
     }
 
     private function paginateProducts(ActiveQuery $query, int $page, int $pageSize, bool $showcase): array
@@ -392,12 +432,7 @@ class CatalogService
                 'items' => [],
             ];
             if ($showcase) {
-                $result['banners'] = HomeBanner::find()
-                    ->select('image_url')
-                    ->where(['is_active' => true])
-                    ->orderBy(['sort_order' => SORT_ASC])
-                    ->limit(10)
-                    ->column();
+                $this->appendShowcaseBlocks($result);
             }
 
             return $result;
@@ -420,15 +455,78 @@ class CatalogService
         ];
 
         if ($showcase) {
-            $result['banners'] = HomeBanner::find()
-                ->select('image_url')
-                ->where(['is_active' => true])
-                ->orderBy(['sort_order' => SORT_ASC])
-                ->limit(10)
-                ->column();
+            $this->appendShowcaseBlocks($result);
         }
 
         return $result;
+    }
+
+    /** @return array{banners: list<array<string, mixed>>, about: array<string, mixed>|null, categories: list<array<string, mixed>>} */
+    public function homePageContent(): array
+    {
+        return [
+            'banners' => $this->activeBannersForApi(),
+            'about' => $this->homeAboutForApi(),
+            'categories' => $this->homeGenderBlocksForApi(),
+        ];
+    }
+
+    /** @param array<string, mixed> $result */
+    private function appendShowcaseBlocks(array &$result): void
+    {
+        $content = $this->homePageContent();
+        $result['banners'] = $content['banners'];
+        if ($content['about'] !== null) {
+            $result['about'] = $content['about'];
+        }
+        if ($content['categories'] !== []) {
+            $result['categories'] = $content['categories'];
+        }
+    }
+
+    /** @return array{title: string, image_url: string}|null */
+    private function homeAboutForApi(): ?array
+    {
+        $about = HomeAbout::findOne(1);
+        if ($about === null || $about->title === '' || $about->getImagePublicUrl() === null) {
+            return null;
+        }
+
+        return $about->toApiArray();
+    }
+
+    /** @return list<array<string, mixed>> */
+    private function homeGenderBlocksForApi(): array
+    {
+        $blocks = HomeGenderBlock::find()
+            ->orderBy(['id' => SORT_ASC])
+            ->all();
+
+        $result = [];
+        foreach ($blocks as $block) {
+            if ($block->getImagePublicUrl() === null) {
+                continue;
+            }
+
+            $result[] = $block->toApiArray();
+        }
+
+        return $result;
+    }
+
+    /** @return list<array<string, mixed>> */
+    private function activeBannersForApi(): array
+    {
+        $banners = HomeBanner::find()
+            ->where(['is_active' => true])
+            ->orderBy(['sort_order' => SORT_ASC, 'id' => SORT_ASC])
+            ->limit(10)
+            ->all();
+
+        return array_map(
+            static fn (HomeBanner $banner): array => $banner->toApiArray(),
+            $banners,
+        );
     }
 
     /** @param array<string, mixed> $params */

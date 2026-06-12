@@ -10,8 +10,6 @@ use yii\bootstrap5\ActiveForm;
 use yii\helpers\Html;
 use yii\web\View;
 
-$this->params['breadcrumbs'][] = ['label' => Yii::t('app', 'Products'), 'url' => ['index']];
-$this->params['breadcrumbs'][] = $this->title;
 
 $this->registerJsFile('@web/js/admin-product-images.js?v=4', ['depends' => [\yii\bootstrap5\BootstrapPluginAsset::class], 'position' => View::POS_END]);
 $this->registerJsFile('@web/js/admin-product-slug.js', ['depends' => [\yii\web\JqueryAsset::class], 'position' => View::POS_END]);

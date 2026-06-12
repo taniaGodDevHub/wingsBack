@@ -9,8 +9,6 @@ use app\models\CatalogFeature;
 use yii\bootstrap5\ActiveForm;
 use yii\helpers\Html;
 
-$this->params['breadcrumbs'][] = ['label' => Yii::t('app', 'Attribute values'), 'url' => ['feature-values']];
-$this->params['breadcrumbs'][] = $this->title;
 
 $colorFeatureId ??= CatalogFeature::find()
     ->select('id')

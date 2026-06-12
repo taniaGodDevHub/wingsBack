@@ -1,36 +1,27 @@
 <?php
 
 /** @var yii\web\View $this */
+/** @var string $tab */
+/** @var app\models\HomeAbout $aboutModel */
+/** @var array<string, app\models\HomeGenderBlock> $genderBlocks */
 /** @var yii\data\ActiveDataProvider $dataProvider */
 
-use yii\grid\GridView;
 use yii\helpers\Html;
+use yii\web\View;
 
-$this->params['breadcrumbs'][] = Yii::t('app', 'Settings');
-$this->params['breadcrumbs'][] = $this->title;
+$this->registerJsFile('@web/js/admin-image-preview.js', ['depends' => [\yii\web\JqueryAsset::class], 'position' => View::POS_END]);
 ?>
-<h1 class="h3 mb-4"><?= Html::encode($this->title) ?></h1>
-<p><?= Html::a(Yii::t('app', 'Create banner'), ['banner-form'], ['class' => 'btn btn-primary mb-3']) ?></p>
-<?= GridView::widget([
-    'dataProvider' => $dataProvider,
-    'columns' => [
-        'id',
-        'image_url:url',
-        'sort_order',
-        [
-            'attribute' => 'is_active',
-            'value' => static fn ($m) => $m->is_active ? Yii::t('app', 'Yes') : Yii::t('app', 'No'),
-        ],
-        [
-            'class' => yii\grid\ActionColumn::class,
-            'template' => '{update}',
-            'buttons' => [
-                'update' => static fn ($url, $model) => Html::a(
-                    Yii::t('app', 'Edit'),
-                    ['banner-form', 'id' => $model->id],
-                    ['class' => 'btn btn-sm btn-outline-secondary'],
-                ),
-            ],
-        ],
-    ],
-]) ?>
+<h1 class="h3 mb-2"><?= Html::encode($this->title) ?></h1>
+<p class="text-muted mb-3"><?= Yii::t('app', 'Manage home page content: banners, about us block and gender categories.') ?></p>
+
+<?= $this->render('_pageSettingsTabs', ['tab' => $tab]) ?>
+
+<div class="admin-page-settings-tab-content">
+    <?php if ($tab === 'main'): ?>
+        <?= $this->render('_tabMain', ['dataProvider' => $dataProvider]) ?>
+    <?php elseif ($tab === 'about'): ?>
+        <?= $this->render('_tabAbout', ['aboutModel' => $aboutModel]) ?>
+    <?php else: ?>
+        <?= $this->render('_tabCategories', ['genderBlocks' => $genderBlocks]) ?>
+    <?php endif ?>
+</div>

@@ -92,6 +92,7 @@ $config = [
                 'POST api/delivery/calculate-delivery' => 'api/delivery/calculate-delivery',
                 'GET result/done' => 'site/payment-done',
                 'GET result/error' => 'site/payment-error',
+                'GET api/catalog/home' => 'api/catalog/home',
                 'GET api/catalog/showcase' => 'api/catalog/showcase',
                 'GET api/catalog/search/universal' => 'api/catalog/universal',
                 'GET api/catalog/categories/simple-tree' => 'api/catalog/simple-tree',

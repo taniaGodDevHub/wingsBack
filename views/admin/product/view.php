@@ -6,9 +6,7 @@
 use yii\helpers\Html;
 use yii\web\View;
 
-$this->params['breadcrumbs'][] = ['label' => Yii::t('app', 'Products'), 'url' => ['index']];
 $this->registerJsFile('@web/js/admin-product-images.js?v=4', ['depends' => [\yii\bootstrap5\BootstrapPluginAsset::class], 'position' => View::POS_END]);
-$this->params['breadcrumbs'][] = $this->title;
 ?>
 <h1 class="h3 mb-4"><?= Html::encode($this->title) ?></h1>
 <div class="row">

@@ -7,8 +7,6 @@
 use yii\bootstrap5\ActiveForm;
 use yii\helpers\Html;
 
-$this->params['breadcrumbs'][] = Yii::t('app', 'Users');
-$this->params['breadcrumbs'][] = $this->title;
 ?>
 <div class="admin-rbac-assignments">
     <h1 class="h3 mb-4"><?= Html::encode($this->title) ?></h1>

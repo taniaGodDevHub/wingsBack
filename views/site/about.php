@@ -5,7 +5,6 @@
 use yii\helpers\Html;
 
 $this->title = Yii::t('app', 'About');
-$this->params['breadcrumbs'][] = $this->title;
 ?>
 <div class="site-about d-flex align-items-center justify-content-center text-center">
     <div class="site-about-content mx-auto">

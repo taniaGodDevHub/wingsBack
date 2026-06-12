@@ -8,12 +8,18 @@ use app\models\CatalogFeature;
 use app\models\CatalogFeatureValue;
 use app\models\Category;
 use app\models\Color;
+use app\models\HomeAbout;
 use app\models\HomeBanner;
+use app\models\HomeGenderBlock;
+use app\services\HomeAboutUploadService;
+use app\services\HomeBannerUploadService;
+use app\services\HomeGenderBlockUploadService;
 use Yii;
 use yii\data\ActiveDataProvider;
 use yii\web\ForbiddenHttpException;
 use yii\web\NotFoundHttpException;
 use yii\web\Response;
+use yii\web\UploadedFile;
 
 class SettingsController extends BaseAdminController
 {
@@ -151,16 +157,118 @@ class SettingsController extends BaseAdminController
         ]);
     }
 
-    public function actionBanners(): string
+    public function actionBanners(): string|Response
     {
-        $this->view->title = Yii::t('app', 'Home banners');
+        $this->view->title = Yii::t('app', 'Page settings');
+        $tab = $this->pageSettingsTab();
+        $aboutModel = HomeAbout::singleton();
+        $genderBlocks = HomeGenderBlock::blocksMap();
 
-        return $this->render('banners', [
+        if (Yii::$app->request->isPost) {
+            $section = (string) Yii::$app->request->post('settings-section', '');
+
+            if ($section === 'about' && $aboutModel->load(Yii::$app->request->post())) {
+                $aboutModel->imageFile = UploadedFile::getInstance($aboutModel, 'imageFile');
+
+                if ($aboutModel->validate()) {
+                    if ($aboutModel->imageFile !== null) {
+                        $uploadError = (new HomeAboutUploadService())->upload($aboutModel, $aboutModel->imageFile);
+                        if ($uploadError !== null) {
+                            Yii::$app->session->setFlash('error', $uploadError);
+
+                            return $this->render('banners', $this->pageSettingsViewParams($tab, $aboutModel, $genderBlocks));
+                        }
+                    }
+
+                    if ($aboutModel->save()) {
+                        Yii::$app->session->setFlash('success', Yii::t('app', 'About block saved successfully.'));
+
+                        return $this->redirect(['banners', 'tab' => 'about']);
+                    }
+                }
+
+                $tab = 'about';
+            }
+
+            if ($section === 'categories') {
+                $post = Yii::$app->request->post('HomeGenderBlock', []);
+                if (!is_array($post)) {
+                    $post = [];
+                }
+
+                foreach (HomeGenderBlock::CODES as $code) {
+                    $block = $genderBlocks[$code];
+                    if (isset($post[$code]) && is_array($post[$code])) {
+                        $block->setAttributes($post[$code]);
+                    }
+                    $block->imageFile = UploadedFile::getInstanceByName("HomeGenderBlock[{$code}][imageFile]");
+                }
+
+                $isValid = true;
+                foreach ($genderBlocks as $block) {
+                    if (!$block->validate()) {
+                        $isValid = false;
+                    }
+                }
+
+                if ($isValid) {
+                    $uploadService = new HomeGenderBlockUploadService();
+                    foreach ($genderBlocks as $block) {
+                        if ($block->imageFile === null) {
+                            continue;
+                        }
+
+                        $uploadError = $uploadService->upload($block, $block->imageFile);
+                        if ($uploadError !== null) {
+                            Yii::$app->session->setFlash('error', $uploadError);
+
+                            return $this->render('banners', $this->pageSettingsViewParams('categories', $aboutModel, $genderBlocks));
+                        }
+                    }
+
+                    $saved = true;
+                    foreach ($genderBlocks as $block) {
+                        if (!$block->save(false)) {
+                            $saved = false;
+                        }
+                    }
+
+                    if ($saved) {
+                        Yii::$app->session->setFlash('success', Yii::t('app', 'Category blocks saved successfully.'));
+
+                        return $this->redirect(['banners', 'tab' => 'categories']);
+                    }
+                }
+
+                $tab = 'categories';
+            }
+        }
+
+        return $this->render('banners', $this->pageSettingsViewParams($tab, $aboutModel, $genderBlocks));
+    }
+
+    private function pageSettingsTab(): string
+    {
+        $tab = (string) Yii::$app->request->get('tab', 'main');
+
+        return in_array($tab, ['main', 'about', 'categories'], true) ? $tab : 'main';
+    }
+
+    /**
+     * @param array<string, HomeGenderBlock> $genderBlocks
+     * @return array<string, mixed>
+     */
+    private function pageSettingsViewParams(string $tab, HomeAbout $aboutModel, array $genderBlocks): array
+    {
+        return [
+            'tab' => $tab,
+            'aboutModel' => $aboutModel,
+            'genderBlocks' => $genderBlocks,
             'dataProvider' => new ActiveDataProvider([
                 'query' => HomeBanner::find()->orderBy(['sort_order' => SORT_ASC]),
                 'pagination' => ['pageSize' => 20],
             ]),
-        ]);
+        ];
     }
 
     public function actionBannerForm(?int $id = null): string|Response
@@ -168,12 +276,29 @@ class SettingsController extends BaseAdminController
         $model = $id !== null ? $this->findBanner($id) : new HomeBanner();
         if ($model->isNewRecord) {
             $model->is_active = true;
-            $model->sort_order = 0;
+            $model->sort_order = (int) HomeBanner::find()->max('sort_order') + 1;
+            $model->button_text = HomeBanner::DEFAULT_BUTTON_TEXT;
         }
 
-        if ($model->load(Yii::$app->request->post()) && $model->save()) {
-            Yii::$app->session->setFlash('success', Yii::t('app', 'Saved successfully.'));
-            return $this->redirect(['banners']);
+        if ($model->load(Yii::$app->request->post())) {
+            $model->imageFile = UploadedFile::getInstance($model, 'imageFile');
+
+            if ($model->validate()) {
+                if ($model->imageFile !== null) {
+                    $uploadError = (new HomeBannerUploadService())->upload($model, $model->imageFile);
+                    if ($uploadError !== null) {
+                        Yii::$app->session->setFlash('error', $uploadError);
+
+                        return $this->render('banner-form', ['model' => $model]);
+                    }
+                }
+
+                if ($model->save()) {
+                    Yii::$app->session->setFlash('success', Yii::t('app', 'Saved successfully.'));
+
+                    return $this->redirect(['banners', 'tab' => 'main']);
+                }
+            }
         }
 
         $this->view->title = $model->isNewRecord
