@@ -17,13 +17,13 @@ use yii\web\UnauthorizedHttpException;
 /**
  * @OA\Tag(
  *     name="Корзина",
- *     description="Управление корзиной покупок (гость и авторизованный пользователь)"
+ *     description="Одна активная корзина на пользователя (user_id) или гостевую сессию (session_id). Гость: X-Session-ID или session_id в body/query. После входа merge через guest_sync в auth-ответе и/или POST /api/cart-client/sync (идемпотентно)."
  * )
  *
  * @OA\Post(
  *     path="/api/cart-client/add",
  *     summary="Добавить товар в корзину",
- *     description="actionAdd — добавляет товар или увеличивает количество; для гостя нужен заголовок X-Session-ID",
+ *     description="Добавляет товар или увеличивает количество. Гость: X-Session-ID или session_id в body. Авторизованный: Bearer.",
  *     operationId="CartClientController.actionAdd",
  *     tags={"Корзина"},
  *     security={{"bearerAuth": {}}, {"sessionId": {}}},
@@ -71,7 +71,7 @@ use yii\web\UnauthorizedHttpException;
  * @OA\Post(
  *     path="/api/cart-client/remove",
  *     summary="Удалить товар из корзины",
- *     description="actionRemove — удаляет позицию по product_id",
+ *     description="Удаляет позицию по product_id. Гость: X-Session-ID или session_id в body.",
  *     operationId="CartClientController.actionRemove",
  *     tags={"Корзина"},
  *     security={{"bearerAuth": {}}, {"sessionId": {}}},
@@ -79,11 +79,7 @@ use yii\web\UnauthorizedHttpException;
  *         required=true,
  *         @OA\MediaType(
  *             mediaType="application/json",
- *             @OA\Schema(
- *                 required={"product_id"},
- *                 @OA\Property(property="product_id", type="integer"),
- *                 @OA\Property(property="cart_id", type="integer", nullable=true)
- *             )
+ *             @OA\Schema(ref="#/components/schemas/CartProductRequest")
  *         )
  *     ),
  *     @OA\Response(
@@ -103,7 +99,7 @@ use yii\web\UnauthorizedHttpException;
  * @OA\Get(
  *     path="/api/cart-client/list",
  *     summary="Получить содержимое корзины",
- *     description="actionList — список позиций с информацией о товарах и итоговой суммой",
+ *     description="Список позиций корзины текущего пользователя или гостевой сессии.",
  *     operationId="CartClientController.actionList",
  *     tags={"Корзина"},
  *     security={{"bearerAuth": {}}, {"sessionId": {}}},
@@ -120,6 +116,13 @@ use yii\web\UnauthorizedHttpException;
  *         description="Количество позиций на странице (макс. 200)",
  *         required=false,
  *         @OA\Schema(type="integer", default=200)
+ *     ),
+ *     @OA\Parameter(
+ *         name="session_id",
+ *         in="query",
+ *         description="Для гостя, если не передан X-Session-ID",
+ *         required=false,
+ *         @OA\Schema(ref="#/components/schemas/GuestSessionId")
  *     ),
  *     @OA\Response(
  *         response=200,
@@ -169,7 +172,7 @@ use yii\web\UnauthorizedHttpException;
  * @OA\Post(
  *     path="/api/cart-client/sync",
  *     summary="Объединить гостевую корзину с пользовательской",
- *     description="actionSync — после входа переносит товары из гостевой сессии в корзину авторизованного пользователя",
+ *     description="Ручной merge гостевой корзины в корзину пользователя. Требует Bearer + session_id (body или X-Session-ID). Идемпотентен: безопасно вызывать после auth, даже если guest_sync уже выполнен. Количества одинаковых товаров суммируются.",
  *     operationId="CartClientController.actionSync",
  *     tags={"Корзина"},
  *     security={{"bearerAuth": {}}, {"sessionId": {}}},

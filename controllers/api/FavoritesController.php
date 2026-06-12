@@ -17,13 +17,13 @@ use yii\web\UnauthorizedHttpException;
 /**
  * @OA\Tag(
  *     name="Избранное",
- *     description="Список избранных товаров (гость и авторизованный пользователь)"
+ *     description="Единый список избранного на пользователя (user_id) или гостевую сессию (session_id). Гость: X-Session-ID или session_id в body/query. После входа merge через guest_sync в auth-ответе и/или POST /api/favorites/sync (идемпотентно)."
  * )
  *
  * @OA\Post(
  *     path="/api/favorites/add",
  *     summary="Добавить товар в избранное",
- *     description="actionAdd — добавляет товар в избранное; для гостя нужен заголовок X-Session-ID",
+ *     description="Добавляет товар в избранное. Гость: X-Session-ID или session_id в body. Авторизованный: Bearer (привязка к user_id).",
  *     operationId="FavoritesController.actionAdd",
  *     tags={"Избранное"},
  *     security={{"bearerAuth": {}}, {"sessionId": {}}},
@@ -31,10 +31,7 @@ use yii\web\UnauthorizedHttpException;
  *         required=true,
  *         @OA\MediaType(
  *             mediaType="application/json",
- *             @OA\Schema(
- *                 required={"product_id"},
- *                 @OA\Property(property="product_id", type="integer")
- *             )
+ *             @OA\Schema(ref="#/components/schemas/FavoriteProductRequest")
  *         )
  *     ),
  *     @OA\Response(
@@ -58,10 +55,7 @@ use yii\web\UnauthorizedHttpException;
  *         required=true,
  *         @OA\MediaType(
  *             mediaType="application/json",
- *             @OA\Schema(
- *                 required={"product_id"},
- *                 @OA\Property(property="product_id", type="integer")
- *             )
+ *             @OA\Schema(ref="#/components/schemas/FavoriteProductRequest")
  *         )
  *     ),
  *     @OA\Response(
@@ -88,7 +82,7 @@ use yii\web\UnauthorizedHttpException;
  *             @OA\Schema(
  *                 required={"product_ids"},
  *                 @OA\Property(property="product_ids", type="array", @OA\Items(type="integer")),
- *                 @OA\Property(property="session_id", type="string", nullable=true, description="Для гостя, если не передан X-Session-ID")
+ *                 @OA\Property(property="session_id", ref="#/components/schemas/GuestSessionId", nullable=true)
  *             )
  *         )
  *     ),
@@ -112,7 +106,7 @@ use yii\web\UnauthorizedHttpException;
  * @OA\Get(
  *     path="/api/favorites/list",
  *     summary="Получить список избранного",
- *     description="actionList — постраничный список избранных товаров",
+ *     description="Постраничный список избранного текущего пользователя или гостевой сессии.",
  *     operationId="FavoritesController.actionList",
  *     tags={"Избранное"},
  *     security={{"bearerAuth": {}}, {"sessionId": {}}},
@@ -130,6 +124,13 @@ use yii\web\UnauthorizedHttpException;
  *         required=false,
  *         @OA\Schema(type="integer", default=200)
  *     ),
+ *     @OA\Parameter(
+ *         name="session_id",
+ *         in="query",
+ *         description="Для гостя, если не передан X-Session-ID",
+ *         required=false,
+ *         @OA\Schema(ref="#/components/schemas/GuestSessionId")
+ *     ),
  *     @OA\Response(
  *         response=200,
  *         description="Список избранного",
@@ -143,7 +144,7 @@ use yii\web\UnauthorizedHttpException;
  * @OA\Post(
  *     path="/api/favorites/sync",
  *     summary="Объединить гостевое избранное с пользовательским",
- *     description="actionSync — после входа переносит избранное из гостевой сессии в аккаунт пользователя",
+ *     description="Ручной merge гостевого избранного в аккаунт. Требует Bearer + session_id (body или X-Session-ID). Идемпотентен: безопасно вызывать после auth, даже если guest_sync уже выполнен. Дубликаты товаров не создаются.",
  *     operationId="FavoritesController.actionSync",
  *     tags={"Избранное"},
  *     security={{"bearerAuth": {}}, {"sessionId": {}}},

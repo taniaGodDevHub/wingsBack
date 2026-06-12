@@ -13,28 +13,37 @@ use OpenApi\Annotations as OA;
  * )
  *
  * @OA\Schema(
+ *     schema="GuestSessionId",
+ *     type="string",
+ *     description="Стабильный ID гостевой сессии. Генерируется на фронтенде один раз (UUID/случайная строка), хранится в браузере. Передаётся в заголовке X-Session-ID и/или в поле session_id.",
+ *     example="7f3c2a9e1b0046d8a2f59c8e4d1a003b"
+ * )
+ *
+ * @OA\Schema(
  *     schema="GuestSyncCartResult",
- *     @OA\Property(property="merged_items_count", type="integer"),
- *     @OA\Property(property="result_cart_id", type="integer"),
- *     @OA\Property(property="result_items_count", type="integer")
+ *     @OA\Property(property="merged_items_count", type="integer", description="Сколько позиций перенесено из гостевой корзины"),
+ *     @OA\Property(property="result_cart_id", type="integer", description="ID активной корзины пользователя"),
+ *     @OA\Property(property="result_items_count", type="integer", description="Итоговое количество единиц товара в корзине")
  * )
  *
  * @OA\Schema(
  *     schema="GuestSyncFavoritesResult",
- *     @OA\Property(property="merged_count", type="integer"),
- *     @OA\Property(property="result_total", type="integer")
+ *     @OA\Property(property="merged_count", type="integer", description="Сколько товаров добавлено из гостевого избранного"),
+ *     @OA\Property(property="result_total", type="integer", description="Итоговое число товаров в избранном пользователя")
  * )
  *
  * @OA\Schema(
  *     schema="GuestSyncResponse",
- *     @OA\Property(property="skipped", type="boolean", description="true — session_id не передан"),
- *     @OA\Property(property="reason", type="string", nullable=true, example="no_session"),
- *     @OA\Property(property="cart", ref="#/components/schemas/GuestSyncCartResult"),
- *     @OA\Property(property="favorites", ref="#/components/schemas/GuestSyncFavoritesResult")
+ *     description="Результат автоматического объединения при auth verify/login/register. Повторный вызов sync идемпотентен.",
+ *     @OA\Property(property="skipped", type="boolean", description="true — session_id не был передан ни в заголовке, ни в теле"),
+ *     @OA\Property(property="reason", type="string", nullable=true, example="no_session", description="Причина пропуска merge"),
+ *     @OA\Property(property="cart", ref="#/components/schemas/GuestSyncCartResult", description="Присутствует, если skipped=false"),
+ *     @OA\Property(property="favorites", ref="#/components/schemas/GuestSyncFavoritesResult", description="Присутствует, если skipped=false")
  * )
  *
  * @OA\Schema(
  *     schema="TokenResponse",
+ *     description="JWT после входа или регистрации. Поле guest_sync содержит автоматический merge корзины и избранного.",
  *     @OA\Property(property="access_token", type="string"),
  *     @OA\Property(property="refresh_token", type="string"),
  *     @OA\Property(property="token_type", type="string", example="bearer"),
@@ -135,8 +144,15 @@ use OpenApi\Annotations as OA;
  *
  * @OA\Schema(
  *     schema="SyncRequest",
- *     required={"session_id"},
- *     @OA\Property(property="session_id", type="string", description="ID гостевой сессии (или заголовок X-Session-ID)")
+ *     description="Ручное объединение после входа. Достаточно передать session_id в теле **или** заголовок X-Session-ID (оба — необязательно, но хотя бы один обязателен). Требуется Authorization: Bearer.",
+ *     @OA\Property(property="session_id", ref="#/components/schemas/GuestSessionId")
+ * )
+ *
+ * @OA\Schema(
+ *     schema="FavoriteProductRequest",
+ *     required={"product_id"},
+ *     @OA\Property(property="product_id", type="integer"),
+ *     @OA\Property(property="session_id", ref="#/components/schemas/GuestSessionId", nullable=true, description="Для гостя, если не передан X-Session-ID")
  * )
  *
  * @OA\Schema(
@@ -392,7 +408,15 @@ use OpenApi\Annotations as OA;
  *     @OA\Property(property="product_id", type="integer"),
  *     @OA\Property(property="quantity", type="integer", default=1),
  *     @OA\Property(property="cart_id", type="integer", nullable=true),
- *     @OA\Property(property="session_id", type="string", nullable=true, description="Для гостя, если не передан X-Session-ID")
+ *     @OA\Property(property="session_id", ref="#/components/schemas/GuestSessionId", nullable=true)
+ * )
+ *
+ * @OA\Schema(
+ *     schema="CartProductRequest",
+ *     required={"product_id"},
+ *     @OA\Property(property="product_id", type="integer"),
+ *     @OA\Property(property="cart_id", type="integer", nullable=true),
+ *     @OA\Property(property="session_id", ref="#/components/schemas/GuestSessionId", nullable=true)
  * )
  *
  * @OA\Schema(
@@ -513,8 +537,28 @@ use OpenApi\Annotations as OA;
  *
  * @OA\Examples(
  *     example="token-response",
- *     summary="JWT-токены",
- *     value={"access_token": "eyJ...", "refresh_token": "eyJ...", "token_type": "bearer"}
+ *     summary="JWT-токены с автоматическим merge",
+ *     value={
+ *         "access_token": "eyJ...",
+ *         "refresh_token": "eyJ...",
+ *         "token_type": "bearer",
+ *         "guest_sync": {
+ *             "skipped": false,
+ *             "cart": {"merged_items_count": 2, "result_cart_id": 15, "result_items_count": 3},
+ *             "favorites": {"merged_count": 1, "result_total": 4}
+ *         }
+ *     }
+ * )
+ *
+ * @OA\Examples(
+ *     example="token-response-no-session",
+ *     summary="JWT без session_id (merge пропущен)",
+ *     value={
+ *         "access_token": "eyJ...",
+ *         "refresh_token": "eyJ...",
+ *         "token_type": "bearer",
+ *         "guest_sync": {"skipped": true, "reason": "no_session"}
+ *     }
  * )
  *
  * @OA\Examples(

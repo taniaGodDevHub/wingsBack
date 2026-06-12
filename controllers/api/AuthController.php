@@ -19,7 +19,7 @@ use yii\web\UnauthorizedHttpException;
 /**
  * @OA\Tag(
  *     name="Авторизация",
- *     description="Регистрация, вход и управление JWT-токенами"
+ *     description="Регистрация, вход и управление JWT-токенами. При verify/login/register с session_id (заголовок X-Session-ID или body) в ответе TokenResponse.guest_sync автоматически переносятся гостевая корзина и избранное."
  * )
  * @OA\Tag(
  *     name="Профиль",
@@ -157,7 +157,7 @@ use yii\web\UnauthorizedHttpException;
  * @OA\Post(
  *     path="/api/auth/verify_phone_registration",
  *     summary="Подтвердить: регистрацию по телефону",
- *     description="actionVerifyPhoneRegistration — Проверяет SMS-код и создаёт аккаунт, возвращает JWT-токены",
+ *     description="Проверяет SMS-код и создаёт аккаунт. Возвращает JWT и guest_sync (автоматический merge корзины/избранного, если передан session_id). Дополнительно можно вызвать POST /api/cart-client/sync и POST /api/favorites/sync — идемпотентно.",
  *     operationId="actionVerifyPhoneRegistration",
  *     tags={"Авторизация"},
  *     @OA\RequestBody(
@@ -169,17 +169,18 @@ use yii\web\UnauthorizedHttpException;
  *                 @OA\Property(property="phone_number", type="string", example="+79991234567"),
  *                 @OA\Property(property="code", type="string", example="123456"),
  *                 @OA\Property(property="record_id", type="string", format="uuid"),
- *                 @OA\Property(property="session_id", type="string", nullable=true, description="ID гостевой сессии для переноса корзины и избранного (или заголовок X-Session-ID)")
+ *                 @OA\Property(property="session_id", ref="#/components/schemas/GuestSessionId", nullable=true)
  *             )
  *         )
  *     ),
  *     @OA\Response(
  *         response=200,
- *         description="JWT-токены",
+ *         description="JWT-токены и результат guest_sync",
  *         @OA\MediaType(
  *             mediaType="application/json",
  *             @OA\Schema(ref="#/components/schemas/TokenResponse"),
- *             @OA\Examples(example=200, ref="#/components/examples/token-response")
+ *             @OA\Examples(example="with-sync", ref="#/components/examples/token-response"),
+ *             @OA\Examples(example="no-session", ref="#/components/examples/token-response-no-session")
  *         )
  *     )
  * )
@@ -187,7 +188,7 @@ use yii\web\UnauthorizedHttpException;
  * @OA\Post(
  *     path="/api/auth/verify_email_registration",
  *     summary="Подтвердить: регистрацию по email",
- *     description="actionVerifyEmailRegistration — Проверяет код из письма и создаёт аккаунт, возвращает JWT-токены",
+ *     description="Проверяет код из письма и создаёт аккаунт. Возвращает JWT и guest_sync (автоматический merge корзины/избранного, если передан session_id).",
  *     operationId="actionVerifyEmailRegistration",
  *     tags={"Авторизация"},
  *     @OA\RequestBody(
@@ -199,17 +200,18 @@ use yii\web\UnauthorizedHttpException;
  *                 @OA\Property(property="email", type="string", example="user@example.com"),
  *                 @OA\Property(property="code", type="string", example="123456"),
  *                 @OA\Property(property="record_id", type="string", format="uuid"),
- *                 @OA\Property(property="session_id", type="string", nullable=true, description="ID гостевой сессии для переноса корзины и избранного (или заголовок X-Session-ID)")
+ *                 @OA\Property(property="session_id", ref="#/components/schemas/GuestSessionId", nullable=true)
  *             )
  *         )
  *     ),
  *     @OA\Response(
  *         response=200,
- *         description="JWT-токены",
+ *         description="JWT-токены и результат guest_sync",
  *         @OA\MediaType(
  *             mediaType="application/json",
  *             @OA\Schema(ref="#/components/schemas/TokenResponse"),
- *             @OA\Examples(example=200, ref="#/components/examples/token-response")
+ *             @OA\Examples(example="with-sync", ref="#/components/examples/token-response"),
+ *             @OA\Examples(example="no-session", ref="#/components/examples/token-response-no-session")
  *         )
  *     )
  * )
@@ -217,7 +219,7 @@ use yii\web\UnauthorizedHttpException;
  * @OA\Post(
  *     path="/api/auth/login_phone_with_code",
  *     summary="Войти: по SMS-коду",
- *     description="actionLoginPhoneWithCode — Авторизация существующего пользователя по коду из SMS",
+ *     description="Авторизация по SMS-коду. Возвращает JWT и guest_sync (автоматический merge корзины/избранного, если передан session_id). Ручной sync после входа опционален и идемпотентен.",
  *     operationId="actionLoginPhoneWithCode",
  *     tags={"Авторизация"},
  *     @OA\RequestBody(
@@ -228,17 +230,18 @@ use yii\web\UnauthorizedHttpException;
  *                 required={"code","record_id"},
  *                 @OA\Property(property="code", type="string", example="123456"),
  *                 @OA\Property(property="record_id", type="string", format="uuid"),
- *                 @OA\Property(property="session_id", type="string", nullable=true, description="ID гостевой сессии для переноса корзины и избранного (или заголовок X-Session-ID)")
+ *                 @OA\Property(property="session_id", ref="#/components/schemas/GuestSessionId", nullable=true)
  *             )
  *         )
  *     ),
  *     @OA\Response(
  *         response=200,
- *         description="JWT-токены",
+ *         description="JWT-токены и результат guest_sync",
  *         @OA\MediaType(
  *             mediaType="application/json",
  *             @OA\Schema(ref="#/components/schemas/TokenResponse"),
- *             @OA\Examples(example=200, ref="#/components/examples/token-response")
+ *             @OA\Examples(example="with-sync", ref="#/components/examples/token-response"),
+ *             @OA\Examples(example="no-session", ref="#/components/examples/token-response-no-session")
  *         )
  *     )
  * )
@@ -246,7 +249,7 @@ use yii\web\UnauthorizedHttpException;
  * @OA\Post(
  *     path="/api/auth/login_email_with_code",
  *     summary="Войти: по коду из email",
- *     description="actionLoginEmailWithCode — Авторизация существующего пользователя по коду из письма",
+ *     description="Авторизация по коду из email. Возвращает JWT и guest_sync (автоматический merge корзины/избранного, если передан session_id).",
  *     operationId="actionLoginEmailWithCode",
  *     tags={"Авторизация"},
  *     @OA\RequestBody(
@@ -257,17 +260,18 @@ use yii\web\UnauthorizedHttpException;
  *                 required={"code","record_id"},
  *                 @OA\Property(property="code", type="string", example="123456"),
  *                 @OA\Property(property="record_id", type="string", format="uuid"),
- *                 @OA\Property(property="session_id", type="string", nullable=true, description="ID гостевой сессии для переноса корзины и избранного (или заголовок X-Session-ID)")
+ *                 @OA\Property(property="session_id", ref="#/components/schemas/GuestSessionId", nullable=true)
  *             )
  *         )
  *     ),
  *     @OA\Response(
  *         response=200,
- *         description="JWT-токены",
+ *         description="JWT-токены и результат guest_sync",
  *         @OA\MediaType(
  *             mediaType="application/json",
  *             @OA\Schema(ref="#/components/schemas/TokenResponse"),
- *             @OA\Examples(example=200, ref="#/components/examples/token-response")
+ *             @OA\Examples(example="with-sync", ref="#/components/examples/token-response"),
+ *             @OA\Examples(example="no-session", ref="#/components/examples/token-response-no-session")
  *         )
  *     )
  * )
