@@ -63,6 +63,22 @@ class User extends ActiveRecord implements IdentityInterface
         return static::findOne(['username' => $username, 'status' => self::STATUS_ACTIVE]);
     }
 
+    public static function findByLogin(string $login): ?static
+    {
+        $login = trim($login);
+        if ($login === '') {
+            return null;
+        }
+
+        if (str_contains($login, '@')) {
+            $profile = UserProfile::findByEmail($login);
+
+            return $profile?->user;
+        }
+
+        return static::findByUsername($login);
+    }
+
     public function getId(): int|string
     {
         return $this->id;

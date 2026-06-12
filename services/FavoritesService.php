@@ -106,6 +106,15 @@ class FavoritesService
         }
 
         $userId = (int) $user->id;
+        $guest = GuestSession::findOne(['session_id' => $sessionId]);
+        $hasGuestItems = FavoriteItem::find()->where(['session_id' => $sessionId])->exists();
+        if ($guest !== null && $guest->favorites_merged_at !== null && !$hasGuestItems) {
+            return [
+                'merged_count' => 0,
+                'result_total' => (int) FavoriteItem::find()->where(['user_id' => $userId])->count(),
+            ];
+        }
+
         $guestItems = FavoriteItem::find()->where(['session_id' => $sessionId])->all();
         $merged = 0;
 
@@ -123,8 +132,7 @@ class FavoritesService
             $merged++;
         }
 
-        $guest = GuestSession::findOne(['session_id' => $sessionId]);
-        if ($guest !== null) {
+        if ($guest !== null && ($merged > 0 || $guestItems !== [])) {
             $guest->favorites_merged_at = time();
             $guest->save(false);
         }

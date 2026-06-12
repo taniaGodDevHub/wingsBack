@@ -168,7 +168,8 @@ use yii\web\UnauthorizedHttpException;
  *                 required={"phone_number","code","record_id"},
  *                 @OA\Property(property="phone_number", type="string", example="+79991234567"),
  *                 @OA\Property(property="code", type="string", example="123456"),
- *                 @OA\Property(property="record_id", type="string", format="uuid")
+ *                 @OA\Property(property="record_id", type="string", format="uuid"),
+ *                 @OA\Property(property="session_id", type="string", nullable=true, description="ID гостевой сессии для переноса корзины и избранного (или заголовок X-Session-ID)")
  *             )
  *         )
  *     ),
@@ -197,7 +198,8 @@ use yii\web\UnauthorizedHttpException;
  *                 required={"email","code","record_id"},
  *                 @OA\Property(property="email", type="string", example="user@example.com"),
  *                 @OA\Property(property="code", type="string", example="123456"),
- *                 @OA\Property(property="record_id", type="string", format="uuid")
+ *                 @OA\Property(property="record_id", type="string", format="uuid"),
+ *                 @OA\Property(property="session_id", type="string", nullable=true, description="ID гостевой сессии для переноса корзины и избранного (или заголовок X-Session-ID)")
  *             )
  *         )
  *     ),
@@ -225,7 +227,8 @@ use yii\web\UnauthorizedHttpException;
  *             @OA\Schema(
  *                 required={"code","record_id"},
  *                 @OA\Property(property="code", type="string", example="123456"),
- *                 @OA\Property(property="record_id", type="string", format="uuid")
+ *                 @OA\Property(property="record_id", type="string", format="uuid"),
+ *                 @OA\Property(property="session_id", type="string", nullable=true, description="ID гостевой сессии для переноса корзины и избранного (или заголовок X-Session-ID)")
  *             )
  *         )
  *     ),
@@ -253,7 +256,8 @@ use yii\web\UnauthorizedHttpException;
  *             @OA\Schema(
  *                 required={"code","record_id"},
  *                 @OA\Property(property="code", type="string", example="123456"),
- *                 @OA\Property(property="record_id", type="string", format="uuid")
+ *                 @OA\Property(property="record_id", type="string", format="uuid"),
+ *                 @OA\Property(property="session_id", type="string", nullable=true, description="ID гостевой сессии для переноса корзины и избранного (или заголовок X-Session-ID)")
  *             )
  *         )
  *     ),

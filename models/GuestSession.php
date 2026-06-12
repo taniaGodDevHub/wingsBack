@@ -11,6 +11,8 @@ use yii\db\ActiveRecord;
  * @property string $session_id
  * @property int $created_at
  * @property int $updated_at
+ * @property int|null $cart_merged_at
+ * @property int|null $favorites_merged_at
  */
 class GuestSession extends ActiveRecord
 {

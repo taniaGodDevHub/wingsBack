@@ -25,6 +25,7 @@ class AuthVerificationChallenge extends ActiveRecord
     public const TYPE_REGISTRATION = 'registration';
     public const TYPE_LOGIN = 'login';
     public const TYPE_EMAIL_CONFIRM = 'email_confirmation';
+    public const TYPE_PASSWORD_RESET = 'password_reset';
 
     public static function tableName(): string
     {

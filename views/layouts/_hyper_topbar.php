@@ -51,11 +51,16 @@ use yii\helpers\Url;
                     <?php if (Yii::$app->user->isGuest): ?>
                         <?= Html::a(
                             '<i class="ri-login-box-line font-16 me-1"></i><span>' . Yii::t('app', 'Login') . '</span>',
-                            ['/site/login'],
+                            ['/admin/auth/login'],
                             ['class' => 'dropdown-item'],
                         ) ?>
                     <?php else: ?>
-                        <?= Html::beginForm(['/site/logout'], 'post', ['class' => 'd-inline']) ?>
+                        <?= Html::a(
+                            '<i class="ri-user-settings-line font-16 me-1"></i><span>' . Yii::t('app', 'Profile') . '</span>',
+                            ['/admin/profile/edit'],
+                            ['class' => 'dropdown-item'],
+                        ) ?>
+                        <?= Html::beginForm(['/admin/auth/logout'], 'post', ['class' => 'd-inline']) ?>
                         <?= Html::submitButton(
                             '<i class="ri-logout-box-r-line font-16 me-1"></i><span>' . Yii::t('app', 'Logout') . '</span>',
                             ['class' => 'dropdown-item border-0 bg-transparent w-100 text-start'],

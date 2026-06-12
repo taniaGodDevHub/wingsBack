@@ -7,6 +7,7 @@ namespace app\services;
 use app\components\api\ApiHttpException;
 use app\models\Cart;
 use app\models\CartItem;
+use app\models\GuestSession;
 use app\models\Product;
 use app\services\catalog\ProductPresenter;
 use Yii;
@@ -203,6 +204,12 @@ class CartService
             throw new \InvalidArgumentException('session_id is required.');
         }
 
+        $guestSession = GuestSession::findOne(['session_id' => $sessionId]);
+        $guestCart = Cart::findActiveForSession($sessionId);
+        if ($guestSession !== null && $guestSession->cart_merged_at !== null && $guestCart === null) {
+            return $this->buildSyncResult($user, 0);
+        }
+
         $transaction = Yii::$app->db->beginTransaction();
         try {
             $guestCart = Cart::findActiveForSession($sessionId);
@@ -234,20 +241,45 @@ class CartService
                 }
                 $guestCart->is_active = false;
                 $guestCart->save(false);
+
+                $guestSession ??= GuestSession::findOne(['session_id' => $sessionId]);
+                if ($guestSession !== null) {
+                    $guestSession->cart_merged_at = time();
+                    $guestSession->save(false);
+                }
             }
 
-            $itemsCount = (int) CartItem::find()->where(['cart_id' => $userCart->id])->sum('quantity') ?: 0;
+            $result = $this->buildSyncResult($user, $merged, (int) $userCart->id);
             $transaction->commit();
 
-            return [
-                'merged_items_count' => $merged,
-                'result_cart_id' => (int) $userCart->id,
-                'result_items_count' => $itemsCount,
-            ];
+            return $result;
         } catch (\Throwable $e) {
             $transaction->rollBack();
             throw $e;
         }
+    }
+
+    /** @return array{merged_items_count: int, result_cart_id: int, result_items_count: int} */
+    private function buildSyncResult(\app\models\User $user, int $merged, ?int $cartId = null): array
+    {
+        $userCart = $cartId !== null
+            ? Cart::findOne($cartId)
+            : Cart::findActiveForUser((int) $user->id);
+
+        if ($userCart === null) {
+            $userCart = new Cart();
+            $userCart->user_id = (int) $user->id;
+            $userCart->is_active = true;
+            $userCart->save(false);
+        }
+
+        $itemsCount = (int) CartItem::find()->where(['cart_id' => $userCart->id])->sum('quantity') ?: 0;
+
+        return [
+            'merged_items_count' => $merged,
+            'result_cart_id' => (int) $userCart->id,
+            'result_items_count' => $itemsCount,
+        ];
     }
 
     private function requireProduct(int $productId): Product

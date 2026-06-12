@@ -13,6 +13,7 @@ return [
     'exposeActivationCode' => true,
     'authCodeEmailFrom' => 'noreply@example.com',
     'authCodeEmailSubject' => 'Код подтверждения',
+    'passwordResetEmailSubject' => 'Код для сброса пароля',
     'authChallengeTtl' => 600,
     'authChallengeThrottleSeconds' => 60,
 

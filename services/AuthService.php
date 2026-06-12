@@ -317,10 +317,7 @@ class AuthService
             throw $e;
         }
 
-        /** @var JwtService $jwt */
-        $jwt = Yii::$app->jwt;
-
-        return $jwt->issueTokenPair($user);
+        return $this->issueTokensWithGuestSync($user);
     }
 
     private function completeLogin(AuthVerificationChallenge $challenge): array
@@ -341,10 +338,21 @@ class AuthService
         $challenge->used_at = time();
         $challenge->save(false);
 
+        return $this->issueTokensWithGuestSync($user);
+    }
+
+    /** @return array<string, mixed> */
+    private function issueTokensWithGuestSync(User $user): array
+    {
         /** @var JwtService $jwt */
         $jwt = Yii::$app->jwt;
+        $sessionId = (new GuestSessionService())->resolveFromRequest();
+        $guestSync = (new GuestDataSyncService())->syncForUser($user, $sessionId);
 
-        return $jwt->issueTokenPair($user);
+        return array_merge(
+            $jwt->issueTokenPair($user),
+            ['guest_sync' => $guestSync],
+        );
     }
 
     private function assertThrottle(string $channel, string $destination): void

@@ -21,4 +21,18 @@ class AuthCodeMailer extends Component
             ->setSubject(Yii::$app->params['authCodeEmailSubject'])
             ->send();
     }
+
+    public function sendPasswordResetCode(string $email, string $code): bool
+    {
+        /** @var MailerInterface $mailer */
+        $mailer = Yii::$app->mailer;
+        $subject = Yii::$app->params['passwordResetEmailSubject']
+            ?? Yii::t('app', 'Password reset code');
+
+        return $mailer->compose('@app/mail/password-reset-code', ['code' => $code])
+            ->setFrom([Yii::$app->params['authCodeEmailFrom'] => Yii::$app->params['senderName']])
+            ->setTo($email)
+            ->setSubject($subject)
+            ->send();
+    }
 }

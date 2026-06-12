@@ -13,10 +13,32 @@ use OpenApi\Annotations as OA;
  * )
  *
  * @OA\Schema(
+ *     schema="GuestSyncCartResult",
+ *     @OA\Property(property="merged_items_count", type="integer"),
+ *     @OA\Property(property="result_cart_id", type="integer"),
+ *     @OA\Property(property="result_items_count", type="integer")
+ * )
+ *
+ * @OA\Schema(
+ *     schema="GuestSyncFavoritesResult",
+ *     @OA\Property(property="merged_count", type="integer"),
+ *     @OA\Property(property="result_total", type="integer")
+ * )
+ *
+ * @OA\Schema(
+ *     schema="GuestSyncResponse",
+ *     @OA\Property(property="skipped", type="boolean", description="true — session_id не передан"),
+ *     @OA\Property(property="reason", type="string", nullable=true, example="no_session"),
+ *     @OA\Property(property="cart", ref="#/components/schemas/GuestSyncCartResult"),
+ *     @OA\Property(property="favorites", ref="#/components/schemas/GuestSyncFavoritesResult")
+ * )
+ *
+ * @OA\Schema(
  *     schema="TokenResponse",
  *     @OA\Property(property="access_token", type="string"),
  *     @OA\Property(property="refresh_token", type="string"),
- *     @OA\Property(property="token_type", type="string", example="bearer")
+ *     @OA\Property(property="token_type", type="string", example="bearer"),
+ *     @OA\Property(property="guest_sync", ref="#/components/schemas/GuestSyncResponse")
  * )
  *
  * @OA\Schema(

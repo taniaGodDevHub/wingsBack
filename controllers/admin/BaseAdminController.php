@@ -26,6 +26,10 @@ abstract class BaseAdminController extends Controller
                     ],
                 ],
                 'denyCallback' => static function (): void {
+                    if (Yii::$app->user->isGuest) {
+                        Yii::$app->user->loginRequired();
+                    }
+
                     throw new ForbiddenHttpException(Yii::t('app', 'Access denied.'));
                 },
             ],

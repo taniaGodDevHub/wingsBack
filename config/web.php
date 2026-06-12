@@ -38,6 +38,7 @@ $config = [
         'user' => [
             'identityClass' => \app\models\User::class,
             'enableAutoLogin' => true,
+            'loginUrl' => ['admin/auth/login'],
         ],
         'errorHandler' => [
             'class' => \app\components\api\ApiErrorHandler::class,
@@ -119,6 +120,8 @@ $config = [
         'api/orders' => \app\controllers\api\OrdersController::class,
         'api/dadata' => \app\controllers\api\DaDataController::class,
         'api/delivery' => \app\controllers\api\DeliveryController::class,
+        'admin/auth' => \app\controllers\admin\AuthController::class,
+        'admin/profile' => \app\controllers\admin\ProfileController::class,
         'admin/user' => \app\controllers\admin\UserController::class,
         'admin/rbac' => \app\controllers\admin\RbacController::class,
         'admin/settings' => \app\controllers\admin\SettingsController::class,

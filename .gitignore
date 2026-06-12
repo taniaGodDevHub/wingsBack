@@ -37,6 +37,9 @@ Thumbs.db
 /cache/
 /tmp/
 
+# Local API smoke tests (run_api_tests.php, cookies, reports, HTML dumps)
+/.api-test/
+
 # Tests
 /tests/codeception/_output/
 /tests/codeception/_support/_generated/
