@@ -10,9 +10,11 @@ use app\models\Category;
 use app\models\Color;
 use app\models\HomeAbout;
 use app\models\HomeBanner;
+use app\models\HomeBottomBanner;
 use app\models\HomeGenderBlock;
 use app\services\HomeAboutUploadService;
 use app\services\HomeBannerUploadService;
+use app\services\HomeBottomBannerUploadService;
 use app\services\HomeGenderBlockUploadService;
 use Yii;
 use yii\data\ActiveDataProvider;
@@ -162,6 +164,7 @@ class SettingsController extends BaseAdminController
         $this->view->title = Yii::t('app', 'Page settings');
         $tab = $this->pageSettingsTab();
         $aboutModel = HomeAbout::singleton();
+        $bottomBannerModel = HomeBottomBanner::singleton();
         $genderBlocks = HomeGenderBlock::blocksMap();
 
         if (Yii::$app->request->isPost) {
@@ -176,7 +179,7 @@ class SettingsController extends BaseAdminController
                         if ($uploadError !== null) {
                             Yii::$app->session->setFlash('error', $uploadError);
 
-                            return $this->render('banners', $this->pageSettingsViewParams($tab, $aboutModel, $genderBlocks));
+                            return $this->render('banners', $this->pageSettingsViewParams($tab, $aboutModel, $bottomBannerModel, $genderBlocks));
                         }
                     }
 
@@ -188,6 +191,29 @@ class SettingsController extends BaseAdminController
                 }
 
                 $tab = 'about';
+            }
+
+            if ($section === 'bottom' && $bottomBannerModel->load(Yii::$app->request->post())) {
+                $bottomBannerModel->imageFile = UploadedFile::getInstance($bottomBannerModel, 'imageFile');
+
+                if ($bottomBannerModel->validate()) {
+                    if ($bottomBannerModel->imageFile !== null) {
+                        $uploadError = (new HomeBottomBannerUploadService())->upload($bottomBannerModel, $bottomBannerModel->imageFile);
+                        if ($uploadError !== null) {
+                            Yii::$app->session->setFlash('error', $uploadError);
+
+                            return $this->render('banners', $this->pageSettingsViewParams($tab, $aboutModel, $bottomBannerModel, $genderBlocks));
+                        }
+                    }
+
+                    if ($bottomBannerModel->save()) {
+                        Yii::$app->session->setFlash('success', Yii::t('app', 'Bottom banner saved successfully.'));
+
+                        return $this->redirect(['banners', 'tab' => 'bottom']);
+                    }
+                }
+
+                $tab = 'bottom';
             }
 
             if ($section === 'categories') {
@@ -222,7 +248,7 @@ class SettingsController extends BaseAdminController
                         if ($uploadError !== null) {
                             Yii::$app->session->setFlash('error', $uploadError);
 
-                            return $this->render('banners', $this->pageSettingsViewParams('categories', $aboutModel, $genderBlocks));
+                            return $this->render('banners', $this->pageSettingsViewParams('categories', $aboutModel, $bottomBannerModel, $genderBlocks));
                         }
                     }
 
@@ -244,25 +270,30 @@ class SettingsController extends BaseAdminController
             }
         }
 
-        return $this->render('banners', $this->pageSettingsViewParams($tab, $aboutModel, $genderBlocks));
+        return $this->render('banners', $this->pageSettingsViewParams($tab, $aboutModel, $bottomBannerModel, $genderBlocks));
     }
 
     private function pageSettingsTab(): string
     {
         $tab = (string) Yii::$app->request->get('tab', 'main');
 
-        return in_array($tab, ['main', 'about', 'categories'], true) ? $tab : 'main';
+        return in_array($tab, ['main', 'about', 'categories', 'bottom'], true) ? $tab : 'main';
     }
 
     /**
      * @param array<string, HomeGenderBlock> $genderBlocks
      * @return array<string, mixed>
      */
-    private function pageSettingsViewParams(string $tab, HomeAbout $aboutModel, array $genderBlocks): array
-    {
+    private function pageSettingsViewParams(
+        string $tab,
+        HomeAbout $aboutModel,
+        HomeBottomBanner $bottomBannerModel,
+        array $genderBlocks,
+    ): array {
         return [
             'tab' => $tab,
             'aboutModel' => $aboutModel,
+            'bottomBannerModel' => $bottomBannerModel,
             'genderBlocks' => $genderBlocks,
             'dataProvider' => new ActiveDataProvider([
                 'query' => HomeBanner::find()->orderBy(['sort_order' => SORT_ASC]),

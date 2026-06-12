@@ -11,6 +11,7 @@ use app\models\Category;
 use app\models\Color;
 use app\models\HomeAbout;
 use app\models\HomeBanner;
+use app\models\HomeBottomBanner;
 use app\models\HomeGenderBlock;
 use app\models\Product;
 use Yii;
@@ -461,13 +462,21 @@ class CatalogService
         return $result;
     }
 
-    /** @return array{banners: list<array<string, mixed>>, about: array<string, mixed>|null, categories: list<array<string, mixed>>} */
+    /**
+     * @return array{
+     *     banners: list<array<string, mixed>>,
+     *     about: array<string, mixed>|null,
+     *     categories: list<array<string, mixed>>,
+     *     bottom_banner: array<string, mixed>|null
+     * }
+     */
     public function homePageContent(): array
     {
         return [
             'banners' => $this->activeBannersForApi(),
             'about' => $this->homeAboutForApi(),
             'categories' => $this->homeGenderBlocksForApi(),
+            'bottom_banner' => $this->homeBottomBannerForApi(),
         ];
     }
 
@@ -482,6 +491,20 @@ class CatalogService
         if ($content['categories'] !== []) {
             $result['categories'] = $content['categories'];
         }
+        if ($content['bottom_banner'] !== null) {
+            $result['bottom_banner'] = $content['bottom_banner'];
+        }
+    }
+
+    /** @return array{image_url: string, button_text: string, button_url: string|null}|null */
+    private function homeBottomBannerForApi(): ?array
+    {
+        $banner = HomeBottomBanner::findOne(1);
+        if ($banner === null || $banner->getImagePublicUrl() === null || $banner->button_text === '') {
+            return null;
+        }
+
+        return $banner->toApiArray();
     }
 
     /** @return array{title: string, image_url: string}|null */

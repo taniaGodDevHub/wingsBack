@@ -220,7 +220,7 @@ use OpenApi\Annotations as OA;
  *
  * @OA\Schema(
  *     schema="HomePageContentResponse",
- *     description="Визуальный контент главной страницы: баннеры, блок «О нас» и категории по полу",
+ *     description="Визуальный контент главной страницы: баннеры, блок «О нас», категории по полу и нижний баннер",
  *     @OA\Property(
  *         property="banners",
  *         type="array",
@@ -238,7 +238,21 @@ use OpenApi\Annotations as OA;
  *         type="array",
  *         description="Блоки категорий по полу (мужское/женское) с изображениями",
  *         @OA\Items(ref="#/components/schemas/ShowcaseHomeCategory")
+ *     ),
+ *     @OA\Property(
+ *         property="bottom_banner",
+ *         ref="#/components/schemas/ShowcaseBottomBanner",
+ *         nullable=true,
+ *         description="Нижний баннер; null, если не заполнены изображение и текст кнопки"
  *     )
+ * )
+ *
+ * @OA\Schema(
+ *     schema="ShowcaseBottomBanner",
+ *     description="Нижний баннер на главной",
+ *     @OA\Property(property="image_url", type="string", format="uri"),
+ *     @OA\Property(property="button_text", type="string", example="Перейти в каталог"),
+ *     @OA\Property(property="button_url", type="string", nullable=true, example="/catalog")
  * )
  *
  * @OA\Schema(
@@ -264,6 +278,12 @@ use OpenApi\Annotations as OA;
  *         type="array",
  *         description="Категории по полу с изображениями; присутствует только если есть загруженные изображения",
  *         @OA\Items(ref="#/components/schemas/ShowcaseHomeCategory")
+ *     ),
+ *     @OA\Property(
+ *         property="bottom_banner",
+ *         ref="#/components/schemas/ShowcaseBottomBanner",
+ *         nullable=true,
+ *         description="Нижний баннер; присутствует только если заполнен"
  *     )
  * )
  *

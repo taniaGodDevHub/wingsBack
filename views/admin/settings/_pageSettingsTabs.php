@@ -9,6 +9,7 @@ $tabs = [
     'main' => Yii::t('app', 'Main'),
     'about' => Yii::t('app', 'About us'),
     'categories' => Yii::t('app', 'Categories'),
+    'bottom' => Yii::t('app', 'Bottom banner'),
 ];
 ?>
 <ul class="nav nav-tabs admin-page-settings-tabs mb-4" role="tablist">
