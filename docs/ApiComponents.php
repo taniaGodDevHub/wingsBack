@@ -66,9 +66,19 @@ use OpenApi\Annotations as OA;
  *
  * @OA\Schema(
  *     schema="ChallengeOkResponse",
+ *     description="Ответ после запроса SMS/email-кода. В mock-режиме SMS (`smsMockMode`) поле activation_code содержит одноразовый код для вёрстки и тестов.",
  *     @OA\Property(property="ok", type="boolean", example=true),
- *     @OA\Property(property="record_id", type="string", format="uuid"),
- *     @OA\Property(property="activation_code", type="string", example="123456", description="Только в dev-режиме")
+ *     @OA\Property(property="record_id", type="string", format="uuid", description="Идентификатор challenge — передать в verify/login вместе с кодом"),
+ *     @OA\Property(property="activation_code", type="string", example="123456", description="Одноразовый код. Присутствует при smsMockMode или exposeActivationCode; в продакшене с реальной SMS отсутствует")
+ * )
+ *
+ * @OA\Schema(
+ *     schema="PhoneLoginCodeResponse",
+ *     description="Ответ phone_login_get_code. В mock-режиме SMS код возвращается в теле ответа для входа без реальной отправки.",
+ *     @OA\Property(property="ok", type="boolean", example=true),
+ *     @OA\Property(property="record_id", type="string", format="uuid", description="Идентификатор challenge для login_phone_with_code"),
+ *     @OA\Property(property="code", type="string", example="123456", description="Одноразовый код входа. Присутствует при smsMockMode или exposeActivationCode"),
+ *     @OA\Property(property="activation_code", type="string", example="123456", description="Дубликат code для обратной совместимости")
  * )
  *
  * @OA\Schema(
@@ -569,8 +579,14 @@ use OpenApi\Annotations as OA;
  *
  * @OA\Examples(
  *     example="challenge-ok-response",
- *     summary="Код подтверждения отправлен",
+ *     summary="Код подтверждения (mock SMS)",
  *     value={"ok": true, "record_id": "550e8400-e29b-41d4-a716-446655440000", "activation_code": "123456"}
+ * )
+ *
+ * @OA\Examples(
+ *     example="phone-login-code-response",
+ *     summary="Код входа по телефону (mock SMS)",
+ *     value={"ok": true, "record_id": "550e8400-e29b-41d4-a716-446655440000", "code": "123456", "activation_code": "123456"}
  * )
  *
  * @OA\Response(

@@ -54,7 +54,7 @@ use yii\web\UnauthorizedHttpException;
  * @OA\Post(
  *     path="/api/auth/phone_registration_confirmed",
  *     summary="Начать: регистрацию по телефону",
- *     description="actionPhoneRegistrationConfirmed — Отправляет SMS с кодом подтверждения для регистрации",
+ *     description="actionPhoneRegistrationConfirmed — Запрашивает SMS-код для регистрации. Пока включён smsMockMode, SMS не отправляется: одноразовый код возвращается в activation_code для вёрстки и тестов. Далее — POST /api/auth/verify_phone_registration с phone_number, code и record_id.",
  *     operationId="actionPhoneRegistrationConfirmed",
  *     tags={"Авторизация"},
  *     @OA\Parameter(
@@ -66,7 +66,7 @@ use yii\web\UnauthorizedHttpException;
  *     ),
  *     @OA\Response(
  *         response=200,
- *         description="Код подтверждения отправлен",
+ *         description="record_id и код (в mock-режиме SMS — activation_code в теле ответа)",
  *         @OA\MediaType(
  *             mediaType="application/json",
  *             @OA\Schema(ref="#/components/schemas/ChallengeOkResponse"),
@@ -78,7 +78,7 @@ use yii\web\UnauthorizedHttpException;
  * @OA\Post(
  *     path="/api/auth/phone_login_get_code",
  *     summary="Получить: код входа по телефону",
- *     description="actionPhoneLoginGetCode — Отправляет SMS с кодом для входа существующему пользователю",
+ *     description="actionPhoneLoginGetCode — Запрашивает SMS-код для входа существующему пользователю. Пока включён smsMockMode, SMS не отправляется: код возвращается в полях code и activation_code. Передайте record_id и code в POST /api/auth/login_phone_with_code.",
  *     operationId="actionPhoneLoginGetCode",
  *     tags={"Авторизация"},
  *     @OA\Parameter(
@@ -90,11 +90,11 @@ use yii\web\UnauthorizedHttpException;
  *     ),
  *     @OA\Response(
  *         response=200,
- *         description="Код подтверждения отправлен",
+ *         description="record_id и код входа (в mock-режиме SMS — code в теле ответа)",
  *         @OA\MediaType(
  *             mediaType="application/json",
- *             @OA\Schema(ref="#/components/schemas/ChallengeOkResponse"),
- *             @OA\Examples(example=200, ref="#/components/examples/challenge-ok-response")
+ *             @OA\Schema(ref="#/components/schemas/PhoneLoginCodeResponse"),
+ *             @OA\Examples(example=200, ref="#/components/examples/phone-login-code-response")
  *         )
  *     )
  * )

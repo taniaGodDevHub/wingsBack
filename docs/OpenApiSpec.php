@@ -22,7 +22,13 @@ use OpenApi\Annotations as OA;
  * **Объединение после входа / регистрации**
  * 1. Автоматически: при `verify_*` / `login_*` с `session_id` (заголовок или body) в ответе `TokenResponse.guest_sync` переносятся корзина и избранное.
  * 2. Вручную (идемпотентно): параллельно `POST /api/cart-client/sync` и `POST /api/favorites/sync` с Bearer + `session_id`.
- * Если `session_id` не передан при auth, `guest_sync.skipped=true` — передайте `session_id` в ручных sync."
+ * Если `session_id` не передан при auth, `guest_sync.skipped=true` — передайте `session_id` в ручных sync.
+ *
+ * **SMS (временный mock-режим)**
+ * Пока не подключён SMS-провайдер, включён `smsMockMode`: SMS не отправляется, а одноразовый код возвращается в ответе
+ * `phone_registration_confirmed` и `phone_login_get_code` (поля `activation_code` и `code`).
+ * Фронтенд использует `record_id` + `code` для `verify_phone_registration` / `login_phone_with_code`.
+ * После подключения SMS.ru установите `smsMockMode=false` и укажите `smsRuApiId` — код перестанет приходить в ответе API."
  *     ),
  *     @OA\Server(url="/", description="API-сервер")
  * )

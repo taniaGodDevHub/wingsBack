@@ -7,7 +7,7 @@ namespace app\components\sms;
 use Yii;
 use yii\base\Component;
 
-class SmsRuClient extends Component
+class SmsRuClient extends Component implements SmsSenderInterface
 {
     private const CHECK_URL = 'https://sms.ru/auth/check';
     private const SEND_URL = 'https://sms.ru/sms/send';
@@ -26,18 +26,18 @@ class SmsRuClient extends Component
         ]);
     }
 
-    public function sendCode(string $phone, string $code): bool
+    public function sendCode(string $phone, string $code): void
     {
         $apiId = $this->getApiId();
         if ($apiId === '') {
             Yii::warning('smsRuApiId is empty; SMS not sent.', __METHOD__);
-            return YII_ENV_DEV;
+            return;
         }
 
         $digits = preg_replace('/\D+/', '', $phone) ?? '';
         if ($digits === '') {
             Yii::warning('Invalid phone number for SMS.ru.', __METHOD__);
-            return false;
+            return;
         }
 
         $payload = [
@@ -59,21 +59,20 @@ class SmsRuClient extends Component
 
         $data = $this->request(self::SEND_URL, $payload);
         if ($data === null) {
-            return false;
+            return;
         }
 
         if (($data['status'] ?? '') !== 'OK') {
             $this->logError('SMS.ru send rejected.', $data);
-            return false;
+            return;
         }
 
         $smsStatus = $data['sms'][$digits] ?? null;
         if (is_array($smsStatus) && ($smsStatus['status'] ?? '') === 'OK') {
-            return true;
+            return;
         }
 
         $this->logError('SMS.ru send failed for recipient.', is_array($smsStatus) ? $smsStatus : $data);
-        return false;
     }
 
     private function getApiId(): string

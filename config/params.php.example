@@ -7,6 +7,7 @@ return [
 
     'smsRuApiId' => '', // API ID из ЛК SMS.ru → Программистам
     'smsRuFrom' => '', // одобренное имя отправителя (необязательно)
+    'smsMockMode' => true, // временная прослойка: SMS не отправляется, код возвращается в ответе API
     'jwtSecret' => 'change-me-to-random-secret-key',
     'jwtAccessTtl' => 3600,
     'jwtRefreshTtl' => 86400,

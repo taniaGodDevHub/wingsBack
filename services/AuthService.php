@@ -6,7 +6,7 @@ namespace app\services;
 
 use app\components\auth\JwtService;
 use app\components\mail\AuthCodeMailer;
-use app\components\sms\SmsRuClient;
+use app\components\sms\SmsSender;
 use app\models\AuthVerificationChallenge;
 use app\models\PhoneNormalizer;
 use app\models\User;
@@ -61,12 +61,18 @@ class AuthService
             throw new NotFoundHttpException('User not found.');
         }
 
-        return $this->startChallenge(
+        $result = $this->startChallenge(
             AuthVerificationChallenge::CHANNEL_PHONE,
             $normalized,
             AuthVerificationChallenge::TYPE_LOGIN,
             true,
         );
+
+        if (isset($result['activation_code'])) {
+            $result['code'] = $result['activation_code'];
+        }
+
+        return $result;
     }
 
     public function startEmailRegistration(string $email): array
@@ -219,7 +225,7 @@ class AuthService
         $response = [
             'record_id' => $challenge->record_id,
         ];
-        if (!empty(Yii::$app->params['exposeActivationCode'])) {
+        if ($this->shouldExposeCode($channel)) {
             $key = $useOkWrapper ? 'activation_code' : 'code';
             $response[$key] = $code;
         }
@@ -230,11 +236,27 @@ class AuthService
         return $response;
     }
 
+    private function shouldExposeCode(string $channel): bool
+    {
+        if (!empty(Yii::$app->params['exposeActivationCode'])) {
+            return true;
+        }
+
+        if ($channel !== AuthVerificationChallenge::CHANNEL_PHONE) {
+            return false;
+        }
+
+        /** @var SmsSender $sms */
+        $sms = Yii::$app->smsSender;
+
+        return $sms->isMockMode();
+    }
+
     private function dispatchCode(string $channel, string $destination, string $code): void
     {
         if ($channel === AuthVerificationChallenge::CHANNEL_PHONE) {
-            /** @var SmsRuClient $sms */
-            $sms = Yii::$app->smsRu;
+            /** @var SmsSender $sms */
+            $sms = Yii::$app->smsSender;
             $sms->sendCode($destination, $code);
             return;
         }
