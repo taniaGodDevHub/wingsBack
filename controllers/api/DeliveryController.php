@@ -21,7 +21,7 @@ use yii\web\UnauthorizedHttpException;
  * @OA\Post(
  *     path="/api/delivery/suggest-address",
  *     summary="Подсказки адресов для оформления",
- *     description="actionSuggestAddress — адресные подсказки DaData с учётом города и способа доставки",
+ *     description="actionSuggestAddress — подсказки полного адреса в одной строке (город, улица, дом). Возвращает full_address с индексом и postal_code отдельным полем.",
  *     operationId="DeliveryController.actionSuggestAddress",
  *     tags={"Доставка"},
  *     @OA\RequestBody(
@@ -38,12 +38,16 @@ use yii\web\UnauthorizedHttpException;
  *     ),
  *     @OA\Response(
  *         response=200,
- *         description="Подсказки адресов",
+ *         description="Подсказки адреса",
  *         @OA\MediaType(
  *             mediaType="application/json",
  *             @OA\Schema(
  *                 @OA\Property(property="status", type="string", example="success"),
- *                 @OA\Property(property="data", type="array", @OA\Items(type="object"))
+ *                 @OA\Property(
+ *                     property="data",
+ *                     type="array",
+ *                     @OA\Items(ref="#/components/schemas/DeliveryAddressSuggestion")
+ *                 )
  *             )
  *         )
  *     )
@@ -107,7 +111,6 @@ class DeliveryController extends BaseApiController
         $body = Yii::$app->request->bodyParams;
         $query = (string) ($body['query'] ?? '');
         $count = min(20, max(1, (int) ($body['count'] ?? 10)));
-        $cityFiasId = isset($body['city_fias_id']) ? (string) $body['city_fias_id'] : null;
         $deliveryMethodId = (int) ($body['delivery_method_id'] ?? DeliveryService::METHOD_CDEK_ID);
         if ($query === '') {
             throw new \InvalidArgumentException('query is required.');
@@ -115,7 +118,7 @@ class DeliveryController extends BaseApiController
 
         return [
             'status' => 'success',
-            'data' => $this->delivery->suggestAddressForCheckout($query, $cityFiasId, $deliveryMethodId, $count),
+            'data' => $this->delivery->suggestAddressForCheckout($query, $deliveryMethodId, $count),
         ];
     }
 

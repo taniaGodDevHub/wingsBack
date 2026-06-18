@@ -10,38 +10,19 @@ final class DaDataClient
 {
     private const SUGGEST_URL = 'https://suggestions.dadata.ru/suggestions/api/4_1/rs/suggest';
 
-    public function suggestCity(string $query, int $count): array
+    /** @return array<int, array<string, mixed>> */
+    public function suggestFullAddress(string $query, int $count): array
     {
         $result = $this->request('/address', [
             'query' => $query,
             'count' => $count,
-            'from_bound' => ['value' => 'city'],
-            'to_bound' => ['value' => 'city'],
         ]);
 
         if ($result !== null) {
             return $result;
         }
 
-        return $this->mockCities($query, $count);
-    }
-
-    public function suggestAddress(string $query, ?string $cityFiasId, int $count): array
-    {
-        $payload = [
-            'query' => $query,
-            'count' => $count,
-        ];
-        if ($cityFiasId !== null && $cityFiasId !== '') {
-            $payload['locations'] = [['city_fias_id' => $cityFiasId]];
-        }
-
-        $result = $this->request('/address', $payload);
-        if ($result !== null) {
-            return $result;
-        }
-
-        return $this->mockAddresses($query, $cityFiasId, $count);
+        return $this->mockFullAddresses($query, $count);
     }
 
     /** @param array<string, mixed> $payload */
@@ -80,50 +61,78 @@ final class DaDataClient
     }
 
     /** @return array<int, array<string, mixed>> */
-    private function mockCities(string $query, int $count): array
+    private function mockFullAddresses(string $query, int $count): array
     {
-        $q = mb_strtolower($query);
+        $q = mb_strtolower(trim($query));
         $all = [
             [
-                'value' => 'Москва',
-                'unrestricted_value' => 'г Москва',
-                'data' => ['city_fias_id' => '0c5b2444-70a3-4b20-878f-b0f2b8daecf0'],
-            ],
-            [
-                'value' => 'Санкт-Петербург',
-                'unrestricted_value' => 'г Санкт-Петербург',
-                'data' => ['city_fias_id' => 'c2deb16a-0330-4f05-821f-1d09c93331e6'],
-            ],
-        ];
-        $filtered = array_values(array_filter(
-            $all,
-            static fn (array $row): bool => $q === '' || str_contains(mb_strtolower($row['value']), $q),
-        ));
-
-        return array_slice($filtered, 0, $count);
-    }
-
-    /** @return array<int, array<string, mixed>> */
-    private function mockAddresses(string $query, ?string $cityFiasId, int $count): array
-    {
-        $items = [
-            [
-                'value' => 'ул Тверская, д 7',
-                'unrestricted_value' => 'г Москва, ул Тверская, д 7',
+                'value' => 'г Москва, ул Тверская, д 7',
+                'unrestricted_value' => '125009, г Москва, ул Тверская, д 7',
                 'data' => [
+                    'postal_code' => '125009',
+                    'city' => 'Москва',
+                    'city_with_type' => 'г Москва',
+                    'city_fias_id' => '0c5b2444-70a3-4b20-878f-b0f2b8daecf0',
                     'address_fias_id' => 'fias-id-1',
                     'house_fias_id' => 'fias-id-house-1',
-                    'postal_code' => '125009',
                     'geo_lat' => '55.7641',
                     'geo_lon' => '37.6054',
                 ],
             ],
+            [
+                'value' => 'г Санкт-Петербург, Невский пр-кт, д 28',
+                'unrestricted_value' => '191186, г Санкт-Петербург, Невский пр-кт, д 28',
+                'data' => [
+                    'postal_code' => '191186',
+                    'city' => 'Санкт-Петербург',
+                    'city_with_type' => 'г Санкт-Петербург',
+                    'city_fias_id' => 'c2deb16a-0330-4f05-821f-1d09c93331e6',
+                    'address_fias_id' => 'fias-id-2',
+                    'house_fias_id' => 'fias-id-house-2',
+                    'geo_lat' => '59.9358',
+                    'geo_lon' => '30.3259',
+                ],
+            ],
+            [
+                'value' => 'г Казань, ул Баумана, д 19',
+                'unrestricted_value' => '420111, г Респ Татарстан, г Казань, ул Баумана, д 19',
+                'data' => [
+                    'postal_code' => '420111',
+                    'city' => 'Казань',
+                    'city_with_type' => 'г Казань',
+                    'city_fias_id' => '93b3df57-4e5e-4b4e-8b0e-0e0e0e0e0e0e',
+                    'address_fias_id' => 'fias-id-3',
+                    'house_fias_id' => 'fias-id-house-3',
+                    'geo_lat' => '55.7887',
+                    'geo_lon' => '49.1221',
+                ],
+            ],
         ];
 
-        if ($query !== '') {
-            $items[0]['value'] = $query;
+        $filtered = array_values(array_filter(
+            $all,
+            static fn (array $row): bool => $q === ''
+                || str_contains(mb_strtolower($row['value']), $q)
+                || str_contains(mb_strtolower($row['unrestricted_value']), $q),
+        ));
+
+        if ($filtered === [] && $q !== '') {
+            $filtered[] = [
+                'value' => $query,
+                'unrestricted_value' => '101000, ' . $query,
+                'data' => [
+                    'postal_code' => '101000',
+                    'city' => 'Москва',
+                    'city_with_type' => 'г Москва',
+                    'city_fias_id' => '0c5b2444-70a3-4b20-878f-b0f2b8daecf0',
+                    'address_fias_id' => 'fias-id-mock',
+                    'house_fias_id' => 'fias-id-house-mock',
+                    'geo_lat' => '55.7558',
+                    'geo_lon' => '37.6173',
+                ],
+            ];
         }
 
-        return array_slice($items, 0, $count);
+        return array_slice($filtered, 0, $count);
     }
 }

@@ -66,25 +66,18 @@ final class DeliveryService
     }
 
     /** @return array<int, array<string, mixed>> */
-    public function suggestAddressForCheckout(string $query, ?string $cityFiasId, int $deliveryMethodId, int $count): array
+    public function suggestAddressForCheckout(string $query, int $deliveryMethodId, int $count): array
     {
         if ($deliveryMethodId !== self::METHOD_CDEK_ID) {
             throw new \InvalidArgumentException('Unsupported delivery_method_id.');
         }
 
-        $suggestions = (new \app\components\dadata\DaDataClient())->suggestAddress($query, $cityFiasId, $count);
+        $suggestions = (new \app\components\dadata\DaDataClient())->suggestFullAddress($query, $count);
+        $formatted = \app\components\dadata\DaDataSuggestionFormatter::formatMany($suggestions);
 
         return array_map(static function (array $row): array {
-            return [
-                'value' => $row['value'] ?? '',
-                'unrestricted_value' => $row['unrestricted_value'] ?? '',
-                'pvz_code' => null,
-                'data' => [
-                    'address_fias_id' => $row['data']['address_fias_id'] ?? $row['data']['fias_id'] ?? null,
-                    'house_fias_id' => $row['data']['house_fias_id'] ?? $row['data']['fias_id'] ?? null,
-                ],
-            ];
-        }, $suggestions);
+            return array_merge($row, ['pvz_code' => null]);
+        }, $formatted);
     }
 
     private function requireEditableOrder(int $orderId, int $userId): ShopOrder

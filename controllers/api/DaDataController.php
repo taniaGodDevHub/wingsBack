@@ -6,6 +6,7 @@ namespace app\controllers\api;
 
 use app\components\api\BaseApiController;
 use app\components\dadata\DaDataClient;
+use app\components\dadata\DaDataSuggestionFormatter;
 use OpenApi\Annotations as OA;
 use Yii;
 use yii\filters\VerbFilter;
@@ -13,38 +14,13 @@ use yii\filters\VerbFilter;
 /**
  * @OA\Tag(
  *     name="DaData",
- *     description="Подсказки городов и адресов через DaData"
- * )
- *
- * @OA\Post(
- *     path="/api/dadata/suggest/city",
- *     summary="Подсказки городов",
- *     description="actionSuggestCity — поиск городов через DaData",
- *     operationId="DaDataController.actionSuggestCity",
- *     tags={"DaData"},
- *     @OA\RequestBody(
- *         required=true,
- *         @OA\MediaType(
- *             mediaType="application/json",
- *             @OA\Schema(ref="#/components/schemas/DaDataSuggestRequest")
- *         )
- *     ),
- *     @OA\Response(
- *         response=200,
- *         description="Список городов",
- *         @OA\MediaType(
- *             mediaType="application/json",
- *             @OA\Schema(
- *                 @OA\Property(property="data", type="array", @OA\Items(type="object"))
- *             )
- *         )
- *     )
+ *     description="Подсказки полного адреса (город, улица и дом в одной строке) через DaData"
  * )
  *
  * @OA\Post(
  *     path="/api/dadata/suggest/address",
- *     summary="Подсказки адресов",
- *     description="actionSuggestAddress — поиск адресов через DaData с опциональным ограничением по городу",
+ *     summary="Подсказки полного адреса",
+ *     description="actionSuggestAddress — поиск по одной строке: город, улица и дом вместе. В ответе value — краткая подпись для списка, full_address — полный адрес с почтовым индексом, postal_code — индекс отдельным полем.",
  *     operationId="DaDataController.actionSuggestAddress",
  *     tags={"DaData"},
  *     @OA\RequestBody(
@@ -56,28 +32,10 @@ use yii\filters\VerbFilter;
  *     ),
  *     @OA\Response(
  *         response=200,
- *         description="Список адресов",
+ *         description="Список подсказок адреса",
  *         @OA\MediaType(
  *             mediaType="application/json",
- *             @OA\Schema(
- *                 @OA\Property(
- *                     property="data",
- *                     type="array",
- *                     @OA\Items(
- *                         @OA\Property(property="value", type="string"),
- *                         @OA\Property(property="unrestricted_value", type="string"),
- *                         @OA\Property(
- *                             property="data",
- *                             type="object",
- *                             @OA\Property(property="address_fias_id", type="string", nullable=true),
- *                             @OA\Property(property="house_fias_id", type="string", nullable=true),
- *                             @OA\Property(property="postal_code", type="string", nullable=true),
- *                             @OA\Property(property="geo_lat", type="string", nullable=true),
- *                             @OA\Property(property="geo_lon", type="string", nullable=true)
- *                         )
- *                     )
- *                 )
- *             )
+ *             @OA\Schema(ref="#/components/schemas/DaDataSuggestResponse")
  *         )
  *     )
  * )
@@ -91,7 +49,6 @@ class DaDataController extends BaseApiController
         $behaviors['verbs'] = [
             'class' => VerbFilter::class,
             'actions' => [
-                'suggest-city' => ['POST'],
                 'suggest-address' => ['POST'],
             ],
         ];
@@ -99,49 +56,18 @@ class DaDataController extends BaseApiController
         return $behaviors;
     }
 
-    public function actionSuggestCity(): array
-    {
-        $body = Yii::$app->request->bodyParams;
-        $query = (string) ($body['query'] ?? '');
-        $count = min(20, max(1, (int) ($body['count'] ?? 10)));
-        if ($query === '') {
-            throw new \InvalidArgumentException('query is required.');
-        }
-
-        $client = new DaDataClient();
-
-        return ['data' => $client->suggestCity($query, $count)];
-    }
-
     public function actionSuggestAddress(): array
     {
         $body = Yii::$app->request->bodyParams;
         $query = (string) ($body['query'] ?? '');
         $count = min(20, max(1, (int) ($body['count'] ?? 10)));
-        $cityFiasId = isset($body['city_fias_id']) ? (string) $body['city_fias_id'] : null;
         if ($query === '') {
             throw new \InvalidArgumentException('query is required.');
         }
 
         $client = new DaDataClient();
-        $suggestions = $client->suggestAddress($query, $cityFiasId, $count);
+        $suggestions = $client->suggestFullAddress($query, $count);
 
-        return [
-            'data' => array_map(static function (array $row): array {
-                $data = $row['data'] ?? [];
-
-                return [
-                    'value' => $row['value'] ?? '',
-                    'unrestricted_value' => $row['unrestricted_value'] ?? '',
-                    'data' => [
-                        'address_fias_id' => $data['address_fias_id'] ?? $data['fias_id'] ?? null,
-                        'house_fias_id' => $data['house_fias_id'] ?? $data['fias_id'] ?? null,
-                        'postal_code' => $data['postal_code'] ?? null,
-                        'geo_lat' => $data['geo_lat'] ?? null,
-                        'geo_lon' => $data['geo_lon'] ?? null,
-                    ],
-                ];
-            }, $suggestions),
-        ];
+        return ['data' => DaDataSuggestionFormatter::formatMany($suggestions)];
     }
 }

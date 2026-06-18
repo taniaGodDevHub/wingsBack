@@ -86,7 +86,6 @@ $config = [
                 'GET api/orders/<order_id:\\d+>' => 'api/orders/view',
                 'POST api/orders/<order_id:\\d+>/confirm' => 'api/orders/confirm',
                 'GET api/orders/<order_id:\\d+>/delivery-options' => 'api/orders/delivery-options',
-                'POST api/dadata/suggest/city' => 'api/dadata/suggest-city',
                 'POST api/dadata/suggest/address' => 'api/dadata/suggest-address',
                 'POST api/delivery/suggest-address' => 'api/delivery/suggest-address',
                 'POST api/delivery/calculate-delivery' => 'api/delivery/calculate-delivery',

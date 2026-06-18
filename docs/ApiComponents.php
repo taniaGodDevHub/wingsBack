@@ -212,9 +212,44 @@ use OpenApi\Annotations as OA;
  * @OA\Schema(
  *     schema="DaDataSuggestRequest",
  *     required={"query"},
- *     @OA\Property(property="query", type="string", description="Строка поиска"),
- *     @OA\Property(property="count", type="integer", default=10, description="Количество подсказок (1–20)"),
- *     @OA\Property(property="city_fias_id", type="string", description="ФИАС ID города для ограничения поиска адресов")
+ *     @OA\Property(property="query", type="string", example="Москва Тверская 7", description="Полный адрес в одной строке: город, улица, дом"),
+ *     @OA\Property(property="count", type="integer", default=10, description="Количество подсказок (1–20)")
+ * )
+ *
+ * @OA\Schema(
+ *     schema="DaDataAddressSuggestionData",
+ *     @OA\Property(property="city_fias_id", type="string", nullable=true, description="ФИАС ID города — для расчёта доставки"),
+ *     @OA\Property(property="address_fias_id", type="string", nullable=true),
+ *     @OA\Property(property="house_fias_id", type="string", nullable=true),
+ *     @OA\Property(property="geo_lat", type="string", nullable=true),
+ *     @OA\Property(property="geo_lon", type="string", nullable=true)
+ * )
+ *
+ * @OA\Schema(
+ *     schema="DaDataAddressSuggestion",
+ *     description="Подсказка полного адреса",
+ *     @OA\Property(property="value", type="string", example="г Москва, ул Тверская, д 7", description="Краткая подпись для списка подсказок"),
+ *     @OA\Property(property="full_address", type="string", example="125009, г Москва, ул Тверская, д 7", description="Полный адрес с почтовым индексом"),
+ *     @OA\Property(property="postal_code", type="string", nullable=true, example="125009", description="Почтовый индекс отдельным полем"),
+ *     @OA\Property(property="city_name", type="string", nullable=true, example="г Москва"),
+ *     @OA\Property(property="data", ref="#/components/schemas/DaDataAddressSuggestionData")
+ * )
+ *
+ * @OA\Schema(
+ *     schema="DaDataSuggestResponse",
+ *     @OA\Property(
+ *         property="data",
+ *         type="array",
+ *         @OA\Items(ref="#/components/schemas/DaDataAddressSuggestion")
+ *     )
+ * )
+ *
+ * @OA\Schema(
+ *     schema="DeliveryAddressSuggestion",
+ *     allOf={
+ *         @OA\Schema(ref="#/components/schemas/DaDataAddressSuggestion"),
+ *         @OA\Schema(@OA\Property(property="pvz_code", type="string", nullable=true, description="Код ПВЗ; null для курьерской доставки"))
+ *     }
  * )
  *
  * @OA\Schema(
