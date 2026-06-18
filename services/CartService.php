@@ -9,22 +9,25 @@ use app\models\Cart;
 use app\models\CartItem;
 use app\models\GuestSession;
 use app\models\Product;
+use app\models\ProductSize;
 use app\services\catalog\ProductPresenter;
 use Yii;
 
 class CartService
 {
-    public function add(ApiOwnerContext $owner, int $productId, int $quantity, ?int $cartId): array
+    public function add(ApiOwnerContext $owner, int $productId, string $sizeValue, int $quantity, ?int $cartId): array
     {
-        $this->requireProduct($productId);
+        $product = $this->requireProduct($productId);
+        $sizeValue = $this->requireProductSize($product, $sizeValue);
         $quantity = max(1, $quantity);
         $cart = $this->resolveCart($owner, $cartId, true);
 
-        $item = CartItem::findOne(['cart_id' => $cart->id, 'product_id' => $productId]);
+        $item = $this->findCartItem((int) $cart->id, $productId, $sizeValue);
         if ($item === null) {
             $item = new CartItem();
             $item->cart_id = (int) $cart->id;
             $item->product_id = $productId;
+            $item->size_value = $sizeValue;
             $item->quantity = $quantity;
             $item->save(false);
         } else {
@@ -32,31 +35,33 @@ class CartService
             $item->save(false);
         }
 
-        return [
-            'cart_id' => (int) $cart->id,
-            'product_id' => $productId,
-            'quantity' => (int) $item->quantity,
-            'is_in_cart' => true,
-        ];
+        return $this->buildItemActionResponse($item);
     }
 
-    public function update(ApiOwnerContext $owner, int $productId, int $quantity, ?int $cartId): array
+    public function update(ApiOwnerContext $owner, int $productId, string $sizeValue, int $quantity, ?int $cartId): array
     {
+        $sizeValue = $this->normalizeSizeValue($sizeValue);
+        if ($sizeValue === '') {
+            throw new \InvalidArgumentException('size_value is required.');
+        }
+
         $cart = $this->resolveCart($owner, $cartId, false);
         if ($cart === null) {
             throw ApiHttpException::notFound('Cart not found');
         }
 
-        $item = CartItem::findOne(['cart_id' => $cart->id, 'product_id' => $productId]);
+        $item = $this->findCartItem((int) $cart->id, $productId, $sizeValue);
         if ($item === null) {
             throw ApiHttpException::notFound('Product not found in cart');
         }
 
         if ($quantity <= 0) {
             $item->delete();
+
             return [
                 'cart_id' => (int) $cart->id,
                 'product_id' => $productId,
+                'size_value' => $sizeValue,
                 'quantity' => 0,
                 'is_in_cart' => false,
             ];
@@ -65,26 +70,31 @@ class CartService
         $item->quantity = $quantity;
         $item->save(false);
 
-        return [
-            'cart_id' => (int) $cart->id,
-            'product_id' => $productId,
-            'quantity' => (int) $item->quantity,
-            'is_in_cart' => true,
-        ];
+        return $this->buildItemActionResponse($item);
     }
 
-    public function remove(ApiOwnerContext $owner, int $productId, ?int $cartId): array
+    public function remove(ApiOwnerContext $owner, int $productId, string $sizeValue, ?int $cartId): array
     {
+        $sizeValue = $this->normalizeSizeValue($sizeValue);
+        if ($sizeValue === '') {
+            throw new \InvalidArgumentException('size_value is required.');
+        }
+
         $cart = $this->resolveCart($owner, $cartId, false);
         if ($cart === null) {
             throw ApiHttpException::notFound('Cart not found');
         }
 
-        CartItem::deleteAll(['cart_id' => $cart->id, 'product_id' => $productId]);
+        CartItem::deleteAll([
+            'cart_id' => $cart->id,
+            'product_id' => $productId,
+            'size_value' => $sizeValue,
+        ]);
 
         return [
             'cart_id' => (int) $cart->id,
             'product_id' => $productId,
+            'size_value' => $sizeValue,
             'is_in_cart' => false,
         ];
     }
@@ -127,6 +137,7 @@ class CartService
             $unitPrice = (float) $product->price;
             $responseItems[] = [
                 'product_id' => (int) $item->product_id,
+                'size_value' => $item->size_value,
                 'cart_id' => (int) $cart->id,
                 'quantity' => (int) $item->quantity,
                 'unit_price' => $unitPrice,
@@ -164,9 +175,12 @@ class CartService
         foreach ($itemsInput as $row) {
             if (is_array($row)) {
                 $productId = (int) ($row['product_id'] ?? 0);
+                $sizeValue = $this->normalizeSizeValue((string) ($row['size_value'] ?? ''));
                 $quantity = max(1, (int) ($row['quantity'] ?? 1));
                 $unitPrice = isset($row['unit_price']) ? (float) $row['unit_price'] : null;
-                $item = CartItem::findOne(['cart_id' => $cart->id, 'product_id' => $productId]);
+                $item = $sizeValue !== ''
+                    ? $this->findCartItem((int) $cart->id, $productId, $sizeValue)
+                    : null;
                 if ($item !== null) {
                     $quantity = $item->quantity;
                 }
@@ -183,13 +197,20 @@ class CartService
             }
 
             $productId = (int) $row;
-            $item = CartItem::findOne(['cart_id' => $cart->id, 'product_id' => $productId]);
-            $product = Product::findOne($productId);
-            if ($item === null || $product === null) {
+            $cartItems = CartItem::find()
+                ->where(['cart_id' => $cart->id, 'product_id' => $productId])
+                ->all();
+            if ($cartItems === []) {
                 continue;
             }
-            $count += $item->quantity;
-            $total += (float) $product->price * $item->quantity;
+            $product = Product::findOne($productId);
+            if ($product === null) {
+                continue;
+            }
+            foreach ($cartItems as $cartItem) {
+                $count += $cartItem->quantity;
+                $total += (float) $product->price * $cartItem->quantity;
+            }
         }
 
         return [
@@ -225,10 +246,11 @@ class CartService
             if ($guestCart !== null && (int) $guestCart->id !== (int) $userCart->id) {
                 $guestItems = CartItem::find()->where(['cart_id' => $guestCart->id])->all();
                 foreach ($guestItems as $guestItem) {
-                    $existing = CartItem::findOne([
-                        'cart_id' => $userCart->id,
-                        'product_id' => $guestItem->product_id,
-                    ]);
+                    $existing = $this->findCartItem(
+                        (int) $userCart->id,
+                        (int) $guestItem->product_id,
+                        $guestItem->size_value,
+                    );
                     if ($existing !== null) {
                         $existing->quantity += $guestItem->quantity;
                         $existing->save(false);
@@ -290,6 +312,49 @@ class CartService
         }
 
         return $product;
+    }
+
+    private function normalizeSizeValue(string $sizeValue): string
+    {
+        return trim($sizeValue);
+    }
+
+    private function requireProductSize(Product $product, string $sizeValue): string
+    {
+        $sizeValue = $this->normalizeSizeValue($sizeValue);
+        if ($sizeValue === '') {
+            throw new \InvalidArgumentException('size_value is required.');
+        }
+
+        $exists = ProductSize::find()
+            ->where(['product_id' => $product->id, 'size_value' => $sizeValue])
+            ->exists();
+        if (!$exists) {
+            throw new \InvalidArgumentException('size_value is not available for this product.');
+        }
+
+        return $sizeValue;
+    }
+
+    private function findCartItem(int $cartId, int $productId, string $sizeValue): ?CartItem
+    {
+        return CartItem::findOne([
+            'cart_id' => $cartId,
+            'product_id' => $productId,
+            'size_value' => $sizeValue,
+        ]);
+    }
+
+    /** @return array{cart_id: int, product_id: int, size_value: string, quantity: int, is_in_cart: true} */
+    private function buildItemActionResponse(CartItem $item): array
+    {
+        return [
+            'cart_id' => (int) $item->cart_id,
+            'product_id' => (int) $item->product_id,
+            'size_value' => $item->size_value,
+            'quantity' => (int) $item->quantity,
+            'is_in_cart' => true,
+        ];
     }
 
     private function resolveCart(ApiOwnerContext $owner, ?int $cartId, bool $create): ?Cart

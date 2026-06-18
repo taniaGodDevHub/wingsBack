@@ -23,7 +23,7 @@ use yii\web\UnauthorizedHttpException;
  * @OA\Post(
  *     path="/api/cart-client/add",
  *     summary="Добавить товар в корзину",
- *     description="Добавляет товар или увеличивает количество. Гость: X-Session-ID или session_id в body. Авторизованный: Bearer.",
+ *     description="Добавляет товар выбранного размера или увеличивает количество позиции. Обязательны product_id и size_value из доступных размеров товара. Гость: X-Session-ID или session_id в body. Авторизованный: Bearer.",
  *     operationId="CartClientController.actionAdd",
  *     tags={"Корзина"},
  *     security={{"bearerAuth": {}}, {"sessionId": {}}},
@@ -47,7 +47,7 @@ use yii\web\UnauthorizedHttpException;
  * @OA\Post(
  *     path="/api/cart-client/update",
  *     summary="Обновить количество товара в корзине",
- *     description="actionUpdate — устанавливает новое количество; quantity=0 удаляет позицию",
+ *     description="actionUpdate — устанавливает новое количество позиции с указанным size_value; quantity=0 удаляет позицию",
  *     operationId="CartClientController.actionUpdate",
  *     tags={"Корзина"},
  *     security={{"bearerAuth": {}}, {"sessionId": {}}},
@@ -71,7 +71,7 @@ use yii\web\UnauthorizedHttpException;
  * @OA\Post(
  *     path="/api/cart-client/remove",
  *     summary="Удалить товар из корзины",
- *     description="Удаляет позицию по product_id. Гость: X-Session-ID или session_id в body.",
+ *     description="Удаляет позицию по product_id и size_value. Гость: X-Session-ID или session_id в body.",
  *     operationId="CartClientController.actionRemove",
  *     tags={"Корзина"},
  *     security={{"bearerAuth": {}}, {"sessionId": {}}},
@@ -90,6 +90,7 @@ use yii\web\UnauthorizedHttpException;
  *             @OA\Schema(
  *                 @OA\Property(property="cart_id", type="integer"),
  *                 @OA\Property(property="product_id", type="integer"),
+ *                 @OA\Property(property="size_value", type="string", example="M"),
  *                 @OA\Property(property="is_in_cart", type="boolean", example=false)
  *             )
  *         )
@@ -150,7 +151,7 @@ use yii\web\UnauthorizedHttpException;
  *                 @OA\Property(
  *                     property="items",
  *                     type="array",
- *                     description="Массив product_id или объектов {product_id, quantity, unit_price}",
+ *                     description="Массив product_id или объектов {product_id, size_value, quantity, unit_price}",
  *                     @OA\Items(oneOf={
  *                         @OA\Schema(type="integer"),
  *                         @OA\Schema(type="object")
@@ -232,13 +233,14 @@ class CartClientController extends BaseApiController
         $owner = ApiOwnerContext::resolve(false, true);
         $body = Yii::$app->request->bodyParams;
         $productId = (int) ($body['product_id'] ?? 0);
+        $sizeValue = (string) ($body['size_value'] ?? '');
         $quantity = (int) ($body['quantity'] ?? 1);
         $cartId = isset($body['cart_id']) && $body['cart_id'] !== null ? (int) $body['cart_id'] : null;
         if ($productId <= 0) {
             throw new \InvalidArgumentException('product_id is required.');
         }
 
-        return $this->cart->add($owner, $productId, $quantity, $cartId);
+        return $this->cart->add($owner, $productId, $sizeValue, $quantity, $cartId);
     }
 
     public function actionUpdate(): array
@@ -246,13 +248,14 @@ class CartClientController extends BaseApiController
         $owner = ApiOwnerContext::resolve(false, true);
         $body = Yii::$app->request->bodyParams;
         $productId = (int) ($body['product_id'] ?? 0);
+        $sizeValue = (string) ($body['size_value'] ?? '');
         $quantity = (int) ($body['quantity'] ?? 1);
         $cartId = isset($body['cart_id']) ? (int) $body['cart_id'] : null;
         if ($productId <= 0) {
             throw new \InvalidArgumentException('product_id is required.');
         }
 
-        return $this->cart->update($owner, $productId, $quantity, $cartId);
+        return $this->cart->update($owner, $productId, $sizeValue, $quantity, $cartId);
     }
 
     public function actionRemove(): array
@@ -260,12 +263,13 @@ class CartClientController extends BaseApiController
         $owner = ApiOwnerContext::resolve(false, true);
         $body = Yii::$app->request->bodyParams;
         $productId = (int) ($body['product_id'] ?? 0);
+        $sizeValue = (string) ($body['size_value'] ?? '');
         $cartId = isset($body['cart_id']) ? (int) $body['cart_id'] : null;
         if ($productId <= 0) {
             throw new \InvalidArgumentException('product_id is required.');
         }
 
-        return $this->cart->remove($owner, $productId, $cartId);
+        return $this->cart->remove($owner, $productId, $sizeValue, $cartId);
     }
 
     public function actionList(): array

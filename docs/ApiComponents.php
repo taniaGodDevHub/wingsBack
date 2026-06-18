@@ -169,6 +169,7 @@ use OpenApi\Annotations as OA;
  *     schema="CartItemActionResponse",
  *     @OA\Property(property="cart_id", type="integer"),
  *     @OA\Property(property="product_id", type="integer"),
+ *     @OA\Property(property="size_value", type="string", example="M", description="Выбранный размер товара"),
  *     @OA\Property(property="quantity", type="integer"),
  *     @OA\Property(property="is_in_cart", type="boolean")
  * )
@@ -414,8 +415,9 @@ use OpenApi\Annotations as OA;
  *
  * @OA\Schema(
  *     schema="CartAddRequest",
- *     required={"product_id"},
+ *     required={"product_id","size_value"},
  *     @OA\Property(property="product_id", type="integer"),
+ *     @OA\Property(property="size_value", type="string", example="M", description="Размер из доступных для товара (см. sizes в каталоге)"),
  *     @OA\Property(property="quantity", type="integer", default=1),
  *     @OA\Property(property="cart_id", type="integer", nullable=true),
  *     @OA\Property(property="session_id", ref="#/components/schemas/GuestSessionId", nullable=true)
@@ -423,8 +425,9 @@ use OpenApi\Annotations as OA;
  *
  * @OA\Schema(
  *     schema="CartProductRequest",
- *     required={"product_id"},
+ *     required={"product_id","size_value"},
  *     @OA\Property(property="product_id", type="integer"),
+ *     @OA\Property(property="size_value", type="string", example="M", description="Размер позиции в корзине"),
  *     @OA\Property(property="cart_id", type="integer", nullable=true),
  *     @OA\Property(property="session_id", ref="#/components/schemas/GuestSessionId", nullable=true)
  * )
@@ -445,6 +448,7 @@ use OpenApi\Annotations as OA;
  * @OA\Schema(
  *     schema="CartListItem",
  *     @OA\Property(property="product_id", type="integer"),
+ *     @OA\Property(property="size_value", type="string", example="M"),
  *     @OA\Property(property="cart_id", type="integer"),
  *     @OA\Property(property="quantity", type="integer"),
  *     @OA\Property(property="unit_price", type="number", format="float"),
