@@ -131,34 +131,18 @@
     }
 
     function showFlash(type, message) {
-        const container = document.querySelector('main .container');
-        if (!container) {
+        if (window.WingsFlash && typeof window.WingsFlash.show === 'function') {
+            window.WingsFlash.show(type, message);
             return;
         }
 
+        const container = document.querySelector('.app-flash-toasts') || document.body;
         const alertClass = type === 'success' ? 'alert-success' : 'alert-danger';
         const alertEl = document.createElement('div');
-        alertEl.className = 'alert ' + alertClass + ' alert-dismissible fade show';
+        alertEl.className = 'alert ' + alertClass + ' alert-dismissible fade show shadow-sm mb-2';
         alertEl.setAttribute('role', 'alert');
-
-        const body = document.createElement('span');
-        body.textContent = message;
-        alertEl.appendChild(body);
-
-        const closeBtn = document.createElement('button');
-        closeBtn.type = 'button';
-        closeBtn.className = 'btn-close';
-        closeBtn.setAttribute('data-bs-dismiss', 'alert');
-        closeBtn.setAttribute('aria-label', 'Close');
-        alertEl.appendChild(closeBtn);
-
-        const existingAlert = container.querySelector('.alert');
-        if (existingAlert) {
-            existingAlert.replaceWith(alertEl);
-            return;
-        }
-
-        container.prepend(alertEl);
+        alertEl.textContent = message;
+        container.appendChild(alertEl);
     }
 
     function applyGalleryResponse(data) {

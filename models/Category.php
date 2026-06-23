@@ -26,6 +26,7 @@ class Category extends ActiveRecord
         return [
             [['name', 'slug'], 'required'],
             [['parent_id', 'sort_order'], 'integer'],
+            [['sort_order'], 'default', 'value' => 0],
             [['is_active'], 'boolean'],
             [['slug'], 'string', 'max' => 255],
             [['slug'], 'unique'],
@@ -74,6 +75,9 @@ class Category extends ActiveRecord
         }
         if ($this->parent_id === '' || $this->parent_id === 0) {
             $this->parent_id = null;
+        }
+        if ($this->sort_order === '' || $this->sort_order === null) {
+            $this->sort_order = 0;
         }
 
         return true;

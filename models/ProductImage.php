@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace app\models;
 
-use Yii;
 use yii\db\ActiveRecord;
+use yii\helpers\Url;
 
 /**
  * @property int $id
@@ -33,20 +33,24 @@ class ProductImage extends ActiveRecord
 
     public function getPublicUrl(): string
     {
-        $stored = $this->image_url;
+        $stored = (string) $this->image_url;
+        if ($stored === '') {
+            return '';
+        }
+
         if (preg_match('#^https?://#', $stored)) {
             $path = parse_url($stored, PHP_URL_PATH);
             if (!is_string($path) || !str_contains($path, '/uploads/products/')) {
                 return $stored;
             }
 
-            $filename = basename($path);
-        } elseif (str_contains($stored, 'uploads/products/')) {
-            $filename = basename($stored);
-        } else {
-            return $stored;
+            return Url::to('@web' . $path, true);
         }
 
-        return rtrim(Yii::getAlias('@httpwebuploads'), '/') . '/products/' . $filename;
+        if (str_starts_with($stored, 'uploads/')) {
+            return Url::to('@web/' . ltrim($stored, '/'), true);
+        }
+
+        return $stored;
     }
 }

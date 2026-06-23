@@ -17,6 +17,7 @@ class AlertTest extends \Codeception\Test\Unit
 
         verify($renderingResult)->stringContainsString($message);
         verify($renderingResult)->stringContainsString('alert-danger');
+        verify($renderingResult)->stringContainsString('app-flash-toasts');
 
         verify($renderingResult)->stringNotContainsString('alert-success');
         verify($renderingResult)->stringNotContainsString('alert-info');
@@ -35,6 +36,7 @@ class AlertTest extends \Codeception\Test\Unit
         verify($renderingResult)->stringContainsString($firstMessage);
         verify($renderingResult)->stringContainsString($secondMessage);
         verify($renderingResult)->stringContainsString('alert-danger');
+        verify($renderingResult)->stringContainsString('app-flash-toasts');
 
         verify($renderingResult)->stringNotContainsString('alert-success');
         verify($renderingResult)->stringNotContainsString('alert-info');
@@ -51,6 +53,7 @@ class AlertTest extends \Codeception\Test\Unit
 
         verify($renderingResult)->stringContainsString($message);
         verify($renderingResult)->stringContainsString('alert-danger');
+        verify($renderingResult)->stringContainsString('app-flash-toasts');
 
         verify($renderingResult)->stringNotContainsString('alert-success');
         verify($renderingResult)->stringNotContainsString('alert-info');
@@ -69,6 +72,7 @@ class AlertTest extends \Codeception\Test\Unit
         verify($renderingResult)->stringContainsString($firstMessage);
         verify($renderingResult)->stringContainsString($secondMessage);
         verify($renderingResult)->stringContainsString('alert-danger');
+        verify($renderingResult)->stringContainsString('app-flash-toasts');
 
         verify($renderingResult)->stringNotContainsString('alert-success');
         verify($renderingResult)->stringNotContainsString('alert-info');
@@ -200,6 +204,7 @@ class AlertTest extends \Codeception\Test\Unit
         verify($renderingResult)->stringContainsString($warningMessage);
 
         verify($renderingResult)->stringContainsString('alert-danger');
+        verify($renderingResult)->stringContainsString('app-flash-toasts');
         verify($renderingResult)->stringContainsString('alert-success');
         verify($renderingResult)->stringContainsString('alert-info');
         verify($renderingResult)->stringContainsString('alert-warning');
@@ -238,6 +243,7 @@ class AlertTest extends \Codeception\Test\Unit
         verify($renderingResult)->stringContainsString($secondWarningMessage);
 
         verify($renderingResult)->stringContainsString('alert-danger');
+        verify($renderingResult)->stringContainsString('app-flash-toasts');
         verify($renderingResult)->stringContainsString('alert-success');
         verify($renderingResult)->stringContainsString('alert-info');
         verify($renderingResult)->stringContainsString('alert-warning');

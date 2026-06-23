@@ -6,6 +6,7 @@ namespace app\widgets;
 
 use Yii;
 use yii\bootstrap5\Alert as BootstrapAlert;
+use yii\helpers\Html;
 
 /**
  * Alert widget renders a message from session flash. All flash messages are displayed
@@ -57,26 +58,46 @@ class Alert extends \yii\bootstrap5\Widget
             return;
         }
 
-        $appendClass = isset($this->options['class']) ? ' ' . $this->options['class'] : '';
+        $messages = [];
 
         foreach (array_keys($this->alertTypes) as $type) {
             $flash = $session->getFlash($type);
 
             foreach ((array) $flash as $i => $message) {
-                echo BootstrapAlert::widget(
-                    [
-                        'body' => $message,
-                        'closeButton' => $this->closeButton,
-                        'options' => [
-                            ...$this->options,
-                            'id' => $this->getId() . '-' . $type . '-' . $i,
-                            'class' => $this->alertTypes[$type] . $appendClass
-                        ],
-                    ],
-                );
+                $messages[] = [
+                    'type' => $type,
+                    'message' => $message,
+                    'id' => $this->getId() . '-' . $type . '-' . $i,
+                ];
             }
 
             $session->removeFlash($type);
         }
+
+        if ($messages === []) {
+            return;
+        }
+
+        echo Html::beginTag('div', [
+            'class' => 'app-flash-toasts position-fixed bottom-0 end-0 p-3',
+            'aria-live' => 'polite',
+            'aria-atomic' => 'true',
+        ]);
+
+        foreach ($messages as $item) {
+            echo BootstrapAlert::widget(
+                [
+                    'body' => $item['message'],
+                    'closeButton' => $this->closeButton,
+                    'options' => [
+                        ...$this->options,
+                        'id' => $item['id'],
+                        'class' => $this->alertTypes[$item['type']] . ' alert-dismissible fade show shadow-sm mb-2',
+                    ],
+                ],
+            );
+        }
+
+        echo Html::endTag('div');
     }
 }

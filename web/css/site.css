@@ -793,3 +793,13 @@ a.desc:after {
         padding-top: 0;
     }
 }
+
+.app-flash-toasts {
+    z-index: 1090;
+    max-width: min(420px, calc(100vw - 1.5rem));
+    pointer-events: none;
+}
+
+.app-flash-toasts .alert {
+    pointer-events: auto;
+}

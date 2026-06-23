@@ -27,6 +27,7 @@ class AppAsset extends AssetBundle
         'js/helpers/windowHelper.js',
         'js/hyper-config.js',
         'https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js',
+        'js/flash-toasts.js',
         'js/app.js',
         'js/hyper-theme.js',
     ];

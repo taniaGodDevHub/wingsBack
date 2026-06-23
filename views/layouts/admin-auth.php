@@ -26,11 +26,11 @@ $this->render('_head');
 <div class="admin-auth-page">
     <div class="admin-auth-page__backdrop" aria-hidden="true"></div>
     <div class="admin-auth-page__content">
-        <?= Alert::widget() ?>
         <?= $content ?>
     </div>
 </div>
 
+<?= Alert::widget() ?>
 <?php $this->endBody() ?>
 </body>
 </html>

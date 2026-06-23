@@ -15,7 +15,7 @@ use yii\helpers\Html;
 <?= $form->field($model, 'parent_id')->dropDownList(
     ['' => '—'] + array_column($parents, 'name', 'id'),
 ) ?>
-<?= $form->field($model, 'sort_order')->input('number') ?>
+<?= $form->field($model, 'sort_order')->input('number', ['value' => $model->sort_order ?? 0]) ?>
 <?= $form->field($model, 'is_active')->checkbox() ?>
 <div class="form-group">
     <?= Html::submitButton(Yii::t('app', 'Save'), ['class' => 'btn btn-primary']) ?>

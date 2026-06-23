@@ -53,7 +53,6 @@ $initialTheme = 'light';
         <div class="content-page">
             <div class="content">
                 <div class="container-fluid">
-                    <?= Alert::widget() ?>
                     <?= $content ?>
                 </div>
             </div>
@@ -71,6 +70,7 @@ $initialTheme = 'light';
     </footer>
 </div>
 
+<?= Alert::widget() ?>
 <?php $this->endBody() ?>
 </body>
 </html>

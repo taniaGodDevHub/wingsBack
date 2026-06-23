@@ -48,13 +48,13 @@ $initialTheme = 'light';
                         <i class="ri-moon-line font-22"></i>
                     </div>
                 </div>
-                <?= Alert::widget() ?>
                 <?= $content ?>
             </div>
         </div>
     </div>
 </div>
 
+<?= Alert::widget() ?>
 <?php $this->endBody() ?>
 </body>
 </html>

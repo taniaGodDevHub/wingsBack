@@ -7,6 +7,8 @@ namespace app\components\api;
 use Yii;
 use yii\base\InvalidArgumentException;
 use yii\base\Model;
+use yii\db\IntegrityException;
+use yii\helpers\Url;
 use yii\web\ErrorHandler;
 use yii\web\HttpException;
 use yii\web\Response;
@@ -21,7 +23,82 @@ class ApiErrorHandler extends ErrorHandler
             return;
         }
 
+        if ($this->shouldRenderFlashRedirect($exception)) {
+            $this->renderFlashRedirect($exception);
+
+            return;
+        }
+
         parent::renderException($exception);
+    }
+
+    private function shouldRenderFlashRedirect(\Throwable $exception): bool
+    {
+        if (!Yii::$app->has('request') || !Yii::$app->has('response') || !Yii::$app->has('session')) {
+            return false;
+        }
+
+        $request = Yii::$app->request;
+
+        if ($request->isAjax || $request->getIsPjax()) {
+            return false;
+        }
+
+        if (str_starts_with((string) $request->pathInfo, 'api/')) {
+            return false;
+        }
+
+        return true;
+    }
+
+    private function renderFlashRedirect(\Throwable $exception): void
+    {
+        try {
+            Yii::$app->session->setFlash('error', $this->resolveUserMessage($exception));
+        } catch (\Throwable) {
+            parent::renderException($exception);
+
+            return;
+        }
+
+        Yii::$app->response->clear();
+        Yii::$app->response->redirect($this->resolveRedirectUrl())->send();
+        Yii::$app->end();
+    }
+
+    private function resolveUserMessage(\Throwable $exception): string
+    {
+        if ($exception instanceof HttpException && $exception->statusCode < 500) {
+            return $exception->getMessage() !== ''
+                ? $exception->getMessage()
+                : Yii::t('app', 'An error occurred while processing your request.');
+        }
+
+        if ($exception instanceof IntegrityException) {
+            return Yii::t('app', 'Failed to save data. Check required fields and try again.');
+        }
+
+        if (YII_DEBUG && $exception->getMessage() !== '') {
+            return $exception->getMessage();
+        }
+
+        return Yii::t('app', 'An error occurred while processing your request.');
+    }
+
+    private function resolveRedirectUrl(): string
+    {
+        $request = Yii::$app->request;
+        $referrer = $request->referrer;
+
+        if (is_string($referrer) && $referrer !== '' && !str_contains($referrer, '/site/error')) {
+            return $referrer;
+        }
+
+        if ($request->isPost) {
+            return Url::to($request->url, true);
+        }
+
+        return Url::to(Yii::$app->homeUrl, true);
     }
 
     private function renderApiException(\Throwable $exception): void

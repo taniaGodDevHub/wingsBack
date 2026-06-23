@@ -119,6 +119,8 @@ return [
     'User not found.' => 'Пользователь не найден.',
     'User #{id}' => 'Пользователь #{id}',
     'Access denied.' => 'Доступ запрещён.',
+    'An error occurred while processing your request.' => 'Произошла ошибка при обработке запроса.',
+    'Failed to save data. Check required fields and try again.' => 'Не удалось сохранить данные. Проверьте обязательные поля и попробуйте снова.',
     'Active' => 'Активен',
     'Deleted' => 'Удалён',
     'Phone' => 'Телефон',
