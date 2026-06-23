@@ -14,6 +14,7 @@ use yii\helpers\Html;
     'columns' => [
         'id',
         'name',
+        'slug',
         [
             'attribute' => 'hex',
             'format' => 'raw',

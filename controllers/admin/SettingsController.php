@@ -18,6 +18,8 @@ use app\services\HomeBottomBannerUploadService;
 use app\services\HomeGenderBlockUploadService;
 use Yii;
 use yii\data\ActiveDataProvider;
+use yii\db\IntegrityException;
+use yii\filters\VerbFilter;
 use yii\web\ForbiddenHttpException;
 use yii\web\NotFoundHttpException;
 use yii\web\Response;
@@ -38,6 +40,12 @@ class SettingsController extends BaseAdminController
         $behaviors['access']['denyCallback'] = static function (): void {
             throw new ForbiddenHttpException(Yii::t('app', 'Access denied.'));
         };
+        $behaviors['verbs'] = [
+            'class' => VerbFilter::class,
+            'actions' => [
+                'category-delete' => ['POST'],
+            ],
+        ];
 
         return $behaviors;
     }
@@ -61,7 +69,7 @@ class SettingsController extends BaseAdminController
 
         if ($model->load(Yii::$app->request->post()) && $model->save()) {
             Yii::$app->session->setFlash('success', Yii::t('app', 'Saved successfully.'));
-            return $this->redirect(['categories']);
+            return $this->redirect(['/admin/settings/categories']);
         }
 
         $this->view->title = $model->isNewRecord
@@ -72,6 +80,29 @@ class SettingsController extends BaseAdminController
             'model' => $model,
             'parents' => Category::find()->orderBy(['name' => SORT_ASC])->all(),
         ]);
+    }
+
+    public function actionCategoryDelete(int $id): Response
+    {
+        $model = $this->findCategory($id);
+
+        try {
+            if (!$model->delete()) {
+                throw new \RuntimeException('Category delete returned false.');
+            }
+            Yii::$app->session->setFlash('success', Yii::t('app', 'Category deleted.'));
+        } catch (IntegrityException $e) {
+            Yii::error($e->getMessage(), __METHOD__);
+            Yii::$app->session->setFlash(
+                'error',
+                Yii::t('app', 'Cannot delete category: it is used in catalog data.'),
+            );
+        } catch (\Throwable $e) {
+            Yii::error($e, __METHOD__);
+            Yii::$app->session->setFlash('error', Yii::t('app', 'Failed to delete category.'));
+        }
+
+        return $this->redirect(['/admin/settings/categories']);
     }
 
     public function actionColors(): string
@@ -92,7 +123,7 @@ class SettingsController extends BaseAdminController
 
         if ($model->load(Yii::$app->request->post()) && $model->save()) {
             Yii::$app->session->setFlash('success', Yii::t('app', 'Saved successfully.'));
-            return $this->redirect(['colors']);
+            return $this->redirect(['/admin/settings/colors']);
         }
 
         $this->view->title = $model->isNewRecord ? Yii::t('app', 'Create color') : Yii::t('app', 'Edit color');
@@ -118,7 +149,7 @@ class SettingsController extends BaseAdminController
 
         if ($model->load(Yii::$app->request->post()) && $model->save()) {
             Yii::$app->session->setFlash('success', Yii::t('app', 'Saved successfully.'));
-            return $this->redirect(['features']);
+            return $this->redirect(['/admin/settings/features']);
         }
 
         $this->view->title = $model->isNewRecord
@@ -146,7 +177,7 @@ class SettingsController extends BaseAdminController
 
         if ($model->load(Yii::$app->request->post()) && $model->save()) {
             Yii::$app->session->setFlash('success', Yii::t('app', 'Saved successfully.'));
-            return $this->redirect(['feature-values']);
+            return $this->redirect(['/admin/settings/feature-values']);
         }
 
         $this->view->title = $model->isNewRecord
@@ -186,7 +217,7 @@ class SettingsController extends BaseAdminController
                     if ($aboutModel->save()) {
                         Yii::$app->session->setFlash('success', Yii::t('app', 'About block saved successfully.'));
 
-                        return $this->redirect(['banners', 'tab' => 'about']);
+                        return $this->redirect(['/admin/settings/banners', 'tab' => 'about']);
                     }
                 }
 
@@ -209,7 +240,7 @@ class SettingsController extends BaseAdminController
                     if ($bottomBannerModel->save()) {
                         Yii::$app->session->setFlash('success', Yii::t('app', 'Bottom banner saved successfully.'));
 
-                        return $this->redirect(['banners', 'tab' => 'bottom']);
+                        return $this->redirect(['/admin/settings/banners', 'tab' => 'bottom']);
                     }
                 }
 
@@ -262,7 +293,7 @@ class SettingsController extends BaseAdminController
                     if ($saved) {
                         Yii::$app->session->setFlash('success', Yii::t('app', 'Category blocks saved successfully.'));
 
-                        return $this->redirect(['banners', 'tab' => 'categories']);
+                        return $this->redirect(['/admin/settings/banners', 'tab' => 'categories']);
                     }
                 }
 
@@ -327,7 +358,7 @@ class SettingsController extends BaseAdminController
                 if ($model->save()) {
                     Yii::$app->session->setFlash('success', Yii::t('app', 'Saved successfully.'));
 
-                    return $this->redirect(['banners', 'tab' => 'main']);
+                    return $this->redirect(['/admin/settings/banners', 'tab' => 'main']);
                 }
             }
         }

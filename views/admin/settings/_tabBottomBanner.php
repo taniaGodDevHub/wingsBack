@@ -9,7 +9,7 @@ use yii\bootstrap5\ActiveForm;
         'enctype' => 'multipart/form-data',
         'class' => 'admin-bottom-banner-form',
     ],
-    'action' => ['banners', 'tab' => 'bottom'],
+    'action' => ['/admin/settings/banners', 'tab' => 'bottom'],
     'method' => 'post',
 ]); ?>
 <input type="hidden" name="settings-section" value="bottom">

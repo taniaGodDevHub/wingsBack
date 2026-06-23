@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace app\models;
 
 use app\components\SlugHelper;
+use Yii;
 use yii\db\ActiveRecord;
 
 /**
@@ -27,7 +28,44 @@ class Color extends ActiveRecord
             [['name'], 'string', 'max' => 100],
             [['hex'], 'string', 'max' => 7],
             [['slug'], 'string', 'max' => 255],
+            [['slug'], 'unique'],
         ];
+    }
+
+    public function attributeLabels(): array
+    {
+        return [
+            'id' => Yii::t('app', 'ID'),
+            'name' => Yii::t('app', 'Color name'),
+            'slug' => Yii::t('app', 'Slug'),
+            'hex' => Yii::t('app', 'Hex code'),
+        ];
+    }
+
+    public static function findByIdOrSlug(int|string $idOrSlug): ?self
+    {
+        if (self::isNumericId($idOrSlug)) {
+            return static::findOne((int) $idOrSlug);
+        }
+
+        if (is_string($idOrSlug) && $idOrSlug !== '') {
+            return static::findOne(['slug' => $idOrSlug]);
+        }
+
+        return null;
+    }
+
+    public static function isNumericId(mixed $value): bool
+    {
+        if (is_int($value)) {
+            return $value > 0;
+        }
+
+        if (!is_string($value) || $value === '') {
+            return false;
+        }
+
+        return ctype_digit($value) && (int) $value > 0;
     }
 
     public function beforeSave($insert): bool
@@ -37,15 +75,7 @@ class Color extends ActiveRecord
         }
 
         if ($this->hasAttribute('slug') && ($this->slug === '' || $this->slug === null)) {
-            $base = SlugHelper::fromName((string) $this->name, 'color');
-            $this->slug = SlugHelper::makeUnique($base, function (string $slug): bool {
-                $query = static::find()->where(['slug' => $slug]);
-                if (!$this->isNewRecord) {
-                    $query->andWhere(['<>', 'id', $this->id]);
-                }
-
-                return $query->exists();
-            });
+            SlugHelper::assignUniqueSlug($this, 'name', 'slug', 'color');
         }
 
         return true;

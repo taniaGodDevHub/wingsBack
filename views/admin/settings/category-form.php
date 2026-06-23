@@ -6,14 +6,20 @@
 
 use yii\bootstrap5\ActiveForm;
 use yii\helpers\Html;
+use yii\web\View;
+
+$this->registerJsFile('@web/js/helpers/slugHelper.js', ['depends' => [\yii\web\JqueryAsset::class], 'position' => View::POS_END]);
+$this->registerJsFile('@web/js/admin-slug.js', ['depends' => [\yii\web\JqueryAsset::class], 'position' => View::POS_END]);
 
 ?>
 <h1 class="h3 mb-4"><?= Html::encode($this->title) ?></h1>
 <?php $form = ActiveForm::begin(); ?>
-<?= $form->field($model, 'name')->textInput() ?>
-<?= $form->field($model, 'slug')->textInput() ?>
+<div data-admin-slug>
+    <?= $form->field($model, 'name')->textInput() ?>
+    <?= $form->field($model, 'slug')->textInput() ?>
+</div>
 <?= $form->field($model, 'parent_id')->dropDownList(
-    ['' => '—'] + array_column($parents, 'name', 'id'),
+    ['' => Yii::t('app', 'No parent')] + array_column($parents, 'name', 'id'),
 ) ?>
 <?= $form->field($model, 'sort_order')->input('number', ['value' => $model->sort_order ?? 0]) ?>
 <?= $form->field($model, 'is_active')->checkbox() ?>

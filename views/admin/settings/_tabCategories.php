@@ -12,7 +12,7 @@ use yii\bootstrap5\Html;
         'enctype' => 'multipart/form-data',
         'class' => 'admin-gender-blocks-form',
     ],
-    'action' => ['banners', 'tab' => 'categories'],
+    'action' => ['/admin/settings/banners', 'tab' => 'categories'],
     'method' => 'post',
 ]); ?>
 <input type="hidden" name="settings-section" value="categories">

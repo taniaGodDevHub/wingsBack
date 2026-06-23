@@ -45,14 +45,8 @@ class CatalogFeatureValue extends ActiveRecord
 
         if ($this->hasAttribute('slug') && ($this->slug === '' || $this->slug === null)) {
             $featureId = (int) $this->feature_id;
-            $base = SlugHelper::fromName((string) $this->name, 'value');
-            $this->slug = SlugHelper::makeUnique($base, function (string $slug) use ($featureId): bool {
-                $query = static::find()->where(['feature_id' => $featureId, 'slug' => $slug]);
-                if (!$this->isNewRecord) {
-                    $query->andWhere(['<>', 'id', $this->id]);
-                }
-
-                return $query->exists();
+            SlugHelper::assignUniqueSlug($this, 'name', 'slug', 'value', function ($query) use ($featureId): void {
+                $query->andWhere(['feature_id' => $featureId]);
             });
         }
 
@@ -67,21 +61,42 @@ class CatalogFeatureValue extends ActiveRecord
         }
 
         $featureId = (int) $feature->id;
-        $value = static::findOne(['feature_id' => $featureId, 'name' => $color->name]);
+        $value = null;
+        if ($color->slug !== '' && $color->slug !== null) {
+            $value = static::findOne(['feature_id' => $featureId, 'slug' => $color->slug]);
+        }
+        if ($value === null) {
+            $value = static::findOne(['feature_id' => $featureId, 'name' => $color->name]);
+        }
         if ($value === null) {
             $value = new self([
                 'feature_id' => $featureId,
                 'name' => $color->name,
                 'hex' => $color->hex,
             ]);
+            if ($color->slug !== '' && $color->slug !== null) {
+                $value->slug = $color->slug;
+            }
             $value->save(false);
 
             return $value;
         }
 
+        $dirty = [];
+        if ($value->name !== $color->name) {
+            $value->name = $color->name;
+            $dirty[] = 'name';
+        }
         if ($value->hex !== $color->hex) {
             $value->hex = $color->hex;
-            $value->save(false, ['hex']);
+            $dirty[] = 'hex';
+        }
+        if ($color->slug !== '' && $color->slug !== null && $value->slug !== $color->slug) {
+            $value->slug = $color->slug;
+            $dirty[] = 'slug';
+        }
+        if ($dirty !== []) {
+            $value->save(false, $dirty);
         }
 
         return $value;
@@ -92,6 +107,13 @@ class CatalogFeatureValue extends ActiveRecord
         $feature = $value->feature ?? CatalogFeature::findOne($value->feature_id);
         if ($feature === null || !$feature->isColor()) {
             return null;
+        }
+
+        if ($value->slug !== null && $value->slug !== '') {
+            $color = Color::findOne(['slug' => $value->slug]);
+            if ($color !== null) {
+                return $color;
+            }
         }
 
         $query = Color::find()->where(['name' => $value->name]);

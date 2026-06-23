@@ -40,15 +40,7 @@ class CatalogFeature extends ActiveRecord
         }
 
         if ($this->hasAttribute('slug') && ($this->slug === '' || $this->slug === null)) {
-            $base = SlugHelper::fromName((string) $this->name_ru, 'feature');
-            $this->slug = SlugHelper::makeUnique($base, function (string $slug): bool {
-                $query = static::find()->where(['slug' => $slug]);
-                if (!$this->isNewRecord) {
-                    $query->andWhere(['<>', 'id', $this->id]);
-                }
-
-                return $query->exists();
-            });
+            SlugHelper::assignUniqueSlug($this, 'name_ru', 'slug', 'feature');
         }
 
         return true;

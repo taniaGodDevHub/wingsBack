@@ -9,7 +9,7 @@ use yii\bootstrap5\ActiveForm;
         'enctype' => 'multipart/form-data',
         'class' => 'admin-home-about-form',
     ],
-    'action' => ['banners', 'tab' => 'about'],
+    'action' => ['/admin/settings/banners', 'tab' => 'about'],
     'method' => 'post',
 ]); ?>
 <input type="hidden" name="settings-section" value="about">

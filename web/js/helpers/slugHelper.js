@@ -1,4 +1,4 @@
-(function () {
+(function (global) {
     'use strict';
 
     const CYRILLIC_MAP = {
@@ -37,10 +37,26 @@
         я: 'ya',
     };
 
-    document.addEventListener('DOMContentLoaded', function () {
-        const nameInput = document.getElementById('product-name');
-        const slugInput = document.getElementById('product-slug');
+    function transliterate(text) {
+        return Array.from(text).map(function (char) {
+            const lower = char.toLowerCase();
+            if (Object.prototype.hasOwnProperty.call(CYRILLIC_MAP, lower)) {
+                return CYRILLIC_MAP[lower];
+            }
 
+            return char;
+        }).join('');
+    }
+
+    function slugify(text) {
+        return transliterate(text)
+            .toLowerCase()
+            .replace(/[^a-z0-9]+/g, '-')
+            .replace(/-+/g, '-')
+            .replace(/^-+|-+$/g, '');
+    }
+
+    function bindAutoSlug(nameInput, slugInput) {
         if (!nameInput || !slugInput) {
             return;
         }
@@ -65,24 +81,22 @@
 
             slugManual = slugInput.value.trim() !== '';
         });
-    });
-
-    function transliterate(text) {
-        return Array.from(text).map(function (char) {
-            const lower = char.toLowerCase();
-            if (Object.prototype.hasOwnProperty.call(CYRILLIC_MAP, lower)) {
-                return CYRILLIC_MAP[lower];
-            }
-
-            return char;
-        }).join('');
     }
 
-    function slugify(text) {
-        return transliterate(text)
-            .toLowerCase()
-            .replace(/[^a-z0-9]+/g, '-')
-            .replace(/-+/g, '-')
-            .replace(/^-+|-+$/g, '');
+    function initContainer(container) {
+        const nameInput = container.querySelector('input[name$="[name]"]');
+        const slugInput = container.querySelector('input[name$="[slug]"]');
+        bindAutoSlug(nameInput, slugInput);
     }
-})();
+
+    function initAll(root) {
+        const scope = root || document;
+        scope.querySelectorAll('[data-admin-slug]').forEach(initContainer);
+    }
+
+    global.WingsSlug = {
+        slugify: slugify,
+        bindAutoSlug: bindAutoSlug,
+        initAll: initAll,
+    };
+})(window);

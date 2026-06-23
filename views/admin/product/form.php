@@ -12,7 +12,8 @@ use yii\web\View;
 
 
 $this->registerJsFile('@web/js/admin-product-images.js?v=4', ['depends' => [\yii\bootstrap5\BootstrapPluginAsset::class], 'position' => View::POS_END]);
-$this->registerJsFile('@web/js/admin-product-slug.js', ['depends' => [\yii\web\JqueryAsset::class], 'position' => View::POS_END]);
+$this->registerJsFile('@web/js/helpers/slugHelper.js', ['depends' => [\yii\web\JqueryAsset::class], 'position' => View::POS_END]);
+$this->registerJsFile('@web/js/admin-slug.js', ['depends' => [\yii\web\JqueryAsset::class], 'position' => View::POS_END]);
 $this->registerJsFile('@web/js/admin-product-blago.js', ['depends' => [\yii\web\JqueryAsset::class], 'position' => View::POS_END]);
 $this->registerJsFile('@web/js/admin-product-sizes.js', ['depends' => [\yii\web\JqueryAsset::class], 'position' => View::POS_END]);
 
@@ -49,8 +50,10 @@ $redirectAction = $model->isNewRecord ? 'create' : 'update';
                 </div>
             </div>
             <div class="col-12 col-md-6">
-                <?= $form->field($model, 'name')->textInput() ?>
-                <?= $form->field($model, 'slug')->textInput() ?>
+                <div data-admin-slug>
+                    <?= $form->field($model, 'name')->textInput() ?>
+                    <?= $form->field($model, 'slug')->textInput() ?>
+                </div>
                 <div class="row">
                     <div class="col-12 col-md-6">
                             <?= $form->field($model, 'categoryId')->dropDownList($categoryOptions) ?>

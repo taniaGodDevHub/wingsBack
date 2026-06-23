@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace app\models;
 
+use app\components\SlugHelper;
+use Yii;
 use yii\db\ActiveRecord;
 
 /**
@@ -24,12 +26,24 @@ class Category extends ActiveRecord
     public function rules(): array
     {
         return [
-            [['name', 'slug'], 'required'],
+            [['name'], 'required'],
             [['parent_id', 'sort_order'], 'integer'],
             [['sort_order'], 'default', 'value' => 0],
             [['is_active'], 'boolean'],
             [['slug'], 'string', 'max' => 255],
             [['slug'], 'unique'],
+        ];
+    }
+
+    public function attributeLabels(): array
+    {
+        return [
+            'id' => Yii::t('app', 'ID'),
+            'name' => Yii::t('app', 'Category name'),
+            'slug' => Yii::t('app', 'Slug'),
+            'parent_id' => Yii::t('app', 'Parent category'),
+            'sort_order' => Yii::t('app', 'Sort order'),
+            'is_active' => Yii::t('app', 'Is active'),
         ];
     }
 
@@ -79,6 +93,8 @@ class Category extends ActiveRecord
         if ($this->sort_order === '' || $this->sort_order === null) {
             $this->sort_order = 0;
         }
+
+        SlugHelper::assignUniqueSlug($this, 'name', 'slug', 'category');
 
         return true;
     }

@@ -181,7 +181,12 @@ use yii\filters\VerbFilter;
  *     ),
  *     @OA\Parameter(name="sort_by", in="query", description="Устаревший вариант: price, popular, blago, created_at", @OA\Schema(type="string", enum={"price","popular","blago","created_at"})),
  *     @OA\Parameter(name="sort_order", in="query", description="Направление для sort_by=price или created_at", @OA\Schema(type="string", default="desc", enum={"asc","desc"})),
- *     @OA\Parameter(name="feature_filters", in="query", description="JSON-объект фильтров по атрибутам: ключ — ID атрибута или color, значение — массив ID значений", @OA\Schema(type="string")),
+ *     @OA\Parameter(
+ *         name="feature_filters",
+ *         in="query",
+ *         description="JSON-строка объекта CatalogFeatureFilters: фильтр color принимает массив ID цвета (integer) и/или slug (string)",
+ *         @OA\Schema(type="string")
+ *     ),
  *     @OA\Response(
  *         response=200,
  *         description="Список товаров с фильтрами",
@@ -220,7 +225,12 @@ use yii\filters\VerbFilter;
  *     ),
  *     @OA\Parameter(name="sort_by", in="query", description="Устаревший вариант: price, popular, blago, created_at", @OA\Schema(type="string", enum={"price","popular","blago","created_at"})),
  *     @OA\Parameter(name="sort_order", in="query", description="Направление для sort_by=price или created_at", @OA\Schema(type="string", default="desc", enum={"asc","desc"})),
- *     @OA\Parameter(name="feature_filters", in="query", description="JSON-объект фильтров по атрибутам: ключ — ID атрибута или color, значение — массив ID значений", @OA\Schema(type="string")),
+ *     @OA\Parameter(
+ *         name="feature_filters",
+ *         in="query",
+ *         description="JSON-строка объекта CatalogFeatureFilters: фильтр color принимает массив ID цвета (integer) и/или slug (string)",
+ *         @OA\Schema(type="string")
+ *     ),
  *     @OA\Response(
  *         response=200,
  *         description="Список товаров категории",

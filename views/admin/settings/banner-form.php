@@ -62,7 +62,7 @@ $hasLegacyRemoteImage = $model->image_url !== '' && !$model->hasLocalImage();
                 </div>
                 <div class="d-flex flex-wrap gap-2 mt-2">
                     <?= Html::submitButton(Yii::t('app', 'Save'), ['class' => 'btn btn-primary']) ?>
-                    <?= Html::a(Yii::t('app', 'Cancel'), ['banners', 'tab' => 'main'], ['class' => 'btn btn-outline-secondary']) ?>
+                    <?= Html::a(Yii::t('app', 'Cancel'), ['/admin/settings/banners', 'tab' => 'main'], ['class' => 'btn btn-outline-secondary']) ?>
                 </div>
             </div>
         </div>

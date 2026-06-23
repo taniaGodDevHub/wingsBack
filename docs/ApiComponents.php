@@ -388,6 +388,7 @@ use OpenApi\Annotations as OA;
  * @OA\Schema(
  *     schema="CatalogProductColor",
  *     @OA\Property(property="id", type="integer", example=1001, description="ID из справочника color"),
+ *     @OA\Property(property="slug", type="string", example="chernyy", description="Slug цвета из справочника color"),
  *     @OA\Property(property="name", type="string", example="Черный"),
  *     @OA\Property(property="hex", type="string", example="#111111")
  * )
@@ -408,14 +409,36 @@ use OpenApi\Annotations as OA;
  * )
  *
  * @OA\Schema(
+ *     schema="CatalogFeatureFilters",
+ *     type="object",
+ *     description="Фильтры по атрибутам каталога. Передаётся в query-параметре feature_filters как JSON-строка.",
+ *     @OA\Property(
+ *         property="color",
+ *         type="array",
+ *         description="Фильтр по цвету: массив ID цвета (integer) и/или slug (string)",
+ *         @OA\Items(oneOf={
+ *             @OA\Schema(type="integer", example=1001),
+ *             @OA\Schema(type="string", example="chernyy")
+ *         })
+ *     ),
+ *     @OA\AdditionalProperties(
+ *         type="array",
+ *         description="Фильтр по атрибуту: ключ — ID атрибута (число или строка), значение — массив ID значений атрибута",
+ *         @OA\Items(type="integer", example=101)
+ *     ),
+ *     example={"color"={"chernyy","belyy",1001},"5"={101,102}}
+ * )
+ *
+ * @OA\Schema(
  *     schema="CatalogFilterValue",
- *     @OA\Property(property="id", description="ID значения атрибута (цвет) или строковое значение (размер, пол)", oneOf={
- *         @OA\Schema(type="integer"),
- *         @OA\Schema(type="string")
+ *     @OA\Property(property="id", description="ID цвета (блок color) или ID значения атрибута (feature_*); для size/gender — строковое значение", oneOf={
+ *         @OA\Schema(type="integer", example=1001),
+ *         @OA\Schema(type="string", example="M")
  *     }),
- *     @OA\Property(property="name", type="string"),
- *     @OA\Property(property="hex", type="string", description="Только для фильтра color"),
- *     @OA\Property(property="count", type="integer")
+ *     @OA\Property(property="slug", type="string", example="chernyy", description="Slug цвета; только в блоке фильтра color. В feature_filters можно передать slug вместо id"),
+ *     @OA\Property(property="name", type="string", example="Черный"),
+ *     @OA\Property(property="hex", type="string", example="#111111", description="Только для фильтра color"),
+ *     @OA\Property(property="count", type="integer", example=12, description="Число товаров с этим значением при текущих фильтрах")
  * )
  *
  * @OA\Schema(

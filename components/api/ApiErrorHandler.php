@@ -11,6 +11,7 @@ use yii\db\IntegrityException;
 use yii\helpers\Url;
 use yii\web\ErrorHandler;
 use yii\web\HttpException;
+use yii\web\NotFoundHttpException;
 use yii\web\Response;
 
 class ApiErrorHandler extends ErrorHandler
@@ -48,11 +49,46 @@ class ApiErrorHandler extends ErrorHandler
             return false;
         }
 
+        if (!($exception instanceof HttpException) && !($exception instanceof IntegrityException)) {
+            return false;
+        }
+
+        if ($exception instanceof NotFoundHttpException && $this->isLikelyTruncatedAdminRoute($request->pathInfo)) {
+            return false;
+        }
+
         return true;
+    }
+
+    private function isLikelyTruncatedAdminRoute(string $pathInfo): bool
+    {
+        if ($pathInfo === '' || str_contains($pathInfo, '/')) {
+            return false;
+        }
+
+        return in_array($pathInfo, [
+            'banners',
+            'banner-form',
+            'categories',
+            'category-form',
+            'colors',
+            'color-form',
+            'features',
+            'feature-form',
+            'feature-values',
+            'feature-value-form',
+        ], true);
     }
 
     private function renderFlashRedirect(\Throwable $exception): void
     {
+        $redirectUrl = $this->resolveRedirectUrl();
+        if ($this->isRedirectLoop($redirectUrl)) {
+            parent::renderException($exception);
+
+            return;
+        }
+
         try {
             Yii::$app->session->setFlash('error', $this->resolveUserMessage($exception));
         } catch (\Throwable) {
@@ -62,8 +98,33 @@ class ApiErrorHandler extends ErrorHandler
         }
 
         Yii::$app->response->clear();
-        Yii::$app->response->redirect($this->resolveRedirectUrl())->send();
+        Yii::$app->response->redirect($redirectUrl)->send();
         Yii::$app->end();
+    }
+
+    private function isRedirectLoop(string $redirectUrl): bool
+    {
+        $request = Yii::$app->request;
+        $current = $this->normalizeRequestUrl($request->url);
+        $target = $this->normalizeRequestUrl($redirectUrl);
+
+        if ($target === $current) {
+            return true;
+        }
+
+        return $request->pathInfo === '' && $target === $this->normalizeRequestUrl(Url::to(Yii::$app->homeUrl));
+    }
+
+    private function normalizeRequestUrl(string $url): string
+    {
+        if (str_starts_with($url, 'http://') || str_starts_with($url, 'https://')) {
+            $path = parse_url($url, PHP_URL_PATH) ?? '';
+            $query = parse_url($url, PHP_URL_QUERY);
+
+            return $path . (is_string($query) && $query !== '' ? '?' . $query : '');
+        }
+
+        return $url;
     }
 
     private function resolveUserMessage(\Throwable $exception): string
@@ -95,10 +156,10 @@ class ApiErrorHandler extends ErrorHandler
         }
 
         if ($request->isPost) {
-            return Url::to($request->url, true);
+            return Url::to($request->url);
         }
 
-        return Url::to(Yii::$app->homeUrl, true);
+        return Url::to(Yii::$app->homeUrl);
     }
 
     private function renderApiException(\Throwable $exception): void

@@ -14,10 +14,14 @@
 /config/db.php
 /config/params.php
 /config/env-local.php
+/config/web-local.php
 # Environment files
 .env
 .env.local
 .env.*.local
+
+# Local Apache rewrite (copy from web/.htaccess.example or web/.htaccess.local.example)
+/web/.htaccess
 
 # IDE files
 .vscode/

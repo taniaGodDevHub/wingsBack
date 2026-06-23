@@ -17,7 +17,7 @@ $tabs = [
         <li class="nav-item" role="presentation">
             <?= Html::a(
                 $label,
-                Url::to(['banners', 'tab' => $key]),
+                Url::to(['/admin/settings/banners', 'tab' => $key]),
                 [
                     'class' => 'nav-link' . ($tab === $key ? ' active' : ''),
                     'role' => 'tab',

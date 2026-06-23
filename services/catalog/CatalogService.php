@@ -276,17 +276,18 @@ class CatalogService
         }
 
         $index = 0;
-        foreach ($decoded as $featureKey => $valueIds) {
-            if (!is_array($valueIds) || $valueIds === []) {
-                continue;
-            }
-            $valueIds = array_values(array_filter(array_map('intval', $valueIds)));
-            if ($valueIds === []) {
+        foreach ($decoded as $featureKey => $rawValues) {
+            if (!is_array($rawValues) || $rawValues === []) {
                 continue;
             }
 
             if ((string) $featureKey === 'color') {
-                $valueIds = $this->resolveColorFilterValueIds($valueIds);
+                $valueIds = $this->resolveColorFilterValueIds($rawValues);
+                if ($valueIds === []) {
+                    continue;
+                }
+            } else {
+                $valueIds = array_values(array_filter(array_map('intval', $rawValues)));
                 if ($valueIds === []) {
                     continue;
                 }
@@ -298,12 +299,19 @@ class CatalogService
         }
     }
 
-    /** @param int[] $colorIds @return int[] */
-    private function resolveColorFilterValueIds(array $colorIds): array
+    /** @param array<int|string> $colorKeys @return int[] */
+    private function resolveColorFilterValueIds(array $colorKeys): array
     {
         $valueIds = [];
-        foreach ($colorIds as $colorId) {
-            $color = Color::findOne($colorId);
+        foreach ($colorKeys as $colorKey) {
+            if (!is_int($colorKey) && !is_string($colorKey)) {
+                continue;
+            }
+            if (is_string($colorKey) && trim($colorKey) === '') {
+                continue;
+            }
+
+            $color = Color::findByIdOrSlug($colorKey);
             if ($color === null) {
                 continue;
             }
@@ -691,6 +699,7 @@ class CatalogService
 
             $values[] = [
                 'id' => (int) $color->id,
+                'slug' => $color->slug,
                 'name' => $color->name,
                 'hex' => $color->hex,
                 'count' => $count,

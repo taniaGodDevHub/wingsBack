@@ -6,7 +6,7 @@ use yii\grid\GridView;
 use yii\helpers\Html;
 ?>
 <p class="text-muted mb-3"><?= Yii::t('app', 'Banners are shown on the home page as a slideshow. Order is set by sort order.') ?></p>
-<p><?= Html::a(Yii::t('app', 'Create banner'), ['banner-form'], ['class' => 'btn btn-primary mb-3']) ?></p>
+<p><?= Html::a(Yii::t('app', 'Create banner'), ['/admin/settings/banner-form'], ['class' => 'btn btn-primary mb-3']) ?></p>
 <?= GridView::widget([
     'dataProvider' => $dataProvider,
     'columns' => [
@@ -39,7 +39,7 @@ use yii\helpers\Html;
             'buttons' => [
                 'update' => static fn ($url, $model) => Html::a(
                     Yii::t('app', 'Edit'),
-                    ['banner-form', 'id' => $model->id],
+                    ['/admin/settings/banner-form', 'id' => $model->id],
                     ['class' => 'btn btn-sm btn-outline-secondary'],
                 ),
             ],

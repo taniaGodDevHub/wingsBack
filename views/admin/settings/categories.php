@@ -23,12 +23,22 @@ use yii\helpers\Html;
         ],
         [
             'class' => yii\grid\ActionColumn::class,
-            'template' => '{update}',
+            'template' => '{update} {delete}',
+            'contentOptions' => ['class' => 'text-nowrap'],
             'buttons' => [
                 'update' => static fn ($url, $model) => Html::a(
                     Yii::t('app', 'Edit'),
                     ['category-form', 'id' => $model->id],
-                    ['class' => 'btn btn-sm btn-outline-secondary'],
+                    ['class' => 'btn btn-sm btn-outline-secondary me-1'],
+                ),
+                'delete' => static fn ($url, $model) => Html::a(
+                    Yii::t('app', 'Delete'),
+                    ['category-delete', 'id' => $model->id],
+                    [
+                        'class' => 'btn btn-sm btn-outline-danger',
+                        'data-confirm' => Yii::t('app', 'Are you sure you want to delete this category?'),
+                        'data-method' => 'post',
+                    ],
                 ),
             ],
         ],
