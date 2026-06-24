@@ -184,9 +184,10 @@ class AuthController extends Controller
     private function redirectAfterAuth(): Response
     {
         if (!BaseAdminController::canAccess()) {
+            Yii::$app->user->logout();
             Yii::$app->session->setFlash(
-                'warning',
-                Yii::t('app', 'You are signed in but do not have admin access yet.'),
+                'error',
+                Yii::t('app', 'This account does not have admin access. Sign in with an administrator account.'),
             );
 
             return $this->redirect(['login']);

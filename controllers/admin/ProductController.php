@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace app\controllers\admin;
 
+use app\components\SlugHelper;
 use app\models\CartItem;
 use app\models\CatalogFeature;
 use app\models\CatalogFeatureValue;
@@ -13,7 +14,9 @@ use app\models\FavoriteItem;
 use app\models\Gender;
 use app\models\OrderItem;
 use app\models\Product;
+use app\models\ProductGroup;
 use app\models\ProductSize;
+use app\models\Size;
 use app\models\ShopOrder;
 use app\services\ProductImageUploadService;
 use Yii;
@@ -46,6 +49,7 @@ class ProductController extends BaseAdminController
             'class' => VerbFilter::class,
             'actions' => [
                 'delete' => ['POST'],
+                'copy' => ['POST'],
                 'delete-image' => ['POST'],
                 'upload-images' => ['POST'],
                 'reorder-images' => ['POST'],
@@ -61,7 +65,7 @@ class ProductController extends BaseAdminController
 
         return $this->render('index', [
             'dataProvider' => new ActiveDataProvider([
-                'query' => Product::find()->with(['images', 'sizes'])->orderBy(['id' => SORT_DESC]),
+                'query' => Product::find()->with(['images', 'sizes.size'])->orderBy(['id' => SORT_DESC]),
                 'pagination' => ['pageSize' => 20],
             ]),
         ]);
@@ -81,9 +85,10 @@ class ProductController extends BaseAdminController
         $model->is_available = true;
 
         if ($this->loadProductForm($model) && $model->save()) {
+            $this->saveProductGroup($model);
             $this->saveProductCategory($model);
             $this->saveProductFeatureValues($model);
-            $this->saveProductSizes($model);
+            $this->saveProductSizeChart($model);
             $this->processImageUploads($model);
             Yii::$app->session->setFlash('success', Yii::t('app', 'Saved successfully.'));
 
@@ -116,14 +121,36 @@ class ProductController extends BaseAdminController
         return $this->redirect(['index']);
     }
 
+    public function actionCopy(int $id): Response
+    {
+        $source = $this->findModel($id);
+
+        $transaction = Yii::$app->db->beginTransaction();
+
+        try {
+            $copy = $this->duplicateProduct($source);
+            $transaction->commit();
+            Yii::$app->session->setFlash('success', Yii::t('app', 'Product copied.'));
+
+            return $this->redirect(['update', 'id' => $copy->id]);
+        } catch (\Throwable $e) {
+            $transaction->rollBack();
+            Yii::error($e, __METHOD__);
+            Yii::$app->session->setFlash('error', Yii::t('app', 'Failed to copy product.'));
+
+            return $this->redirect(['index']);
+        }
+    }
+
     public function actionUpdate(int $id): string|Response
     {
         $model = $this->findModel($id);
 
         if ($this->loadProductForm($model) && $model->save()) {
+            $this->saveProductGroup($model);
             $this->saveProductCategory($model);
             $this->saveProductFeatureValues($model);
-            $this->saveProductSizes($model);
+            $this->saveProductSizeChart($model);
             $this->processImageUploads($model);
             Yii::$app->session->setFlash('success', Yii::t('app', 'Saved successfully.'));
 
@@ -313,11 +340,43 @@ class ProductController extends BaseAdminController
         }
 
         $post = Yii::$app->request->post('Product', []);
-        if (!isset($post['sizeValuesInStock'])) {
-            $model->sizeValuesInStock = [];
+        if (!isset($post['sizeChartBySizeId']) || !is_array($post['sizeChartBySizeId'])) {
+            $model->sizeChartBySizeId = [];
+        } else {
+            $normalized = [];
+            foreach ($post['sizeChartBySizeId'] as $sizeId => $row) {
+                $sizeId = (int) $sizeId;
+                if ($sizeId <= 0 || !is_array($row)) {
+                    continue;
+                }
+
+                $normalized[$sizeId] = [
+                    'chest_circumference' => trim((string) ($row['chest_circumference'] ?? '')),
+                    'is_in_stock' => !empty($row['is_in_stock']) && (string) $row['is_in_stock'] !== '0',
+                ];
+            }
+            $model->sizeChartBySizeId = $normalized;
         }
 
         return true;
+    }
+
+    private function saveProductGroup(Product $product): void
+    {
+        $newName = trim($product->newProductGroupName);
+        if ($newName === '') {
+            return;
+        }
+
+        $group = new ProductGroup();
+        $group->name = $newName;
+        if (!$group->save()) {
+            return;
+        }
+
+        $product->product_group_id = (int) $group->id;
+        $product->save(false, ['product_group_id']);
+        $product->newProductGroupName = '';
     }
 
     private function saveProductCategory(Product $product): void
@@ -367,23 +426,29 @@ class ProductController extends BaseAdminController
         }
     }
 
-    private function saveProductSizes(Product $product): void
+    private function saveProductSizeChart(Product $product): void
     {
         ProductSize::deleteAll(['product_id' => $product->id]);
 
-        $values = is_array($product->sizeValuesInStock) ? $product->sizeValuesInStock : [];
-        $allowed = array_flip(ProductSize::getStandardSizeValues());
+        $chart = is_array($product->sizeChartBySizeId) ? $product->sizeChartBySizeId : [];
+        $sizesById = [];
+        foreach (Size::findAllOrdered() as $size) {
+            $sizesById[(int) $size->id] = $size;
+        }
 
-        foreach (array_unique($values) as $sizeValue) {
-            $sizeValue = trim((string) $sizeValue);
-            if ($sizeValue === '' || !isset($allowed[$sizeValue])) {
-                continue;
+        foreach ($sizesById as $sizeId => $size) {
+            $row = $chart[$sizeId] ?? [];
+            $chest = trim((string) ($row['chest_circumference'] ?? ''));
+            if ($chest === '') {
+                $chest = (string) $size->default_chest_circumference;
             }
 
-            $size = new ProductSize();
-            $size->product_id = (int) $product->id;
-            $size->size_value = $sizeValue;
-            $size->save(false);
+            $productSize = new ProductSize();
+            $productSize->product_id = (int) $product->id;
+            $productSize->size_id = $sizeId;
+            $productSize->chest_circumference = $chest;
+            $productSize->is_in_stock = !empty($row['is_in_stock']);
+            $productSize->save(false);
         }
     }
 
@@ -395,6 +460,8 @@ class ProductController extends BaseAdminController
             'categoryOptions' => Category::getDropdownOptions(),
             'genderOptions' => Gender::getDropdownOptions(),
             'catalogFeatures' => CatalogFeature::findAllForAdminForm(),
+            'catalogSizes' => Size::findAllOrdered(),
+            'productGroupOptions' => ProductGroup::getDropdownOptions(),
         ];
     }
 
@@ -405,6 +472,56 @@ class ProductController extends BaseAdminController
         if ($errors !== []) {
             Yii::$app->session->setFlash('error', implode(' ', $errors));
         }
+    }
+
+    private function duplicateProduct(Product $source): Product
+    {
+        $copy = new Product();
+        $copyName = trim($source->name) . ' (' . Yii::t('app', 'copy') . ')';
+        $copy->name = $copyName;
+        $copy->description = $source->description;
+        $copy->product_group_id = $source->product_group_id;
+        $copy->slug = SlugHelper::makeUnique(
+            SlugHelper::fromName($copyName, 'product'),
+            static fn (string $slug): bool => Product::find()->where(['slug' => $slug])->exists(),
+        );
+        $copy->brand = $source->brand;
+        $productCode = trim((string) ($source->product_code ?? ''));
+        $copy->product_code = $productCode !== '' ? $productCode . '-copy' : null;
+        $copy->price = $source->price;
+        $copy->old_price = $source->old_price;
+        $copy->blago = $source->blago;
+        $copy->is_available = (bool) $source->is_available;
+        $copy->is_bestseller = (bool) $source->is_bestseller;
+        $copy->is_featured_home = (bool) $source->is_featured_home;
+        $copy->featured_sort = (int) $source->featured_sort;
+        $copy->bestseller_rank = (int) $source->bestseller_rank;
+        $copy->gender = $source->gender;
+
+        if (!$copy->save()) {
+            throw new \RuntimeException('Failed to save product copy.');
+        }
+
+        foreach ($source->categories as $category) {
+            $copy->link('categories', $category);
+        }
+
+        foreach ($source->featureValues as $featureValue) {
+            $copy->link('featureValues', $featureValue);
+        }
+
+        foreach ($source->sizes as $productSize) {
+            $sizeCopy = new ProductSize();
+            $sizeCopy->product_id = (int) $copy->id;
+            $sizeCopy->size_id = (int) $productSize->size_id;
+            $sizeCopy->chest_circumference = $productSize->chest_circumference;
+            $sizeCopy->is_in_stock = (bool) $productSize->is_in_stock;
+            $sizeCopy->save(false);
+        }
+
+        $this->imageUpload()->copyImagesFromProduct($source, $copy);
+
+        return $copy;
     }
 
     private function deleteProduct(Product $product): void
@@ -458,7 +575,7 @@ class ProductController extends BaseAdminController
     private function findModel(int $id): Product
     {
         $model = Product::find()
-            ->with(['images', 'categories', 'sizes', 'featureValues.feature'])
+            ->with(['images', 'categories', 'sizes.size', 'featureValues.feature', 'productGroup'])
             ->where(['id' => $id])
             ->one();
         if ($model === null) {

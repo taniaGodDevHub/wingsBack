@@ -102,6 +102,49 @@ final class ProductImageUploadService
         $image->delete();
     }
 
+    public function copyImagesFromProduct(Product $source, Product $target): void
+    {
+        foreach ($source->images as $image) {
+            $this->copyImage($target, $image);
+        }
+    }
+
+    private function copyImage(Product $product, ProductImage $sourceImage): void
+    {
+        $sourcePath = $this->resolveLocalFilePath((string) $sourceImage->image_url);
+        $imageUrl = (string) $sourceImage->image_url;
+
+        if ($sourcePath !== null) {
+            $extension = strtolower((string) pathinfo($sourcePath, PATHINFO_EXTENSION));
+            if ($extension === '') {
+                $extension = 'jpg';
+            }
+
+            FileHelper::createDirectory($this->uploadDirectory());
+            $filename = sprintf('%d_%s.%s', (int) $product->id, bin2hex(random_bytes(8)), $extension);
+            $targetPath = $this->uploadDirectory() . DIRECTORY_SEPARATOR . $filename;
+
+            if (!@copy($sourcePath, $targetPath)) {
+                throw new \RuntimeException('Failed to copy product image file.');
+            }
+
+            $imageUrl = 'uploads/products/' . $filename;
+        }
+
+        $record = new ProductImage();
+        $record->product_id = (int) $product->id;
+        $record->image_url = $imageUrl;
+        $record->sort_order = (int) $sourceImage->sort_order;
+
+        if (!$record->save()) {
+            if ($sourcePath !== null && isset($targetPath) && is_file($targetPath)) {
+                @unlink($targetPath);
+            }
+
+            throw new \RuntimeException('Failed to save copied product image record.');
+        }
+    }
+
     public function findImageForProduct(int $productId, int $imageId): ?ProductImage
     {
         return ProductImage::findOne(['id' => $imageId, 'product_id' => $productId]);
@@ -173,24 +216,31 @@ final class ProductImageUploadService
 
     private function removeLocalFileIfOwned(string $imageUrl): void
     {
+        $fullPath = $this->resolveLocalFilePath($imageUrl);
+        if ($fullPath !== null && is_file($fullPath)) {
+            @unlink($fullPath);
+        }
+    }
+
+    private function resolveLocalFilePath(string $imageUrl): ?string
+    {
         if (str_contains($imageUrl, 'uploads/products/')) {
             $filename = basename($imageUrl);
         } else {
             $path = parse_url($imageUrl, PHP_URL_PATH);
             if (!is_string($path) || !str_contains($path, '/uploads/products/')) {
-                return;
+                return null;
             }
 
             $filename = basename($path);
         }
 
         if ($filename === '' || $filename === '.' || $filename === '..') {
-            return;
+            return null;
         }
 
         $fullPath = $this->uploadDirectory() . DIRECTORY_SEPARATOR . $filename;
-        if (is_file($fullPath)) {
-            @unlink($fullPath);
-        }
+
+        return is_file($fullPath) ? $fullPath : null;
     }
 }

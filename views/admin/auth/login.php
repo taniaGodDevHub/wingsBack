@@ -54,6 +54,10 @@ $alreadySignedIn = $alreadySignedIn ?? false;
 
     <?php ActiveForm::end() ?>
 
+    <p class="admin-auth-card__switch text-muted small">
+        <?= Yii::t('app', 'Admin sign-in hint') ?>
+    </p>
+
     <p class="admin-auth-card__switch">
         <?= Yii::t('app', 'No account yet?') ?>
         <?= Html::a(Yii::t('app', 'Register'), ['register']) ?>

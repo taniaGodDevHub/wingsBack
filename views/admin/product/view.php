@@ -14,6 +14,8 @@ $this->registerJsFile('@web/js/admin-product-images.js?v=4', ['depends' => [\yii
         <table class="table table-bordered w-auto">
             <tr><th>ID</th><td><?= (int) $model->id ?></td></tr>
             <tr><th><?= Yii::t('app', 'Product name') ?></th><td><?= Html::encode($model->name) ?></td></tr>
+            <tr><th><?= Yii::t('app', 'Description') ?></th><td><?= $model->description !== null && $model->description !== '' ? nl2br(Html::encode($model->description)) : '—' ?></td></tr>
+            <tr><th><?= Yii::t('app', 'Product group') ?></th><td><?= Html::encode($model->productGroup->name ?? '—') ?></td></tr>
             <tr><th>Slug</th><td><?= Html::encode($model->slug) ?></td></tr>
             <tr><th><?= Yii::t('app', 'Price') ?></th><td><?= (float) $model->price ?> ₽</td></tr>
             <tr>

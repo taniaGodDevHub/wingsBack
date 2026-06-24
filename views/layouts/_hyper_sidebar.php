@@ -75,6 +75,9 @@ $usersOpen = str_starts_with(Yii::$app->controller->route, 'admin/user/')
                             <?= Html::a(Yii::t('app', 'Colors'), ['/admin/settings/colors'], ['class' => 'side-nav-link']) ?>
                         </li>
                         <li class="side-nav-item">
+                            <?= Html::a(Yii::t('app', 'Sizes'), ['/admin/settings/sizes'], ['class' => 'side-nav-link']) ?>
+                        </li>
+                        <li class="side-nav-item">
                             <?= Html::a(Yii::t('app', 'Attributes'), ['/admin/settings/features'], ['class' => 'side-nav-link']) ?>
                         </li>
                         <li class="side-nav-item">

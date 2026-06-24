@@ -21,6 +21,32 @@ use yii\db\Query;
 
 class CatalogService
 {
+    public function productBySlug(string $slug): array
+    {
+        $slug = trim($slug);
+        if ($slug === '') {
+            throw ApiHttpException::notFound('Product not found');
+        }
+
+        $product = Product::find()
+            ->alias('p')
+            ->where(['p.slug' => $slug, 'p.is_available' => true])
+            ->with([
+                'images',
+                'categories',
+                'sizes.size',
+                'featureValues.feature',
+                'productGroup.products.featureValues.feature',
+            ])
+            ->one();
+
+        if ($product === null) {
+            throw ApiHttpException::notFound('Product not found');
+        }
+
+        return ProductPresenter::detailItem($product);
+    }
+
     public function showcase(int $page, int $pageSize): array
     {
         $page = max(1, $page);
@@ -239,8 +265,9 @@ class CatalogService
 
         $sizes = $this->parseCsvStrings((string) ($params['size_values'] ?? ''));
         if ($sizes !== []) {
-            $query->innerJoin('{{%product_size}} psz', 'psz.product_id = p.id')
-                ->andWhere(['psz.size_value' => $sizes]);
+            $query->innerJoin('{{%product_size}} psz', 'psz.product_id = p.id AND psz.is_in_stock = 1')
+                ->innerJoin('{{%size}} sz', 'sz.id = psz.size_id')
+                ->andWhere(['sz.size_value' => $sizes]);
         }
 
         $gender = (string) ($params['gender'] ?? '');
@@ -721,10 +748,11 @@ class CatalogService
     private function filterBlockSize(ActiveQuery $base, array $params): array
     {
         $rows = (new Query())
-            ->select(['psz.size_value', 'cnt' => 'COUNT(DISTINCT p.id)'])
+            ->select(['sz.size_value', 'cnt' => 'COUNT(DISTINCT p.id)'])
             ->from(['p' => (clone $base)->select('p.id')->groupBy('p.id')])
-            ->innerJoin('{{%product_size}} psz', 'psz.product_id = p.id')
-            ->groupBy(['psz.size_value'])
+            ->innerJoin('{{%product_size}} psz', 'psz.product_id = p.id AND psz.is_in_stock = 1')
+            ->innerJoin('{{%size}} sz', 'sz.id = psz.size_id')
+            ->groupBy(['sz.size_value'])
             ->all();
 
         return [

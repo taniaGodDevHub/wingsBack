@@ -5,6 +5,8 @@
 /** @var array<int|string, string> $categoryOptions */
 /** @var array<string, string> $genderOptions */
 /** @var app\models\CatalogFeature[] $catalogFeatures */
+/** @var app\models\Size[] $catalogSizes */
+/** @var array<int|string, string> $productGroupOptions */
 
 use yii\bootstrap5\ActiveForm;
 use yii\helpers\Html;
@@ -39,21 +41,30 @@ $redirectAction = $model->isNewRecord ? 'create' : 'update';
                     <?php else: ?>
                         <?= $this->render('_imageUpload', ['model' => $model, 'mode' => 'embedded']) ?>
                     <?php endif ?>
-                </div>
-                <div class="row">
-                    <div class="col-12 col-md-6">
-                        <?= $form->field($model, 'is_bestseller')->checkbox() ?>
-                    </div>
-                    <div class="col-12 col-md-6">
-                        <?= $form->field($model, 'is_featured_home')->checkbox() ?>
-                    </div>
+
+                    <?= $this->render('_productGroupColors', ['model' => $model]) ?>
+
+                    <?= $this->render('_sizeChartField', [
+                        'model' => $model,
+                        'catalogSizes' => $catalogSizes,
+                    ]) ?>
                 </div>
             </div>
             <div class="col-12 col-md-6">
-                <div data-admin-slug>
-                    <?= $form->field($model, 'name')->textInput() ?>
-                    <?= $form->field($model, 'slug')->textInput() ?>
+                <div data-admin-slug class="row">
+                    <div class="col-12 col-md-6">
+                        <?= $form->field($model, 'name')->textInput() ?>
+                    </div>
+                    <div class="col-12 col-md-6">
+                        <?= $form->field($model, 'slug')->textInput() ?>
+                    </div>
                 </div>
+                <?= $form->field($model, 'description')->textarea(['rows' => 3]) ?>
+                <?= $this->render('_productGroupField', [
+                    'form' => $form,
+                    'model' => $model,
+                    'productGroupOptions' => $productGroupOptions,
+                ]) ?>
                 <div class="row">
                     <div class="col-12 col-md-6">
                             <?= $form->field($model, 'categoryId')->dropDownList($categoryOptions) ?>
@@ -78,15 +89,12 @@ $redirectAction = $model->isNewRecord ? 'create' : 'update';
                     </div>
                 </div>
 
-                <?= $this->render('_sizeField', ['model' => $model]) ?>
-
                 <?= $this->render('_featureFields', [
                     'form' => $form,
                     'model' => $model,
                     'catalogFeatures' => $catalogFeatures,
                 ]) ?>
-                <?= $form->field($model, 'featured_sort')->input('number') ?>
-                <?= $form->field($model, 'bestseller_rank')->input('number') ?>
+                <?= $this->render('_promoFields', ['form' => $form, 'model' => $model]) ?>
                 
             </div>
         </div>

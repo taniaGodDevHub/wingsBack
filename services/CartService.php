@@ -327,7 +327,13 @@ class CartService
         }
 
         $exists = ProductSize::find()
-            ->where(['product_id' => $product->id, 'size_value' => $sizeValue])
+            ->alias('ps')
+            ->innerJoin(['s' => \app\models\Size::tableName()], 's.id = ps.size_id')
+            ->where([
+                'ps.product_id' => $product->id,
+                's.size_value' => $sizeValue,
+                'ps.is_in_stock' => true,
+            ])
             ->exists();
         if (!$exists) {
             throw new \InvalidArgumentException('size_value is not available for this product.');

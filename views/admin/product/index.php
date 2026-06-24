@@ -47,7 +47,7 @@ use yii\helpers\Html;
         ],
         [
             'class' => yii\grid\ActionColumn::class,
-            'template' => '{view} {update} {delete}',
+            'template' => '{view} {update} {copy} {delete}',
             'contentOptions' => ['class' => 'text-center text-nowrap'],
             'headerOptions' => ['class' => 'text-center'],
             'buttons' => [
@@ -69,6 +69,18 @@ use yii\helpers\Html;
                         'title' => Yii::t('app', 'Edit'),
                         'aria-label' => Yii::t('app', 'Edit'),
                         'style' => 'text-decoration: none; font-size: 18px;',
+                    ],
+                ),
+                'copy' => static fn ($url) => Html::a(
+                    '<i class="ri-file-copy-line"></i>',
+                    $url,
+                    [
+                        'class' => 'text-secondary me-2',
+                        'title' => Yii::t('app', 'Copy product'),
+                        'aria-label' => Yii::t('app', 'Copy product'),
+                        'style' => 'text-decoration: none; font-size: 18px;',
+                        'data-confirm' => Yii::t('app', 'Copy this product?'),
+                        'data-method' => 'post',
                     ],
                 ),
                 'delete' => static fn ($url) => Html::a(

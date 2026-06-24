@@ -18,7 +18,7 @@ class ApiErrorHandler extends ErrorHandler
 {
     protected function renderException($exception): void
     {
-        if (Yii::$app->has('request') && str_starts_with((string) Yii::$app->request->pathInfo, 'api/')) {
+        if (Yii::$app->has('request') && $this->isApiRequest()) {
             $this->renderApiException($exception);
 
             return;
@@ -45,7 +45,7 @@ class ApiErrorHandler extends ErrorHandler
             return false;
         }
 
-        if (str_starts_with((string) $request->pathInfo, 'api/')) {
+        if ($this->isApiRequest()) {
             return false;
         }
 
@@ -73,6 +73,8 @@ class ApiErrorHandler extends ErrorHandler
             'category-form',
             'colors',
             'color-form',
+            'sizes',
+            'size-form',
             'features',
             'feature-form',
             'feature-values',
@@ -230,5 +232,20 @@ class ApiErrorHandler extends ErrorHandler
             422 => 'Validation Error',
             default => 'Error',
         };
+    }
+
+    private function isApiRequest(): bool
+    {
+        if (!Yii::$app->has('request')) {
+            return false;
+        }
+
+        try {
+            return str_starts_with((string) Yii::$app->request->pathInfo, 'api/');
+        } catch (\Throwable) {
+            $requestUri = (string) ($_SERVER['REQUEST_URI'] ?? '');
+
+            return str_contains($requestUri, '/api/');
+        }
     }
 }

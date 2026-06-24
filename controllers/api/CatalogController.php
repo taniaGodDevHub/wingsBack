@@ -161,6 +161,38 @@ use yii\filters\VerbFilter;
  * )
  *
  * @OA\Get(
+ *     path="/api/catalog/product/{slug}",
+ *     summary="Карточка товара",
+ *     description="Возвращает данные товара по slug.
+
+Дополнительно к полям списка каталога:
+- `description` — текстовое описание;
+- `size_chart` — полная таблица размеров (RUS, INT, обхват груди, наличие);
+- `sizes` — только размеры в наличии (массив INT);
+- `group` — связанная группа вариантов (`variants`: slug + цвет); `null`, если товар не в группе.
+
+Товар должен быть доступен (`is_available=true`), иначе 404.",
+ *     operationId="catalogProductDetail",
+ *     tags={"Каталог"},
+ *     @OA\Parameter(
+ *         name="slug",
+ *         in="path",
+ *         description="Slug товара",
+ *         required=true,
+ *         @OA\Schema(type="string")
+ *     ),
+ *     @OA\Response(
+ *         response=200,
+ *         description="Карточка товара",
+ *         @OA\MediaType(
+ *             mediaType="application/json",
+ *             @OA\Schema(ref="#/components/schemas/CatalogProductDetail")
+ *         )
+ *     ),
+ *     @OA\Response(response=404, description="Товар не найден")
+ * )
+ *
+ * @OA\Get(
  *     path="/api/catalog/search",
  *     summary="Каталог с фильтрами",
  *     description="actionSearch — поиск товаров с фильтрами, сортировкой и доступными значениями фильтров",
@@ -262,6 +294,7 @@ class CatalogController extends BaseApiController
                 'showcase' => ['GET'],
                 'universal' => ['GET'],
                 'simple-tree' => ['GET'],
+                'product' => ['GET'],
                 'search' => ['GET'],
                 'search-category' => ['GET'],
             ],
@@ -297,6 +330,11 @@ class CatalogController extends BaseApiController
         $contextSlug = (string) Yii::$app->request->get('category_slug', '');
 
         return $this->catalog->categoryTree($contextSlug !== '' ? $contextSlug : null);
+    }
+
+    public function actionProduct(string $slug): array
+    {
+        return $this->catalog->productBySlug($slug);
     }
 
     public function actionSearch(): array

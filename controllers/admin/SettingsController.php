@@ -12,6 +12,7 @@ use app\models\HomeAbout;
 use app\models\HomeBanner;
 use app\models\HomeBottomBanner;
 use app\models\HomeGenderBlock;
+use app\models\Size;
 use app\services\HomeAboutUploadService;
 use app\services\HomeBannerUploadService;
 use app\services\HomeBottomBannerUploadService;
@@ -44,6 +45,7 @@ class SettingsController extends BaseAdminController
             'class' => VerbFilter::class,
             'actions' => [
                 'category-delete' => ['POST'],
+                'size-delete' => ['POST'],
             ],
         ];
 
@@ -129,6 +131,57 @@ class SettingsController extends BaseAdminController
         $this->view->title = $model->isNewRecord ? Yii::t('app', 'Create color') : Yii::t('app', 'Edit color');
 
         return $this->render('color-form', ['model' => $model]);
+    }
+
+    public function actionSizes(): string
+    {
+        $this->view->title = Yii::t('app', 'Sizes');
+
+        return $this->render('sizes', [
+            'dataProvider' => new ActiveDataProvider([
+                'query' => Size::find()->orderBy(['sort_order' => SORT_ASC, 'id' => SORT_ASC]),
+                'pagination' => false,
+            ]),
+        ]);
+    }
+
+    public function actionSizeForm(?int $id = null): string|Response
+    {
+        $model = $id !== null ? $this->findSize($id) : new Size();
+
+        if ($model->load(Yii::$app->request->post()) && $model->save()) {
+            Yii::$app->session->setFlash('success', Yii::t('app', 'Saved successfully.'));
+            return $this->redirect(['/admin/settings/sizes']);
+        }
+
+        $this->view->title = $model->isNewRecord
+            ? Yii::t('app', 'Create size')
+            : Yii::t('app', 'Edit size');
+
+        return $this->render('size-form', ['model' => $model]);
+    }
+
+    public function actionSizeDelete(int $id): Response
+    {
+        $model = $this->findSize($id);
+
+        try {
+            if (!$model->delete()) {
+                throw new \RuntimeException('Size delete returned false.');
+            }
+            Yii::$app->session->setFlash('success', Yii::t('app', 'Size deleted.'));
+        } catch (IntegrityException $e) {
+            Yii::error($e->getMessage(), __METHOD__);
+            Yii::$app->session->setFlash(
+                'error',
+                Yii::t('app', 'Cannot delete size: it is used in catalog data.'),
+            );
+        } catch (\Throwable $e) {
+            Yii::error($e, __METHOD__);
+            Yii::$app->session->setFlash('error', Yii::t('app', 'Failed to delete size.'));
+        }
+
+        return $this->redirect(['/admin/settings/sizes']);
     }
 
     public function actionFeatures(): string
@@ -405,6 +458,16 @@ class SettingsController extends BaseAdminController
         $model = CatalogFeatureValue::findOne($id);
         if ($model === null) {
             throw new NotFoundHttpException(Yii::t('app', 'Attribute value not found.'));
+        }
+
+        return $model;
+    }
+
+    private function findSize(int $id): Size
+    {
+        $model = Size::findOne($id);
+        if ($model === null) {
+            throw new NotFoundHttpException(Yii::t('app', 'Size not found.'));
         }
 
         return $model;

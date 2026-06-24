@@ -96,6 +96,7 @@ $config = [
                 'GET api/catalog/showcase' => 'api/catalog/showcase',
                 'GET api/catalog/search/universal' => 'api/catalog/universal',
                 'GET api/catalog/categories/simple-tree' => 'api/catalog/simple-tree',
+                'GET api/catalog/product/<slug>' => 'api/catalog/product',
                 'GET api/catalog/search' => 'api/catalog/search',
                 'GET api/catalog/search/category/<slug>' => 'api/catalog/search-category',
                 'POST api/favorites/add' => 'api/favorites/add',

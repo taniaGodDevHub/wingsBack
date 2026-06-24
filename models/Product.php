@@ -12,6 +12,8 @@ use yii\db\ActiveRecord;
  * @property int $id
  * @property string $slug
  * @property string $name
+ * @property string|null $description
+ * @property int|null $product_group_id
  * @property string|null $brand
  * @property string|null $product_code
  * @property float $price
@@ -28,7 +30,8 @@ use yii\db\ActiveRecord;
  * @property int $updated_at
  * @property int|null $categoryId
  * @property array<int, int|string> $featureValueByFeatureId feature_id => feature_value_id
- * @property string[] $sizeValuesInStock
+ * @property array<int, array{chest_circumference: string, is_in_stock: bool}> $sizeChartBySizeId
+ * @property-read ProductGroup|null $productGroup
  */
 class Product extends ActiveRecord
 {
@@ -44,8 +47,10 @@ class Product extends ActiveRecord
     /** @var array<int, int|string> */
     public array $featureValueByFeatureId = [];
 
-    /** @var string[] */
-    public array $sizeValuesInStock = [];
+    /** @var array<int, array{chest_circumference: string, is_in_stock: bool}> */
+    public array $sizeChartBySizeId = [];
+
+    public string $newProductGroupName = '';
     public static function tableName(): string
     {
         return '{{%product}}';
@@ -61,6 +66,11 @@ class Product extends ActiveRecord
         if (is_array($values) && array_key_exists('categoryId', $values)) {
             $categoryId = $values['categoryId'];
             $values['categoryId'] = $categoryId === '' || $categoryId === null ? null : (int) $categoryId;
+        }
+
+        if (is_array($values) && array_key_exists('product_group_id', $values)) {
+            $groupId = $values['product_group_id'];
+            $values['product_group_id'] = $groupId === '' || $groupId === null ? null : (int) $groupId;
         }
 
         parent::setAttributes($values, $safeOnly);
@@ -81,9 +91,10 @@ class Product extends ActiveRecord
             [['gender'], 'string', 'max' => 16],
             [['gender'], 'in', 'range' => static fn (): array => Gender::getActiveCodes(), 'skipOnEmpty' => true],
             [['brand', 'product_code'], 'string', 'max' => 255],
+            [['description'], 'string'],
             [['slug'], 'unique'],
-            [['categoryId'], 'integer'],
-            [['featureValueByFeatureId', 'sizeValuesInStock'], 'safe'],
+            [['categoryId', 'product_group_id'], 'integer'],
+            [['featureValueByFeatureId', 'sizeChartBySizeId', 'newProductGroupName'], 'safe'],
         ];
     }
 
@@ -98,7 +109,7 @@ class Product extends ActiveRecord
             $this->syncFeatureValueSelectionsFromRelation();
         }
         if ($this->isRelationPopulated('sizes')) {
-            $this->sizeValuesInStock = $this->getSizeValues();
+            $this->syncSizeChartFromRelation();
         }
 
         $this->blago_unit = self::BLAGO_UNIT_RUB;
@@ -111,6 +122,7 @@ class Product extends ActiveRecord
             'id' => Yii::t('app', 'ID'),
             'slug' => Yii::t('app', 'Slug'),
             'name' => Yii::t('app', 'Product name'),
+            'description' => Yii::t('app', 'Description'),
             'brand' => Yii::t('app', 'Brand'),
             'product_code' => Yii::t('app', 'Product code'),
             'price' => Yii::t('app', 'Price'),
@@ -125,7 +137,9 @@ class Product extends ActiveRecord
             'bestseller_rank' => Yii::t('app', 'Bestseller rank'),
             'gender' => Yii::t('app', 'Gender'),
             'categoryId' => Yii::t('app', 'Category'),
-            'sizeValuesInStock' => Yii::t('app', 'Sizes in stock'),
+            'product_group_id' => Yii::t('app', 'Product group'),
+            'newProductGroupName' => Yii::t('app', 'Create new product group'),
+            'sizeChartBySizeId' => Yii::t('app', 'Size chart'),
             'search_text' => Yii::t('app', 'Search text'),
             'created_at' => Yii::t('app', 'Created at'),
             'updated_at' => Yii::t('app', 'Updated at'),
@@ -145,13 +159,20 @@ class Product extends ActiveRecord
 
     public function getSizes(): \yii\db\ActiveQuery
     {
-        return $this->hasMany(ProductSize::class, ['product_id' => 'id']);
+        return $this->hasMany(ProductSize::class, ['product_id' => 'id'])
+            ->joinWith('size')
+            ->orderBy(['{{%size}}.sort_order' => SORT_ASC, '{{%size}}.id' => SORT_ASC]);
     }
 
     public function getFeatureValues(): \yii\db\ActiveQuery
     {
         return $this->hasMany(CatalogFeatureValue::class, ['id' => 'feature_value_id'])
             ->viaTable('{{%product_feature_value}}', ['product_id' => 'id']);
+    }
+
+    public function getProductGroup(): \yii\db\ActiveQuery
+    {
+        return $this->hasOne(ProductGroup::class, ['id' => 'product_group_id']);
     }
 
     public function syncFeatureValueSelectionsFromRelation(): void
@@ -183,18 +204,125 @@ class Product extends ActiveRecord
             ->one();
     }
 
+    public function syncSizeChartFromRelation(): void
+    {
+        $this->sizeChartBySizeId = [];
+        foreach ($this->sizes as $productSize) {
+            $sizeId = (int) $productSize->size_id;
+            if ($sizeId <= 0) {
+                continue;
+            }
+
+            $this->sizeChartBySizeId[$sizeId] = [
+                'chest_circumference' => (string) ($productSize->chest_circumference ?? ''),
+                'is_in_stock' => (bool) $productSize->is_in_stock,
+            ];
+        }
+    }
+
+    public function initSizeChartFromDefaults(): void
+    {
+        $this->sizeChartBySizeId = [];
+        foreach (Size::findAllOrdered() as $size) {
+            $this->sizeChartBySizeId[(int) $size->id] = [
+                'chest_circumference' => (string) $size->default_chest_circumference,
+                'is_in_stock' => false,
+            ];
+        }
+    }
+
+    public function ensureSizeChartInitialized(): void
+    {
+        if ($this->sizeChartBySizeId !== []) {
+            return;
+        }
+
+        if ($this->isRelationPopulated('sizes') && $this->sizes !== []) {
+            $this->syncSizeChartFromRelation();
+
+            return;
+        }
+
+        $this->initSizeChartFromDefaults();
+    }
+
     /** @return string[] */
     public function getSizeValues(): array
     {
         $values = [];
-        foreach ($this->sizes as $size) {
-            $values[] = $size->size_value;
+        foreach ($this->sizes as $productSize) {
+            if (!(bool) $productSize->is_in_stock) {
+                continue;
+            }
+
+            $sizeValue = $productSize->getSizeValue();
+            if ($sizeValue !== '') {
+                $values[] = $sizeValue;
+            }
         }
 
         return $values;
     }
 
-    /** @return array{id: int, name: string, hex: string}|null */
+    /**
+     * @return array<int, array{rus_label: string, size_value: string, chest_circumference: string, is_in_stock: bool}>
+     */
+    public function getSizeChartData(): array
+    {
+        $rows = [];
+        foreach ($this->sizes as $productSize) {
+            $size = $productSize->size;
+            if ($size === null) {
+                continue;
+            }
+
+            $chest = trim((string) ($productSize->chest_circumference ?? ''));
+            if ($chest === '') {
+                $chest = (string) $size->default_chest_circumference;
+            }
+
+            $rows[] = [
+                'rus_label' => (string) $size->rus_label,
+                'size_value' => (string) $size->size_value,
+                'chest_circumference' => $chest,
+                'is_in_stock' => (bool) $productSize->is_in_stock,
+            ];
+        }
+
+        return $rows;
+    }
+
+    /** @return Product[] */
+    public function getGroupVariantProducts(): array
+    {
+        if ($this->product_group_id === null || (int) $this->product_group_id <= 0) {
+            return [];
+        }
+
+        if ($this->isRelationPopulated('productGroup') && $this->productGroup !== null && $this->productGroup->isRelationPopulated('products')) {
+            $products = [];
+            foreach ($this->productGroup->products as $product) {
+                if (!(bool) $product->is_available) {
+                    continue;
+                }
+
+                $products[] = $product;
+            }
+
+            return $products;
+        }
+
+        return static::find()
+            ->where([
+                'product_group_id' => (int) $this->product_group_id,
+                'is_available' => true,
+            ])
+            ->with(['featureValues.feature'])
+            ->orderBy(['id' => SORT_ASC])
+            ->all();
+    }
+
+    /** @return array{id: int, slug: string, name: string, hex: string}|null */
     public function getColorData(): ?array
     {
         if (!$this->isRelationPopulated('featureValues')) {
@@ -211,6 +339,7 @@ class Product extends ActiveRecord
             if ($color !== null) {
                 return [
                     'id' => (int) $color->id,
+                    'slug' => (string) $color->slug,
                     'name' => $color->name,
                     'hex' => $color->hex,
                 ];
@@ -218,6 +347,7 @@ class Product extends ActiveRecord
 
             return [
                 'id' => (int) $value->id,
+                'slug' => (string) ($value->slug ?? ''),
                 'name' => $value->name,
                 'hex' => $value->hex ?? '',
             ];
@@ -256,7 +386,7 @@ class Product extends ActiveRecord
         }
 
         $this->blago = $this->resolveBlagoAmount();
-        $this->search_text = mb_strtolower($this->name . ' ' . $this->slug);
+        $this->search_text = mb_strtolower(trim($this->name . ' ' . $this->slug . ' ' . (string) ($this->description ?? '')));
         $this->featured_sort = (int) ($this->featured_sort ?? 0);
         $this->bestseller_rank = (int) ($this->bestseller_rank ?? 0);
 

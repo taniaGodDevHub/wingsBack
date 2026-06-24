@@ -42,6 +42,19 @@ final class ProductPresenter
         }, $products);
     }
 
+    public static function detailItem(Product $product): array
+    {
+        $item = self::baseItem($product);
+        $item['images'] = self::imagesDetailed($product);
+        $item['gender'] = $product->gender;
+        $item['color'] = $product->getColorData();
+        $item['sizes'] = $product->getSizeValues();
+        $item['size_chart'] = $product->getSizeChartData();
+        $item['group'] = self::groupData($product);
+
+        return $item;
+    }
+
     public static function cartProductInfo(Product $product): array
     {
         $images = [];
@@ -88,6 +101,7 @@ final class ProductPresenter
             'id' => (int) $product->id,
             'slug' => $product->slug,
             'name' => $product->name,
+            'description' => $product->description,
             'price' => (float) $product->price,
             'old_price' => $product->old_price !== null ? (float) $product->old_price : null,
             'is_available' => (bool) $product->is_available,
@@ -131,5 +145,29 @@ final class ProductPresenter
         }
 
         return $urls;
+    }
+
+    /** @return array{id: int, name: string, slug: string, variants: array<int, array{slug: string, color: array<string, mixed>|null}>}|null */
+    private static function groupData(Product $product): ?array
+    {
+        $group = $product->productGroup;
+        if ($group === null) {
+            return null;
+        }
+
+        $variants = [];
+        foreach ($product->getGroupVariantProducts() as $variant) {
+            $variants[] = [
+                'slug' => $variant->slug,
+                'color' => $variant->getColorData(),
+            ];
+        }
+
+        return [
+            'id' => (int) $group->id,
+            'name' => $group->name,
+            'slug' => $group->slug,
+            'variants' => $variants,
+        ];
     }
 }

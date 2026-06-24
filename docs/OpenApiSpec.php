@@ -28,7 +28,11 @@ use OpenApi\Annotations as OA;
  * Пока не подключён SMS-провайдер, включён `smsMockMode`: SMS не отправляется, а одноразовый код возвращается в ответе
  * `phone_registration_confirmed` и `phone_login_get_code` (поля `activation_code` и `code`).
  * Фронтенд использует `record_id` + `code` для `verify_phone_registration` / `login_phone_with_code`.
- * После подключения SMS.ru установите `smsMockMode=false` и укажите `smsRuApiId` — код перестанет приходить в ответе API."
+ * После подключения SMS.ru установите `smsMockMode=false` и укажите `smsRuApiId` — код перестанет приходить в ответе API.
+ *
+ * **Карточка товара и группы**
+ * `GET /api/catalog/product/{slug}` — детальная карточка: описание, полная таблица размеров (`size_chart`), размеры в наличии (`sizes`) и связанная группа вариантов (`group.variants`: slug + цвет).
+ * Списочные эндпоинты каталога (`/search`, `/showcase`) группу не возвращают."
  *     ),
  *     @OA\Server(url="/", description="API-сервер")
  * )

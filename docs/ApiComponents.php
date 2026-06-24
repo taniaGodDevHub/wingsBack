@@ -398,14 +398,96 @@ use OpenApi\Annotations as OA;
  *     @OA\Property(property="id", type="integer", example=101),
  *     @OA\Property(property="slug", type="string", example="oversize-hoodie-black"),
  *     @OA\Property(property="name", type="string", example="Oversize Hoodie"),
+ *     @OA\Property(property="description", type="string", nullable=true, example="Мягкий оверсайз худи из плотного хлопка"),
  *     @OA\Property(property="price", type="number", format="float", example=5990),
  *     @OA\Property(property="old_price", type="number", format="float", nullable=true, example=7490),
  *     @OA\Property(property="is_available", type="boolean", example=true),
  *     @OA\Property(property="images", type="array", @OA\Items(ref="#/components/schemas/ProductImageShowcase")),
  *     @OA\Property(property="categories", type="array", @OA\Items(ref="#/components/schemas/CategoryRef")),
  *     @OA\Property(property="gender", type="string", enum={"male","female","unisex"}, example="unisex"),
- *     @OA\Property(property="sizes", type="array", @OA\Items(type="string"), example={"S","M","L"}),
+ *     @OA\Property(property="sizes", type="array", @OA\Items(type="string"), example={"S","M","L"}, description="Размеры в наличии (INT), только is_in_stock=true"),
  *     @OA\Property(property="color", ref="#/components/schemas/CatalogProductColor", nullable=true)
+ * )
+ *
+ * @OA\Schema(
+ *     schema="CatalogProductSizeChartRow",
+ *     description="Строка таблицы размеров конкретного товара",
+ *     @OA\Property(property="rus_label", type="string", example="44", description="Размер RUS"),
+ *     @OA\Property(property="size_value", type="string", example="S", description="Международный размер (INT)"),
+ *     @OA\Property(property="chest_circumference", type="string", example="92", description="Обхват груди, см"),
+ *     @OA\Property(property="is_in_stock", type="boolean", example=true, description="Есть ли размер в наличии")
+ * )
+ *
+ * @OA\Schema(
+ *     schema="CatalogProductGroupVariant",
+ *     description="Вариант товара в группе (другой цвет той же модели)",
+ *     @OA\Property(property="slug", type="string", example="oversize-hoodie-white", description="Slug товара-варианта для перехода на карточку"),
+ *     @OA\Property(property="color", ref="#/components/schemas/CatalogProductColor", nullable=true)
+ * )
+ *
+ * @OA\Schema(
+ *     schema="CatalogProductGroup",
+ *     description="Группа связанных товаров (варианты одной модели по цветам). Slug группы имеет префикс group-",
+ *     @OA\Property(property="id", type="integer", example=5),
+ *     @OA\Property(property="name", type="string", example="Худи"),
+ *     @OA\Property(property="slug", type="string", example="group-hudi", description="Уникальный slug группы с префиксом group-"),
+ *     @OA\Property(
+ *         property="variants",
+ *         type="array",
+ *         description="Доступные товары группы (is_available=true), включая текущий",
+ *         @OA\Items(ref="#/components/schemas/CatalogProductGroupVariant")
+ *     )
+ * )
+ *
+ * @OA\Schema(
+ *     schema="CatalogProductDetail",
+ *     description="Детальная карточка товара. Возвращается только эндпоинтом GET /api/catalog/product/{slug}",
+ *     allOf={
+ *         @OA\Schema(ref="#/components/schemas/CatalogSearchProduct"),
+ *         @OA\Schema(
+ *             @OA\Property(property="description", type="string", nullable=true, description="Текстовое описание товара"),
+ *             @OA\Property(
+ *                 property="size_chart",
+ *                 type="array",
+ *                 description="Полная таблица размеров товара (все строки справочника с флагом наличия)",
+ *                 @OA\Items(ref="#/components/schemas/CatalogProductSizeChartRow")
+ *             ),
+ *             @OA\Property(
+ *                 property="group",
+ *                 ref="#/components/schemas/CatalogProductGroup",
+ *                 nullable=true,
+ *                 description="Связанная группа вариантов; null, если товар не в группе"
+ *             )
+ *         )
+ *     },
+ *     example={
+ *         "id": 101,
+ *         "slug": "oversize-hoodie-black",
+ *         "name": "Oversize Hoodie",
+ *         "description": "Мягкий оверсайз худи из плотного хлопка",
+ *         "price": 5990,
+ *         "old_price": 7490,
+ *         "is_available": true,
+ *         "images": {{"id": 1, "image_url": "/uploads/products/hoodie-black.jpg", "sort_order": 0}},
+ *         "categories": {{"id": 3, "name": "Худи", "slug": "hoodies"}},
+ *         "gender": "unisex",
+ *         "sizes": {"S", "M"},
+ *         "color": {"id": 1001, "slug": "chernyy", "name": "Черный", "hex": "#111111"},
+ *         "size_chart": {
+ *             {"rus_label": "44", "size_value": "S", "chest_circumference": "92", "is_in_stock": true},
+ *             {"rus_label": "46", "size_value": "M", "chest_circumference": "96", "is_in_stock": true},
+ *             {"rus_label": "48", "size_value": "L", "chest_circumference": "100", "is_in_stock": false}
+ *         },
+ *         "group": {
+ *             "id": 5,
+ *             "name": "Худи",
+ *             "slug": "group-hudi",
+ *             "variants": {
+ *                 {"slug": "oversize-hoodie-black", "color": {"id": 1001, "slug": "chernyy", "name": "Черный", "hex": "#111111"}},
+ *                 {"slug": "oversize-hoodie-white", "color": {"id": 1002, "slug": "belyy", "name": "Белый", "hex": "#ffffff"}}
+ *             }
+ *         }
+ *     }
  * )
  *
  * @OA\Schema(
