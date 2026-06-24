@@ -61,8 +61,18 @@
             return;
         }
 
-        let slugManual = slugInput.value.trim() !== '';
         let updatingSlug = false;
+
+        function isAutoSlug(name, slug) {
+            const normalizedSlug = slug.trim();
+            if (normalizedSlug === '') {
+                return true;
+            }
+
+            return normalizedSlug === slugify(name);
+        }
+
+        let slugManual = !isAutoSlug(nameInput.value, slugInput.value);
 
         nameInput.addEventListener('input', function () {
             if (slugManual) {
@@ -79,7 +89,7 @@
                 return;
             }
 
-            slugManual = slugInput.value.trim() !== '';
+            slugManual = !isAutoSlug(nameInput.value, slugInput.value);
         });
     }
 

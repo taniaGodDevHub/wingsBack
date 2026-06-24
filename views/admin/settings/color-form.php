@@ -7,7 +7,7 @@ use yii\bootstrap5\ActiveForm;
 use yii\helpers\Html;
 use yii\web\View;
 
-$this->registerJsFile('@web/js/helpers/slugHelper.js', ['depends' => [\yii\web\JqueryAsset::class], 'position' => View::POS_END]);
+$this->registerJsFile('@web/js/helpers/slugHelper.js?v=2', ['depends' => [\yii\web\JqueryAsset::class], 'position' => View::POS_END]);
 $this->registerJsFile('@web/js/admin-slug.js', ['depends' => [\yii\web\JqueryAsset::class], 'position' => View::POS_END]);
 
 ?>
