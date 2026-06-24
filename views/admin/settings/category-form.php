@@ -8,8 +8,8 @@ use yii\bootstrap5\ActiveForm;
 use yii\helpers\Html;
 use yii\web\View;
 
-$this->registerJsFile('@web/js/helpers/slugHelper.js?v=2', ['depends' => [\yii\web\JqueryAsset::class], 'position' => View::POS_END]);
-$this->registerJsFile('@web/js/admin-slug.js', ['depends' => [\yii\web\JqueryAsset::class], 'position' => View::POS_END]);
+$this->registerJsFile('@web/js/helpers/slugHelper.js?v=3', ['depends' => [\yii\web\JqueryAsset::class], 'position' => View::POS_END]);
+$this->registerJsFile('@web/js/admin-slug.js?v=2', ['depends' => [\yii\web\JqueryAsset::class], 'position' => View::POS_END]);
 
 ?>
 <h1 class="h3 mb-4"><?= Html::encode($this->title) ?></h1>
