@@ -48,6 +48,7 @@ final class ProductPresenter
         $item['images'] = self::imagesDetailed($product);
         $item['gender'] = $product->gender;
         $item['color'] = $product->getColorData();
+        $item['attributes'] = self::attributesData($product);
         $item['sizes'] = $product->getSizeValues();
         $item['size_chart'] = $product->getSizeChartData();
         $item['group'] = self::groupData($product);
@@ -145,6 +146,38 @@ final class ProductPresenter
         }
 
         return $urls;
+    }
+
+    /** @return array<int, array{id: int, name: string, slug: string, code: string|null, value: array{id: int, name: string, slug: string}}> */
+    private static function attributesData(Product $product): array
+    {
+        if (!$product->isRelationPopulated('featureValues')) {
+            return [];
+        }
+
+        $attributes = [];
+        foreach ($product->featureValues as $value) {
+            $feature = $value->feature;
+            if ($feature === null || $feature->isColor()) {
+                continue;
+            }
+
+            $attributes[] = [
+                'id' => (int) $feature->id,
+                'name' => $feature->name_ru,
+                'slug' => (string) $feature->slug,
+                'code' => $feature->code !== null && $feature->code !== '' ? (string) $feature->code : null,
+                'value' => [
+                    'id' => (int) $value->id,
+                    'name' => $value->name,
+                    'slug' => (string) $value->slug,
+                ],
+            ];
+        }
+
+        usort($attributes, static fn (array $a, array $b): int => $a['id'] <=> $b['id']);
+
+        return $attributes;
     }
 
     /** @return array{id: int, name: string, slug: string, variants: array<int, array{slug: string, color: array<string, mixed>|null}>}|null */

@@ -31,7 +31,7 @@ use OpenApi\Annotations as OA;
  * После подключения SMS.ru установите `smsMockMode=false` и укажите `smsRuApiId` — код перестанет приходить в ответе API.
  *
  * **Карточка товара и группы**
- * `GET /api/catalog/product/{slug}` — детальная карточка: описание, полная таблица размеров (`size_chart`), размеры в наличии (`sizes`) и связанная группа вариантов (`group.variants`: slug + цвет).
+ * `GET /api/catalog/product/{slug}` — детальная карточка: описание, атрибуты (`attributes`: id, name, slug, value), полная таблица размеров (`size_chart`), размеры в наличии (`sizes`) и связанная группа вариантов (`group.variants`: slug + цвет).
  * Списочные эндпоинты каталога (`/search`, `/showcase`) группу не возвращают."
  *     ),
  *     @OA\Server(url="/", description="API-сервер")

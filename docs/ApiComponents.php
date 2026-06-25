@@ -410,6 +410,24 @@ use OpenApi\Annotations as OA;
  * )
  *
  * @OA\Schema(
+ *     schema="CatalogProductAttributeValue",
+ *     description="Выбранное значение атрибута товара",
+ *     @OA\Property(property="id", type="integer", example=1001, description="ID значения атрибута"),
+ *     @OA\Property(property="name", type="string", example="Хлопок"),
+ *     @OA\Property(property="slug", type="string", example="hlopok")
+ * )
+ *
+ * @OA\Schema(
+ *     schema="CatalogProductAttribute",
+ *     description="Атрибут товара и его значение (кроме цвета — см. поле color)",
+ *     @OA\Property(property="id", type="integer", example=12, description="ID атрибута"),
+ *     @OA\Property(property="name", type="string", example="Материал"),
+ *     @OA\Property(property="slug", type="string", example="material"),
+ *     @OA\Property(property="code", type="string", nullable=true, example=null, description="Служебный код атрибута; для цвета — color (в attributes не включается)"),
+ *     @OA\Property(property="value", ref="#/components/schemas/CatalogProductAttributeValue")
+ * )
+ *
+ * @OA\Schema(
  *     schema="CatalogProductSizeChartRow",
  *     description="Строка таблицы размеров конкретного товара",
  *     @OA\Property(property="rus_label", type="string", example="44", description="Размер RUS"),
@@ -457,6 +475,12 @@ use OpenApi\Annotations as OA;
  *                 ref="#/components/schemas/CatalogProductGroup",
  *                 nullable=true,
  *                 description="Связанная группа вариантов; null, если товар не в группе"
+ *             ),
+ *             @OA\Property(
+ *                 property="attributes",
+ *                 type="array",
+ *                 description="Атрибуты товара и выбранные значения (цвет — в поле color)",
+ *                 @OA\Items(ref="#/components/schemas/CatalogProductAttribute")
  *             )
  *         )
  *     },
@@ -473,6 +497,10 @@ use OpenApi\Annotations as OA;
  *         "gender": "unisex",
  *         "sizes": {"S", "M"},
  *         "color": {"id": 1001, "slug": "chernyy", "name": "Черный", "hex": "#111111"},
+ *         "attributes": {
+ *             {"id": 12, "name": "Материал", "slug": "material", "code": null, "value": {"id": 1001, "name": "Хлопок", "slug": "hlopok"}},
+ *             {"id": 13, "name": "Сезон", "slug": "season", "code": null, "value": {"id": 2001, "name": "Лето", "slug": "leto"}}
+ *         },
  *         "size_chart": {
  *             {"rus_label": "44", "size_value": "S", "chest_circumference": "92", "is_in_stock": true},
  *             {"rus_label": "46", "size_value": "M", "chest_circumference": "96", "is_in_stock": true},
