@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace app\components\api;
 
 use Yii;
-use yii\base\InvalidArgumentException;
 use yii\base\Model;
 use yii\db\IntegrityException;
 use yii\helpers\Url;
@@ -168,10 +167,14 @@ class ApiErrorHandler extends ErrorHandler
     {
         $response = Yii::$app->response;
         $response->format = Response::FORMAT_JSON;
+        $response->isSent = false;
+        $response->stream = null;
+        $response->content = null;
 
         if ($exception instanceof ApiHttpException && is_array($exception->detail)) {
             $response->statusCode = $exception->statusCode;
             $response->data = ['detail' => $exception->detail];
+            $this->sendApiResponse($response);
 
             return;
         }
@@ -179,6 +182,7 @@ class ApiErrorHandler extends ErrorHandler
         if ($exception instanceof CheckoutApiException) {
             $response->statusCode = $exception->statusCode;
             $response->data = ['message' => $exception->getMessage()];
+            $this->sendApiResponse($response);
 
             return;
         }
@@ -186,11 +190,12 @@ class ApiErrorHandler extends ErrorHandler
         if ($exception instanceof HttpException) {
             $response->statusCode = $exception->statusCode;
             $response->data = ['detail' => $exception->getMessage() ?: $this->defaultDetail($exception->statusCode)];
+            $this->sendApiResponse($response);
 
             return;
         }
 
-        if ($exception instanceof InvalidArgumentException) {
+        if ($exception instanceof \InvalidArgumentException) {
             $response->statusCode = 422;
             $response->data = [
                 'detail' => [
@@ -201,11 +206,26 @@ class ApiErrorHandler extends ErrorHandler
                     ],
                 ],
             ];
+            $this->sendApiResponse($response);
 
             return;
         }
 
         parent::renderException($exception);
+    }
+
+    private function sendApiResponse(Response $response): void
+    {
+        $headers = $response->headers;
+        $headers->set('Access-Control-Allow-Origin', '*');
+        $headers->set('Access-Control-Allow-Methods', 'GET, POST, PUT, PATCH, DELETE, OPTIONS');
+        $headers->set(
+            'Access-Control-Allow-Headers',
+            'Content-Type, Authorization, X-Session-ID, Refresh-Token, X-Requested-With',
+        );
+        $headers->set('Access-Control-Max-Age', '86400');
+
+        $response->send();
     }
 
     public static function validationDetail(Model $model): array

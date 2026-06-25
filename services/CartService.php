@@ -21,6 +21,9 @@ class CartService
         $sizeValue = $this->requireProductSize($product, $sizeValue);
         $quantity = max(1, $quantity);
         $cart = $this->resolveCart($owner, $cartId, true);
+        if ($cart === null) {
+            throw ApiHttpException::notFound('Cart not found');
+        }
 
         $item = $this->findCartItem((int) $cart->id, $productId, $sizeValue);
         if ($item === null) {
