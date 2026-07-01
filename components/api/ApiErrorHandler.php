@@ -216,15 +216,7 @@ class ApiErrorHandler extends ErrorHandler
 
     private function sendApiResponse(Response $response): void
     {
-        $headers = $response->headers;
-        $headers->set('Access-Control-Allow-Origin', '*');
-        $headers->set('Access-Control-Allow-Methods', 'GET, POST, PUT, PATCH, DELETE, OPTIONS');
-        $headers->set(
-            'Access-Control-Allow-Headers',
-            'Content-Type, Authorization, X-Session-ID, Refresh-Token, X-Requested-With',
-        );
-        $headers->set('Access-Control-Max-Age', '86400');
-
+        CorsHeaders::apply($response->headers);
         $response->send();
     }
 
