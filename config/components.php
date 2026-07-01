@@ -10,4 +10,7 @@ return [
     'authCodeMailer' => [
         'class' => \app\components\mail\AuthCodeMailer::class,
     ],
+    'smsSender' => [
+        'class' => \app\components\sms\SmsSender::class,
+    ],
 ];

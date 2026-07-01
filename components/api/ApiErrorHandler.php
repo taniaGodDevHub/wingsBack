@@ -189,7 +189,13 @@ class ApiErrorHandler extends ErrorHandler
 
         if ($exception instanceof HttpException) {
             $response->statusCode = $exception->statusCode;
-            $response->data = ['detail' => $exception->getMessage() ?: $this->defaultDetail($exception->statusCode)];
+            if ($exception->statusCode >= 500) {
+                $response->data = ['detail' => $this->buildServerErrorDetail($exception)];
+            } else {
+                $response->data = [
+                    'detail' => $exception->getMessage() ?: $this->defaultDetail($exception->statusCode),
+                ];
+            }
             $this->sendApiResponse($response);
 
             return;
@@ -211,7 +217,45 @@ class ApiErrorHandler extends ErrorHandler
             return;
         }
 
-        parent::renderException($exception);
+        if ($exception instanceof IntegrityException) {
+            $response->statusCode = 409;
+            $response->data = [
+                'detail' => [
+                    'message' => $exception->getMessage() !== ''
+                        ? $exception->getMessage()
+                        : Yii::t('app', 'Failed to save data. Check required fields and try again.'),
+                    'type' => $exception::class,
+                ],
+            ];
+            $this->sendApiResponse($response);
+
+            return;
+        }
+
+        $response->statusCode = 500;
+        $response->data = ['detail' => $this->buildServerErrorDetail($exception)];
+        $this->sendApiResponse($response);
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function buildServerErrorDetail(\Throwable $exception): array
+    {
+        $detail = [
+            'message' => $exception->getMessage() !== ''
+                ? $exception->getMessage()
+                : Yii::t('app', 'An error occurred while processing your request.'),
+            'type' => $exception::class,
+        ];
+
+        if (YII_DEBUG) {
+            $detail['file'] = $exception->getFile();
+            $detail['line'] = $exception->getLine();
+            $detail['trace'] = array_slice(explode("\n", $exception->getTraceAsString()), 0, 20);
+        }
+
+        return $detail;
     }
 
     private function sendApiResponse(Response $response): void
@@ -248,16 +292,78 @@ class ApiErrorHandler extends ErrorHandler
 
     private function isApiRequest(): bool
     {
+        if ($this->requestUriLooksLikeApi()) {
+            return true;
+        }
+
         if (!Yii::$app->has('request')) {
             return false;
         }
 
         try {
-            return str_starts_with((string) Yii::$app->request->pathInfo, 'api/');
-        } catch (\Throwable) {
-            $requestUri = (string) ($_SERVER['REQUEST_URI'] ?? '');
+            $pathInfo = (string) Yii::$app->request->pathInfo;
 
-            return str_contains($requestUri, '/api/');
+            return $pathInfo === 'api'
+                || str_starts_with($pathInfo, 'api/')
+                || str_contains($pathInfo, '/api/');
+        } catch (\Throwable) {
+            return false;
         }
+    }
+
+    private function requestUriLooksLikeApi(): bool
+    {
+        $requestUri = (string) ($_SERVER['REQUEST_URI'] ?? '');
+
+        return str_contains($requestUri, '/api/') || str_contains($requestUri, '/api?');
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    protected function convertExceptionToArray($exception): array
+    {
+        if (!$this->isApiRequest()) {
+            return parent::convertExceptionToArray($exception);
+        }
+
+        if ($exception instanceof ApiHttpException && is_array($exception->detail)) {
+            return ['detail' => $exception->detail];
+        }
+
+        if ($exception instanceof CheckoutApiException) {
+            return ['message' => $exception->getMessage()];
+        }
+
+        if ($exception instanceof HttpException && $exception->statusCode < 500) {
+            return [
+                'detail' => $exception->getMessage() ?: $this->defaultDetail($exception->statusCode),
+            ];
+        }
+
+        if ($exception instanceof \InvalidArgumentException) {
+            return [
+                'detail' => [
+                    [
+                        'loc' => ['body'],
+                        'msg' => $exception->getMessage(),
+                        'type' => 'value_error',
+                    ],
+                ],
+            ];
+        }
+
+        if ($exception instanceof IntegrityException) {
+            return [
+                'detail' => [
+                    'message' => $exception->getMessage() !== ''
+                        ? $exception->getMessage()
+                        : Yii::t('app', 'Failed to save data. Check required fields and try again.'),
+                    'type' => $exception::class,
+                ],
+            ];
+        }
+
+        return ['detail' => $this->buildServerErrorDetail($exception)];
     }
 }

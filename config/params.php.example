@@ -10,6 +10,7 @@ return [
     'jwtSecret' => 'change-me-to-random-secret-key',
     'jwtAccessTtl' => 3600,
     'jwtRefreshTtl' => 86400,
+    // TODO: отключить после подключения реальной SMS и доставки email-кодов без возврата в API
     'exposeActivationCode' => true,
     'authCodeEmailFrom' => 'noreply@example.com',
     'authCodeEmailSubject' => 'Код подтверждения',

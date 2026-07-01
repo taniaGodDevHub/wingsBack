@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace app\services;
 
 use app\components\auth\JwtService;
+use app\components\api\ApiHttpException;
 use app\components\mail\AuthCodeMailer;
 use app\components\sms\SmsSender;
 use app\models\AuthVerificationChallenge;
@@ -46,9 +47,17 @@ class AuthService
 
     public function startPhoneRegistration(string $phoneNumber): array
     {
+        $normalized = PhoneNormalizer::normalize($phoneNumber);
+        if ($normalized === '') {
+            throw new BadRequestHttpException('Invalid phone number.');
+        }
+        if (UserProfile::findByPhone($normalized) !== null) {
+            throw ApiHttpException::alreadyRegistered('phone_number', $normalized);
+        }
+
         return $this->startChallenge(
             AuthVerificationChallenge::CHANNEL_PHONE,
-            PhoneNormalizer::normalize($phoneNumber),
+            $normalized,
             AuthVerificationChallenge::TYPE_REGISTRATION,
             true,
         );
@@ -77,9 +86,17 @@ class AuthService
 
     public function startEmailRegistration(string $email): array
     {
+        $normalized = mb_strtolower(trim($email));
+        if ($normalized === '' || !filter_var($normalized, FILTER_VALIDATE_EMAIL)) {
+            throw new BadRequestHttpException('Invalid email.');
+        }
+        if (UserProfile::findByEmail($normalized) !== null) {
+            throw ApiHttpException::alreadyRegistered('email', $normalized);
+        }
+
         return $this->startChallenge(
             AuthVerificationChallenge::CHANNEL_EMAIL,
-            mb_strtolower(trim($email)),
+            $normalized,
             AuthVerificationChallenge::TYPE_REGISTRATION,
             true,
         );
@@ -246,18 +263,25 @@ class AuthService
             return false;
         }
 
-        /** @var SmsSender $sms */
-        $sms = Yii::$app->smsSender;
+        return $this->resolveSmsSender()->isMockMode();
+    }
 
-        return $sms->isMockMode();
+    private function resolveSmsSender(): SmsSender
+    {
+        if (Yii::$app->has('smsSender')) {
+            /** @var SmsSender $sms */
+            $sms = Yii::$app->get('smsSender');
+
+            return $sms;
+        }
+
+        return new SmsSender();
     }
 
     private function dispatchCode(string $channel, string $destination, string $code): void
     {
         if ($channel === AuthVerificationChallenge::CHANNEL_PHONE) {
-            /** @var SmsSender $sms */
-            $sms = Yii::$app->smsSender;
-            $sms->sendCode($destination, $code);
+            $this->resolveSmsSender()->sendCode($destination, $code);
             return;
         }
 
