@@ -36,7 +36,10 @@ use OpenApi\Annotations as OA;
  *
  * **Новости**
  * `GET /api/news` — постраничный список опубликованных статей (id, title, slug, image_url).
- * `GET /api/news/{slug}` — опубликованная статья и до 3 последних статей (кроме текущей) с полями image_url, title, slug."
+ * `GET /api/news/{slug}` — опубликованная статья и до 3 последних статей (кроме текущей) с полями image_url, title, slug.
+ *
+ * **Благо**
+ * `GET /api/blago` — блок сбора блага (title, collection_start_at, collection_end_at, amount, image_url). Если блок не заполнен — 404."
  *     ),
  *     @OA\Server(url="/", description="API-сервер")
  * )

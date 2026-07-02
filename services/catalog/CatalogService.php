@@ -11,7 +11,6 @@ use app\models\Category;
 use app\models\Color;
 use app\models\HomeAbout;
 use app\models\HomeBanner;
-use app\models\HomeBlago;
 use app\models\HomeBottomBanner;
 use app\models\HomeGenderBlock;
 use app\models\Product;
@@ -502,7 +501,6 @@ class CatalogService
      * @return array{
      *     banners: list<array<string, mixed>>,
      *     about: array<string, mixed>|null,
-     *     blago: array<string, mixed>|null,
      *     categories: list<array<string, mixed>>,
      *     bottom_banner: array<string, mixed>|null
      * }
@@ -512,7 +510,6 @@ class CatalogService
         return [
             'banners' => $this->activeBannersForApi(),
             'about' => $this->homeAboutForApi(),
-            'blago' => $this->homeBlagoForApi(),
             'categories' => $this->homeGenderBlocksForApi(),
             'bottom_banner' => $this->homeBottomBannerForApi(),
         ];
@@ -525,9 +522,6 @@ class CatalogService
         $result['banners'] = $content['banners'];
         if ($content['about'] !== null) {
             $result['about'] = $content['about'];
-        }
-        if ($content['blago'] !== null) {
-            $result['blago'] = $content['blago'];
         }
         if ($content['categories'] !== []) {
             $result['categories'] = $content['categories'];
@@ -557,23 +551,6 @@ class CatalogService
         }
 
         return $about->toApiArray();
-    }
-
-    /** @return array{title: string, collection_start_at: int, collection_end_at: int, amount: float, image_url: string}|null */
-    private function homeBlagoForApi(): ?array
-    {
-        $blago = HomeBlago::findOne(1);
-        if (
-            $blago === null
-            || $blago->title === ''
-            || $blago->getImagePublicUrl() === null
-            || (int) $blago->collection_start_at <= 0
-            || (int) $blago->collection_end_at <= 0
-        ) {
-            return null;
-        }
-
-        return $blago->toApiArray();
     }
 
     /** @return list<array<string, mixed>> */

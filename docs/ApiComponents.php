@@ -284,7 +284,7 @@ use OpenApi\Annotations as OA;
  *
  * @OA\Schema(
  *     schema="HomePageContentResponse",
- *     description="Визуальный контент главной страницы: баннеры, блок «О нас», блок «Благо», категории по полу и нижний баннер",
+ *     description="Визуальный контент главной страницы: баннеры, блок «О нас», категории по полу и нижний баннер",
  *     @OA\Property(
  *         property="banners",
  *         type="array",
@@ -296,12 +296,6 @@ use OpenApi\Annotations as OA;
  *         ref="#/components/schemas/ShowcaseAbout",
  *         nullable=true,
  *         description="Блок «О нас»; null, если не заполнены заголовок и изображение"
- *     ),
- *     @OA\Property(
- *         property="blago",
- *         ref="#/components/schemas/ShowcaseBlago",
- *         nullable=true,
- *         description="Блок «Благо»; null, если не заполнены заголовок, даты сбора и изображение"
  *     ),
  *     @OA\Property(
  *         property="categories",
@@ -342,12 +336,6 @@ use OpenApi\Annotations as OA;
  *         ref="#/components/schemas/ShowcaseAbout",
  *         nullable=true,
  *         description="Блок «О нас»; присутствует только если заполнен"
- *     ),
- *     @OA\Property(
- *         property="blago",
- *         ref="#/components/schemas/ShowcaseBlago",
- *         nullable=true,
- *         description="Блок «Благо»; присутствует только если заполнен"
  *     ),
  *     @OA\Property(
  *         property="categories",
