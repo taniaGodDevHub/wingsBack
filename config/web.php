@@ -99,6 +99,8 @@ $config = [
                 'GET api/catalog/product/<slug>' => 'api/catalog/product',
                 'GET api/catalog/search' => 'api/catalog/search',
                 'GET api/catalog/search/category/<slug>' => 'api/catalog/search-category',
+                'GET api/news' => 'api/news/index',
+                'GET api/news/<slug>' => 'api/news/view',
                 'POST api/favorites/add' => 'api/favorites/add',
                 'POST api/favorites/remove' => 'api/favorites/remove',
                 'POST api/favorites/check' => 'api/favorites/check',
@@ -117,6 +119,7 @@ $config = [
     'controllerMap' => [
         'api/auth' => \app\controllers\api\AuthController::class,
         'api/catalog' => \app\controllers\api\CatalogController::class,
+        'api/news' => \app\controllers\api\NewsController::class,
         'api/cart-client' => \app\controllers\api\CartClientController::class,
         'api/favorites' => \app\controllers\api\FavoritesController::class,
         'api/orders' => \app\controllers\api\OrdersController::class,
@@ -128,6 +131,7 @@ $config = [
         'admin/rbac' => \app\controllers\admin\RbacController::class,
         'admin/settings' => \app\controllers\admin\SettingsController::class,
         'admin/product' => \app\controllers\admin\ProductController::class,
+        'admin/news' => \app\controllers\admin\NewsController::class,
     ],
 ];
 

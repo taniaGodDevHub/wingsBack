@@ -84,7 +84,7 @@
     }
 
     function initContainer(container) {
-        const nameInput = container.querySelector('input[name$="[name]"]');
+        const nameInput = container.querySelector('input[name$="[name]"], input[name$="[title]"]');
         const slugInput = container.querySelector('input[name$="[slug]"]');
         bindAutoSlug(nameInput, slugInput);
     }

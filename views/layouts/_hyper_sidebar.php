@@ -55,6 +55,13 @@ $usersOpen = str_starts_with(Yii::$app->controller->route, 'admin/user/')
             </li>
             <li class="side-nav-item">
                 <?= Html::a(
+                    '<i class="ri-newspaper-line"></i><span> ' . Yii::t('app', 'News') . ' </span>',
+                    ['/admin/news/index'],
+                    ['class' => 'side-nav-link'],
+                ) ?>
+            </li>
+            <li class="side-nav-item">
+                <?= Html::a(
                     '<i class="ri-pages-line"></i><span> ' . Yii::t('app', 'Page settings') . ' </span>',
                     ['/admin/settings/banners'],
                     ['class' => 'side-nav-link' . ($pageSettingsOpen ? ' active' : '')],

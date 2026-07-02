@@ -761,6 +761,99 @@ use OpenApi\Annotations as OA;
  *     value={"ok": true, "record_id": "550e8400-e29b-41d4-a716-446655440000", "code": "123456", "activation_code": "123456"}
  * )
  *
+ * @OA\Schema(
+ *     schema="NewsArticleListResponse",
+ *     description="Постраничный список опубликованных статей",
+ *     @OA\Property(property="page", type="integer", example=1),
+ *     @OA\Property(property="pages", type="integer", example=3),
+ *     @OA\Property(property="total", type="integer", example=42),
+ *     @OA\Property(
+ *         property="items",
+ *         type="array",
+ *         @OA\Items(ref="#/components/schemas/NewsArticleCard")
+ *     ),
+ *     example={
+ *         "page": 1,
+ *         "pages": 2,
+ *         "total": 3,
+ *         "items": {
+ *             {
+ *                 "id": 3,
+ *                 "title": "ОТКРЫТИЕ НОВОГО МАГАЗИНА",
+ *                 "slug": "otkrytie-novogo-magazina",
+ *                 "image_url": "http://example.com/uploads/news/news_abc.png"
+ *             }
+ *         }
+ *     }
+ * )
+ *
+ * @OA\Schema(
+ *     schema="NewsArticleCard",
+ *     description="Краткая карточка статьи (блок последних публикаций)",
+ *     @OA\Property(property="id", type="integer", example=4),
+ *     @OA\Property(property="title", type="string", example="Новая коллекция"),
+ *     @OA\Property(property="slug", type="string", example="novaya-kollektsiya"),
+ *     @OA\Property(
+ *         property="image_url",
+ *         type="string",
+ *         example="http://example.com/uploads/news/news_abc.png",
+ *         description="Абсолютный URL изображения; пустая строка, если фото не задано"
+ *     )
+ * )
+ *
+ * @OA\Schema(
+ *     schema="NewsArticleDetail",
+ *     description="Полная опубликованная статья",
+ *     @OA\Property(property="id", type="integer", example=3),
+ *     @OA\Property(property="title", type="string", example="ОТКРЫТИЕ НОВОГО МАГАЗИНА"),
+ *     @OA\Property(property="slug", type="string", example="otkrytie-novogo-magazina"),
+ *     @OA\Property(property="subtitle", type="string", nullable=true, example="Расширяем границы удобства"),
+ *     @OA\Property(property="text", type="string", nullable=true, description="Текст статьи"),
+ *     @OA\Property(
+ *         property="image_url",
+ *         type="string",
+ *         example="http://example.com/uploads/news/news_abc.png",
+ *         description="Абсолютный URL обложки; пустая строка, если фото не задано"
+ *     ),
+ *     @OA\Property(
+ *         property="created_at",
+ *         type="integer",
+ *         example=1782987000,
+ *         description="Unix timestamp даты создания/публикации"
+ *     )
+ * )
+ *
+ * @OA\Schema(
+ *     schema="NewsArticleResponse",
+ *     description="Статья по slug и до 3 последних опубликованных статей (кроме текущей), отсортированных по дате создания",
+ *     @OA\Property(property="article", ref="#/components/schemas/NewsArticleDetail"),
+ *     @OA\Property(
+ *         property="latest",
+ *         type="array",
+ *         maxItems=3,
+ *         @OA\Items(ref="#/components/schemas/NewsArticleCard")
+ *     ),
+ *     example={
+ *         "article": {
+ *             "id": 3,
+ *             "title": "ОТКРЫТИЕ НОВОГО МАГАЗИНА",
+ *             "slug": "otkrytie-novogo-magazina",
+ *             "subtitle": "Расширяем границы удобства",
+ *             "text": "Текст статьи...",
+ *             "image_url": "http://example.com/uploads/news/news_abc.png",
+ *             "created_at": 1782987000
+ *         },
+ *         "latest": {
+ *             {
+ *                 "id": 4,
+ *                 "title": "Новая коллекция",
+ *                 "slug": "novaya-kollektsiya",
+ *                 "image_url": "http://example.com/uploads/news/news_def.png"
+ *             }
+ *         }
+ *     }
+ * )
+ *
  * @OA\Response(
  *     response="delete-item",
  *     description="Запись успешно удалена",

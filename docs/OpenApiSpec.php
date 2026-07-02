@@ -32,7 +32,11 @@ use OpenApi\Annotations as OA;
  *
  * **Карточка товара и группы**
  * `GET /api/catalog/product/{slug}` — детальная карточка: описание, атрибуты (`attributes`: id, name, slug, value), полная таблица размеров (`size_chart`), размеры в наличии (`sizes`) и связанная группа вариантов (`group.variants`: slug + цвет).
- * Списочные эндпоинты каталога (`/search`, `/showcase`) группу не возвращают."
+ * Списочные эндпоинты каталога (`/search`, `/showcase`) группу не возвращают.
+ *
+ * **Новости**
+ * `GET /api/news` — постраничный список опубликованных статей (id, title, slug, image_url).
+ * `GET /api/news/{slug}` — опубликованная статья и до 3 последних статей (кроме текущей) с полями image_url, title, slug."
  *     ),
  *     @OA\Server(url="/", description="API-сервер")
  * )

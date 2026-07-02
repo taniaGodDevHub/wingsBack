@@ -55,6 +55,8 @@ Thumbs.db
 /tests/acceptance/
 /tests/functional/
 /tests/unit/
+/verify_phone_response.html
+/web/auth-flow-demo.html
 
 # Composer
 composer.lock
