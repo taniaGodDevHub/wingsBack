@@ -14,15 +14,22 @@ use yii\db\ActiveRecord;
  * @property string $payment_status
  * @property int|null $expires_at
  * @property float $total_price
+ * @property float|null $delivery_cost
  * @property string|null $delivery_provider
  * @property string|null $delivery_method_code
  * @property int|null $delivery_method_id
+ * @property int|null $cdek_tariff_code
  * @property string|null $city_fias_id
  * @property string|null $destination_id
  * @property string|null $destination_address
+ * @property string|null $pvz_code
+ * @property int|null $delivery_period_min
+ * @property int|null $delivery_period_max
  * @property string|null $delivery_address
  * @property string|null $payment_method
  * @property string|null $payment_url
+ * @property string|null $cdek_order_uuid
+ * @property string|null $cdek_track_number
  * @property string|null $comment
  * @property int $created_at
  * @property int $updated_at

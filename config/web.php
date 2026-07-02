@@ -89,6 +89,7 @@ $config = [
                 'POST api/dadata/suggest/city' => 'api/dadata/suggest-city',
                 'POST api/dadata/suggest/address' => 'api/dadata/suggest-address',
                 'POST api/delivery/suggest-address' => 'api/delivery/suggest-address',
+                'GET api/delivery/pvz' => 'api/delivery/pvz',
                 'POST api/delivery/calculate-delivery' => 'api/delivery/calculate-delivery',
                 'GET result/done' => 'site/payment-done',
                 'GET result/error' => 'site/payment-error',

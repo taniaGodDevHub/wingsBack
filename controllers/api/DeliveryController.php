@@ -15,13 +15,13 @@ use yii\web\UnauthorizedHttpException;
 /**
  * @OA\Tag(
  *     name="Доставка",
- *     description="Расчёт и подсказки адресов доставки СДЭК"
+ *     description="Checkout: способы доставки СДЭК, расчёт, ПВЗ и подсказки адреса. До подключения ЛК СДЭК работает mock-режим (cdekMockMode)."
  * )
  *
  * @OA\Post(
  *     path="/api/delivery/suggest-address",
- *     summary="Подсказки адресов для оформления",
- *     description="actionSuggestAddress — подсказки полного адреса в одной строке (город, улица, дом). Возвращает full_address с индексом и postal_code отдельным полем.",
+ *     summary="Подсказки адресов для курьерской доставки",
+ *     description="Подсказки полного адреса через DaData. Для ПВЗ используйте GET /api/delivery/pvz.",
  *     operationId="DeliveryController.actionSuggestAddress",
  *     tags={"Доставка"},
  *     @OA\RequestBody(
@@ -31,7 +31,7 @@ use yii\web\UnauthorizedHttpException;
  *             @OA\Schema(
  *                 allOf={
  *                     @OA\Schema(ref="#/components/schemas/DaDataSuggestRequest"),
- *                     @OA\Schema(@OA\Property(property="delivery_method_id", type="integer", default=1))
+ *                     @OA\Schema(@OA\Property(property="delivery_method_id", type="integer", default=2, description="2 — курьер СДЭК"))
  *                 }
  *             )
  *         )
@@ -53,10 +53,36 @@ use yii\web\UnauthorizedHttpException;
  *     )
  * )
  *
+ * @OA\Get(
+ *     path="/api/delivery/pvz",
+ *     summary="Список пунктов выдачи СДЭК",
+ *     description="Возвращает ПВЗ в городе по city_fias_id. В mock-режиме — тестовые пункты Москвы.",
+ *     operationId="DeliveryController.actionPvz",
+ *     tags={"Доставка"},
+ *     @OA\Parameter(name="city_fias_id", in="query", required=true, @OA\Schema(type="string")),
+ *     @OA\Parameter(name="delivery_method_id", in="query", @OA\Schema(type="integer", default=1, description="1 — СДЭК до ПВЗ")),
+ *     @OA\Response(
+ *         response=200,
+ *         description="Список ПВЗ",
+ *         @OA\MediaType(
+ *             mediaType="application/json",
+ *             @OA\Schema(
+ *                 @OA\Property(property="status", type="string", example="success"),
+ *                 @OA\Property(
+ *                     property="data",
+ *                     type="array",
+ *                     @OA\Items(ref="#/components/schemas/CdekPvzPoint")
+ *                 )
+ *             ),
+ *             @OA\Examples(example="mock", ref="#/components/examples/cdek-pvz-mock")
+ *         )
+ *     )
+ * )
+ *
  * @OA\Post(
  *     path="/api/delivery/calculate-delivery",
  *     summary="Рассчитать доставку для заказа",
- *     description="actionCalculateDelivery — рассчитывает сроки доставки СДЭК и обновляет метки позиций заказа",
+ *     description="Рассчитывает стоимость и сроки СДЭК, сохраняет delivery_cost в заказ. Обязателен перед confirm.",
  *     operationId="DeliveryController.actionCalculateDelivery",
  *     tags={"Доставка"},
  *     security={{"bearerAuth": {}}},
@@ -72,7 +98,8 @@ use yii\web\UnauthorizedHttpException;
  *         description="Результат расчёта",
  *         @OA\MediaType(
  *             mediaType="application/json",
- *             @OA\Schema(ref="#/components/schemas/DeliveryCalculateResponse")
+ *             @OA\Schema(ref="#/components/schemas/DeliveryCalculateResponse"),
+ *             @OA\Examples(example="mock", ref="#/components/examples/cdek-calculate-mock")
  *         )
  *     ),
  *     @OA\Response(response=401, ref="#/components/responses/unauthorized")
@@ -93,12 +120,13 @@ class DeliveryController extends BaseApiController
         $behaviors = parent::behaviors();
         $behaviors['authenticator'] = [
             'class' => HttpBearerAuth::class,
-            'optional' => ['suggest-address'],
+            'optional' => ['suggest-address', 'pvz'],
         ];
         $behaviors['verbs'] = [
             'class' => VerbFilter::class,
             'actions' => [
                 'suggest-address' => ['POST'],
+                'pvz' => ['GET'],
                 'calculate-delivery' => ['POST'],
             ],
         ];
@@ -111,7 +139,7 @@ class DeliveryController extends BaseApiController
         $body = Yii::$app->request->bodyParams;
         $query = (string) ($body['query'] ?? '');
         $count = min(20, max(1, (int) ($body['count'] ?? 10)));
-        $deliveryMethodId = (int) ($body['delivery_method_id'] ?? DeliveryService::METHOD_CDEK_ID);
+        $deliveryMethodId = (int) ($body['delivery_method_id'] ?? DeliveryService::METHOD_CDEK_COURIER_ID);
         if ($query === '') {
             throw new \InvalidArgumentException('query is required.');
         }
@@ -119,6 +147,20 @@ class DeliveryController extends BaseApiController
         return [
             'status' => 'success',
             'data' => $this->delivery->suggestAddressForCheckout($query, $deliveryMethodId, $count),
+        ];
+    }
+
+    public function actionPvz(): array
+    {
+        $cityFiasId = (string) Yii::$app->request->get('city_fias_id', '');
+        $deliveryMethodId = (int) Yii::$app->request->get('delivery_method_id', DeliveryService::METHOD_CDEK_PVZ_ID);
+        if ($cityFiasId === '') {
+            throw new \InvalidArgumentException('city_fias_id is required.');
+        }
+
+        return [
+            'status' => 'success',
+            'data' => $this->delivery->listPvzPoints($cityFiasId, $deliveryMethodId),
         ];
     }
 
@@ -132,7 +174,7 @@ class DeliveryController extends BaseApiController
         $body = Yii::$app->request->bodyParams;
         $orderId = (int) ($body['order_id'] ?? 0);
         $cityFiasId = (string) ($body['city_fias_id'] ?? '');
-        $deliveryMethodId = (int) ($body['delivery_method_id'] ?? DeliveryService::METHOD_CDEK_ID);
+        $deliveryMethodId = (int) ($body['delivery_method_id'] ?? DeliveryService::METHOD_CDEK_PVZ_ID);
         if ($orderId <= 0 || $cityFiasId === '') {
             throw new \InvalidArgumentException('order_id and city_fias_id are required.');
         }

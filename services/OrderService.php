@@ -101,14 +101,43 @@ class OrderService
             throw CheckoutApiException::conflict('Заказ уже оформлен или срок резерва истек');
         }
 
-        $order->delivery_method_id = (int) ($payload['delivery_method_id'] ?? DeliveryService::METHOD_CDEK_ID);
-        $order->city_fias_id = (string) ($payload['city_fias_id'] ?? '');
-        $order->destination_id = (string) ($payload['destination_id'] ?? '');
+        $deliveryMethodId = (int) ($payload['delivery_method_id'] ?? DeliveryService::METHOD_CDEK_PVZ_ID);
+        $cityFiasId = (string) ($payload['city_fias_id'] ?? '');
+        $isPvz = (bool) ($payload['is_pvz'] ?? $deliveryMethodId === DeliveryService::METHOD_CDEK_PVZ_ID);
+
+        if ($cityFiasId === '') {
+            throw new \InvalidArgumentException('city_fias_id is required.');
+        }
+
+        if ($order->delivery_cost === null) {
+            (new DeliveryService())->calculateDelivery($orderId, $userId, $cityFiasId, $deliveryMethodId);
+            $order->refresh();
+        }
+
+        $pvzCode = (string) ($payload['pvz_code'] ?? '');
+        $destinationId = (string) ($payload['destination_id'] ?? '');
+
+        $order->delivery_method_id = $deliveryMethodId;
+        $order->city_fias_id = $cityFiasId;
+        $order->destination_id = $destinationId;
         $order->destination_address = (string) ($payload['destination_address'] ?? '');
         $order->delivery_address = $order->destination_address;
         $order->payment_method = (string) ($payload['payment_method'] ?? 'cash');
         $order->delivery_provider = DeliveryService::PROVIDER_CDEK;
-        $order->delivery_method_code = DeliveryService::METHOD_CDEK_CODE;
+        $order->delivery_method_code = $deliveryMethodId === DeliveryService::METHOD_CDEK_COURIER_ID
+            ? DeliveryService::CODE_CDEK_COURIER
+            : DeliveryService::CODE_CDEK_PVZ;
+
+        if ($isPvz) {
+            $order->pvz_code = $pvzCode !== '' ? $pvzCode : ($destinationId !== '' ? $destinationId : null);
+        } else {
+            $order->pvz_code = null;
+        }
+
+        $itemsTotal = (float) OrderItem::find()->where(['order_id' => $order->id])->sum('total_price');
+        $deliveryCost = (float) ($order->delivery_cost ?? 0);
+        $order->total_price = $itemsTotal + $deliveryCost;
+
         $order->status = ShopOrder::STATUS_AWAITING_PAYMENT;
         $order->payment_status = 'pending';
 
@@ -116,11 +145,17 @@ class OrderService
         $order->payment_url = "{$baseUrl}/invoice/{$order->id}";
         $order->save(false);
 
+        if ((bool) (Yii::$app->params['cdekCreateOnConfirm'] ?? false)) {
+            (new \app\components\cdek\ShipmentService())->registerShipment($order);
+        }
+
         return [
             'order_id' => (int) $order->id,
             'status' => $order->status,
             'payment_status' => $order->payment_status,
             'delivery_provider' => $order->delivery_provider,
+            'delivery_cost' => $deliveryCost,
+            'total_price' => (float) $order->total_price,
             'payment_url' => $order->payment_url,
         ];
     }

@@ -32,7 +32,7 @@ $config = [
         ],
         'db' => $db,
         'authManager' => require __DIR__ . '/authManager.php',
-    ] + $i18n['components'],
+    ] + (require __DIR__ . '/components.php') + $i18n['components'],
     'params' => $params,
     /*
     'controllerMap' => [

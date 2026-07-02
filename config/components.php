@@ -13,4 +13,7 @@ return [
     'smsSender' => [
         'class' => \app\components\sms\SmsSender::class,
     ],
+    'cdek' => [
+        'class' => \app\components\cdek\CdekClient::class,
+    ],
 ];

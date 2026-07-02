@@ -147,13 +147,9 @@ use yii\web\UnauthorizedHttpException;
  *             mediaType="application/json",
  *             @OA\Schema(
  *                 type="array",
- *                 @OA\Items(
- *                     @OA\Property(property="id", type="integer"),
- *                     @OA\Property(property="name", type="string"),
- *                     @OA\Property(property="code", type="string"),
- *                     @OA\Property(property="is_pvz", type="boolean")
- *                 )
- *             )
+ *                 @OA\Items(ref="#/components/schemas/CdekDeliveryOption")
+ *             ),
+ *             @OA\Examples(example="mock", ref="#/components/examples/cdek-delivery-options-mock")
  *         )
  *     ),
  *     @OA\Response(response=401, ref="#/components/responses/unauthorized")

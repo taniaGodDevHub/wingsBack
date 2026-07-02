@@ -7,6 +7,7 @@ namespace app\controllers;
 use Yii;
 use app\models\ContactForm;
 use app\models\LoginForm;
+use app\models\ShopOrder;
 use yii\captcha\CaptchaAction;
 use yii\filters\AccessControl;
 use yii\filters\VerbFilter;
@@ -158,6 +159,16 @@ class SiteController extends Controller
     public function actionPaymentDone(): Response
     {
         Yii::$app->response->format = Response::FORMAT_JSON;
+
+        $invId = (int) Yii::$app->request->get('InvId', 0);
+        if ($invId > 0) {
+            $order = ShopOrder::findOne($invId);
+            if ($order !== null && $order->status === ShopOrder::STATUS_AWAITING_PAYMENT) {
+                $order->payment_status = 'paid';
+                $order->save(false);
+                (new \app\components\cdek\ShipmentService())->registerShipment($order);
+            }
+        }
 
         return $this->asJson([
             'status' => 'ok',

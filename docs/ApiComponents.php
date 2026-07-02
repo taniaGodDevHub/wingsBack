@@ -206,6 +206,8 @@ use OpenApi\Annotations as OA;
  *     @OA\Property(property="status", type="string"),
  *     @OA\Property(property="payment_status", type="string"),
  *     @OA\Property(property="delivery_provider", type="string"),
+ *     @OA\Property(property="delivery_cost", type="number", format="float"),
+ *     @OA\Property(property="total_price", type="number", format="float"),
  *     @OA\Property(property="payment_url", type="string")
  * )
  *
@@ -845,13 +847,45 @@ use OpenApi\Annotations as OA;
  * )
  *
  * @OA\Schema(
+ *     schema="CdekDeliveryOption",
+ *     @OA\Property(property="id", type="integer", example=1, description="1 — ПВЗ, 2 — курьер"),
+ *     @OA\Property(property="name", type="string", example="СДЭК до ПВЗ"),
+ *     @OA\Property(property="code", type="string", example="cdek_pvz"),
+ *     @OA\Property(property="is_pvz", type="boolean"),
+ *     @OA\Property(property="price", type="number", format="float", example=350),
+ *     @OA\Property(property="period_min", type="integer", example=2),
+ *     @OA\Property(property="period_max", type="integer", example=4),
+ *     @OA\Property(property="tariff_code", type="integer", example=136)
+ * )
+ *
+ * @OA\Schema(
+ *     schema="CdekPvzPoint",
+ *     @OA\Property(property="code", type="string", example="MSK1"),
+ *     @OA\Property(property="name", type="string", example="СДЭК ПВЗ Тверская"),
+ *     @OA\Property(property="address", type="string"),
+ *     @OA\Property(property="work_time", type="string"),
+ *     @OA\Property(property="lat", type="number", format="float", nullable=true),
+ *     @OA\Property(property="lon", type="number", format="float", nullable=true),
+ *     @OA\Property(property="city_code", type="integer")
+ * )
+ *
+ * @OA\Schema(
+ *     schema="DeliveryCalculateItem",
+ *     @OA\Property(property="order_item_id", type="integer"),
+ *     @OA\Property(property="product_id", type="integer"),
+ *     @OA\Property(property="delivery_label", type="string", example="Доставка СДЭК 2-4 дн.")
+ * )
+ *
+ * @OA\Schema(
  *     schema="OrderConfirmRequest",
  *     required={"city_fias_id","destination_id","destination_address"},
  *     @OA\Property(property="order_id", type="integer"),
- *     @OA\Property(property="delivery_method_id", type="integer", default=1),
+ *     @OA\Property(property="delivery_method_id", type="integer", default=1, description="1 — ПВЗ, 2 — курьер"),
  *     @OA\Property(property="city_fias_id", type="string"),
- *     @OA\Property(property="destination_id", type="string"),
+ *     @OA\Property(property="destination_id", type="string", description="pvz_code для ПВЗ или id подсказки адреса"),
  *     @OA\Property(property="destination_address", type="string"),
+ *     @OA\Property(property="pvz_code", type="string", nullable=true, description="Код ПВЗ при доставке до пункта выдачи"),
+ *     @OA\Property(property="is_pvz", type="boolean", nullable=true),
  *     @OA\Property(property="payment_method", type="string", default="cash"),
  *     @OA\Property(property="payment_time", type="string", nullable=true)
  * )
@@ -861,14 +895,93 @@ use OpenApi\Annotations as OA;
  *     required={"order_id","city_fias_id"},
  *     @OA\Property(property="order_id", type="integer"),
  *     @OA\Property(property="city_fias_id", type="string"),
- *     @OA\Property(property="delivery_method_id", type="integer", default=1)
+ *     @OA\Property(property="delivery_method_id", type="integer", default=1, description="1 — ПВЗ, 2 — курьер")
  * )
  *
  * @OA\Schema(
  *     schema="DeliveryCalculateResponse",
  *     @OA\Property(property="provider", type="string", example="cdek"),
- *     @OA\Property(property="method_code", type="string", example="cdek_standard"),
- *     @OA\Property(property="items", type="array", @OA\Items(type="object"))
+ *     @OA\Property(property="method_code", type="string", example="cdek_pvz"),
+ *     @OA\Property(property="delivery_cost", type="number", format="float", example=350),
+ *     @OA\Property(property="period_min", type="integer", example=2),
+ *     @OA\Property(property="period_max", type="integer", example=4),
+ *     @OA\Property(property="total_with_delivery", type="number", format="float", example=7350),
+ *     @OA\Property(
+ *         property="items",
+ *         type="array",
+ *         @OA\Items(ref="#/components/schemas/DeliveryCalculateItem")
+ *     )
+ * )
+ *
+ * @OA\Examples(
+ *     example="cdek-calculate-mock",
+ *     summary="Расчёт доставки СДЭК (mock до подключения ЛК)",
+ *     value={
+ *         "provider": "cdek",
+ *         "method_code": "cdek_pvz",
+ *         "delivery_cost": 350,
+ *         "period_min": 2,
+ *         "period_max": 4,
+ *         "total_with_delivery": 7350,
+ *         "items": {
+ *             {"order_item_id": 1, "product_id": 10, "delivery_label": "Доставка СДЭК 2-4 дн."}
+ *         }
+ *     }
+ * )
+ *
+ * @OA\Examples(
+ *     example="cdek-pvz-mock",
+ *     summary="Список ПВЗ СДЭК (mock до подключения ЛК)",
+ *     value={
+ *         "status": "success",
+ *         "data": {
+ *             {
+ *                 "code": "MSK1",
+ *                 "name": "СДЭК ПВЗ Тверская",
+ *                 "address": "г Москва, ул Тверская, д 7",
+ *                 "work_time": "Пн-Пт 10:00-20:00, Сб-Вс 10:00-18:00",
+ *                 "lat": 55.7641,
+ *                 "lon": 37.6054,
+ *                 "city_code": 44
+ *             },
+ *             {
+ *                 "code": "MSK2",
+ *                 "name": "СДЭК ПВЗ Арбат",
+ *                 "address": "г Москва, ул Арбат, д 12",
+ *                 "work_time": "Ежедневно 09:00-21:00",
+ *                 "lat": 55.7520,
+ *                 "lon": 37.5925,
+ *                 "city_code": 44
+ *             }
+ *         }
+ *     }
+ * )
+ *
+ * @OA\Examples(
+ *     example="cdek-delivery-options-mock",
+ *     summary="Способы доставки СДЭК (mock до подключения ЛК)",
+ *     value={
+ *         {
+ *             "id": 1,
+ *             "name": "СДЭК до ПВЗ",
+ *             "code": "cdek_pvz",
+ *             "is_pvz": true,
+ *             "price": 350,
+ *             "period_min": 2,
+ *             "period_max": 4,
+ *             "tariff_code": 136
+ *         },
+ *         {
+ *             "id": 2,
+ *             "name": "СДЭК курьером",
+ *             "code": "cdek_courier",
+ *             "is_pvz": false,
+ *             "price": 490,
+ *             "period_min": 2,
+ *             "period_max": 4,
+ *             "tariff_code": 137
+ *         }
+ *     }
  * )
  *
  * @OA\Examples(

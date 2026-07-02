@@ -21,4 +21,20 @@ return [
     'dadataApiKey' => '',
     'orderDraftTtl' => 1800,
     'paymentBaseUrl' => 'https://pay.example.com',
+
+    // СДЭК API v2 — https://cdekrussia.ru/integration
+    // Ключи появятся после заключения договора и создания ЛК СДЭК.
+    // 1. Заключить договор на cdekrussia.ru/integration
+    // 2. Получить client_id / client_secret в ЛК
+    // 3. Заполнить cdekClientId, cdekClientSecret, cdekFromCityCode
+    // 4. Протестировать на api.edu.cdek.ru, затем cdekMockMode => false
+    // 5. На prod: cdekApiBaseUrl => https://api.cdek.ru
+    'cdekMockMode' => true,
+    'cdekClientId' => '',
+    'cdekClientSecret' => '',
+    'cdekApiBaseUrl' => 'https://api.edu.cdek.ru',
+    'cdekFromCityCode' => 44,
+    'cdekDefaultTariffCode' => 136,
+    'cdekDefaultPackageWeightGrams' => 500,
+    'cdekCreateOnConfirm' => false,
 ];
