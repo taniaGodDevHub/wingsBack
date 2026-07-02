@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace app\components\cdek;
 
-use app\models\OrderTracking;
 use app\models\ShopOrder;
 use Yii;
 
@@ -26,18 +25,24 @@ final class ShipmentService
         }
 
         $response = $this->cdek->createOrder($this->buildOrderPayload($order));
+        $normalized = CdekOrderNormalizer::normalizeCreateResponse($response);
 
-        $uuid = (string) ($response['uuid'] ?? '');
-        $trackNumber = (string) ($response['cdek_number'] ?? $response['track_number'] ?? '10123456789');
-
-        $order->cdek_order_uuid = $uuid !== '' ? $uuid : null;
-        $order->cdek_track_number = $trackNumber !== '' ? $trackNumber : null;
+        $order->cdek_order_uuid = $normalized['uuid'] !== '' ? $normalized['uuid'] : null;
+        $order->cdek_track_number = $normalized['cdek_number'] !== '' ? $normalized['cdek_number'] : null;
         if ($order->status === ShopOrder::STATUS_AWAITING_PAYMENT) {
             $order->status = ShopOrder::STATUS_PROCESSING;
         }
         $order->save(false);
 
-        $this->upsertTracking($order, $trackNumber, (string) ($response['status'] ?? 'ACCEPTED'));
+        OrderTrackingWriter::upsertOnShipmentRegistration(
+            $order,
+            $normalized['cdek_number'],
+            $normalized['status'],
+        );
+
+        if (!$this->cdek->isMockMode() && $order->cdek_order_uuid !== null) {
+            (new TrackingSyncService($this->cdek))->syncOrder($order);
+        }
     }
 
     /** @return array<string, mixed> */
@@ -56,21 +61,5 @@ final class ShipmentService
                 'name' => 'Получатель',
             ],
         ];
-    }
-
-    private function upsertTracking(ShopOrder $order, string $trackNumber, string $status): void
-    {
-        $tracking = OrderTracking::findOne(['order_id' => $order->id]) ?? new OrderTracking();
-        $tracking->order_id = (int) $order->id;
-        $tracking->provider = 'cdek';
-        $tracking->track_number = $trackNumber;
-        $tracking->current_status = $status;
-        $tracking->description = 'Отправление зарегистрировано в СДЭК';
-        $tracking->current_city = null;
-        $tracking->updated_at = time();
-        if ($order->delivery_period_max !== null) {
-            $tracking->expected_delivery = date('Y-m-d', strtotime('+' . $order->delivery_period_max . ' days'));
-        }
-        $tracking->save(false);
     }
 }

@@ -104,13 +104,42 @@ final class CdekMockData
     public static function orderStatus(string $uuid): array
     {
         return [
-            'uuid' => $uuid,
-            'cdek_number' => '10123456789',
-            'status' => 'DELIVERED',
-            'current_status' => 'DELIVERED',
-            'description' => 'Заказ вручён получателю',
-            'current_city' => 'Москва',
-            'expected_delivery' => date('Y-m-d', strtotime('+2 days')),
+            'entity' => [
+                'uuid' => $uuid,
+                'cdek_number' => '10123456789',
+                'planned_delivery_date' => date('Y-m-d', strtotime('+3 days')),
+                'statuses' => [
+                    [
+                        'code' => 'ACCEPTED',
+                        'name' => 'Принят складом СДЭК',
+                        'date_time' => date('c'),
+                        'city' => 'Москва',
+                    ],
+                ],
+            ],
+        ];
+    }
+
+    /** @return array<string, mixed> */
+    public static function deliveredOrderStatus(string $uuid): array
+    {
+        $deliveryDate = date('Y-m-d', strtotime('-1 day'));
+
+        return [
+            'entity' => [
+                'uuid' => $uuid,
+                'cdek_number' => '10123456789',
+                'planned_delivery_date' => $deliveryDate,
+                'delivery_date' => $deliveryDate,
+                'statuses' => [
+                    [
+                        'code' => 'DELIVERED',
+                        'name' => 'Заказ вручён получателю',
+                        'date_time' => $deliveryDate . 'T14:00:00+03:00',
+                        'city' => 'Москва',
+                    ],
+                ],
+            ],
         ];
     }
 }

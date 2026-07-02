@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace app\components\cdek;
 
-use app\models\OrderTracking;
 use app\models\ShopOrder;
 
 /**
@@ -20,14 +19,10 @@ final class TrackingSyncService
 
     public function syncAll(): int
     {
-        if ($this->cdek->isMockMode()) {
-            return 0;
-        }
-
         $orders = ShopOrder::find()
             ->where(['not', ['cdek_order_uuid' => null]])
-            ->andWhere(['not', ['status' => ShopOrder::STATUS_COMPLETED]])
             ->andWhere(['not', ['status' => ShopOrder::STATUS_CANCELLED]])
+            ->andWhere(['not', ['status' => ShopOrder::STATUS_DRAFT]])
             ->all();
 
         $updated = 0;
@@ -56,25 +51,20 @@ final class TrackingSyncService
     /** @param array<string, mixed> $status */
     private function applyStatus(ShopOrder $order, array $status): void
     {
-        $cdekStatus = strtoupper((string) ($status['status'] ?? $status['current_status'] ?? ''));
-        $trackNumber = (string) ($status['cdek_number'] ?? $order->cdek_track_number ?? '');
+        $normalized = CdekOrderNormalizer::normalize($status);
 
-        if ($trackNumber !== '') {
-            $order->cdek_track_number = $trackNumber;
+        OrderTrackingWriter::upsertFromCdekStatus($order, $status);
+
+        if ($normalized['cdek_number'] !== '') {
+            $order->cdek_track_number = $normalized['cdek_number'];
         }
 
-        $tracking = OrderTracking::findOne(['order_id' => $order->id]) ?? new OrderTracking();
-        $tracking->order_id = (int) $order->id;
-        $tracking->provider = 'cdek';
-        $tracking->track_number = $trackNumber !== '' ? $trackNumber : null;
-        $tracking->current_status = $cdekStatus;
-        $tracking->description = (string) ($status['description'] ?? null);
-        $tracking->current_city = (string) ($status['current_city'] ?? null);
-        $tracking->updated_at = time();
-        $tracking->expected_delivery = (string) ($status['expected_delivery'] ?? $tracking->expected_delivery);
-        $tracking->save(false);
+        $order->status = $this->mapCdekStatusToOrderStatus($normalized['status'], $order->status);
 
-        $order->status = $this->mapCdekStatusToOrderStatus($cdekStatus, $order->status);
+        if ($normalized['delivered_at'] !== null) {
+            $order->completed_at = $normalized['delivered_at'];
+        }
+
         $order->save(false);
     }
 

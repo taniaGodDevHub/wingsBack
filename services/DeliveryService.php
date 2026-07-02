@@ -7,6 +7,7 @@ namespace app\services;
 use app\components\api\CheckoutApiException;
 use app\components\cdek\CdekClient;
 use app\components\cdek\CdekMockData;
+use app\components\cdek\OrderTrackingWriter;
 use app\models\OrderItem;
 use app\models\ShopOrder;
 use Yii;
@@ -101,6 +102,8 @@ final class DeliveryService
         $order->delivery_period_min = $periodMin;
         $order->delivery_period_max = $periodMax;
         $order->save(false);
+
+        OrderTrackingWriter::upsertEstimatedDelivery($order, $periodMax);
 
         $items = [];
         foreach (OrderItem::find()->where(['order_id' => $order->id])->all() as $item) {

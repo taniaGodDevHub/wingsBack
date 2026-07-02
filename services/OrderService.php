@@ -6,6 +6,7 @@ namespace app\services;
 
 use app\components\api\ApiHttpException;
 use app\components\api\CheckoutApiException;
+use app\components\cdek\OrderTrackingWriter;
 use app\models\OrderItem;
 use app\models\OrderTracking;
 use app\models\Product;
@@ -145,6 +146,8 @@ class OrderService
         $order->payment_url = "{$baseUrl}/invoice/{$order->id}";
         $order->save(false);
 
+        OrderTrackingWriter::upsertEstimatedDelivery($order);
+
         if ((bool) (Yii::$app->params['cdekCreateOnConfirm'] ?? false)) {
             (new \app\components\cdek\ShipmentService())->registerShipment($order);
         }
@@ -276,6 +279,9 @@ class OrderService
     private function formatOrderCardBase(ShopOrder $order, ?OrderTracking $tracking): array
     {
         $estimatedDelivery = $tracking?->expected_delivery;
+        if ($order->completed_at !== null && ShopOrder::isDeliveryCompleted($order->status)) {
+            $estimatedDelivery = date('Y-m-d', (int) $order->completed_at);
+        }
 
         $row = [
             'id' => (int) $order->id,
@@ -291,7 +297,7 @@ class OrderService
             'timeline_steps' => $this->buildTimelineSteps($order, $estimatedDelivery),
         ];
 
-        $formattedTracking = $this->formatTracking($tracking);
+        $formattedTracking = $this->formatTracking($tracking, $order);
         if ($formattedTracking !== null) {
             $row['tracking'] = $formattedTracking;
         }
@@ -302,9 +308,9 @@ class OrderService
     /** @return list<array{key: string, label: string, date: string|null, completed: bool}> */
     private function buildTimelineSteps(ShopOrder $order, ?string $estimatedDelivery): array
     {
-        $isCompleted = $order->status === ShopOrder::STATUS_COMPLETED;
-        $deliveryDate = $isCompleted && $order->completed_at !== null
-            ? gmdate('c', $order->completed_at)
+        $isDelivered = ShopOrder::isDeliveryCompleted($order->status);
+        $deliveryDate = $order->completed_at !== null
+            ? gmdate('c', (int) $order->completed_at)
             : $estimatedDelivery;
 
         return [
@@ -322,18 +328,23 @@ class OrderService
             ],
             [
                 'key' => 'delivery',
-                'label' => $isCompleted ? 'Выполнен' : 'Примерная доставка',
+                'label' => $isDelivered ? 'Доставлен' : 'Примерная доставка',
                 'date' => $deliveryDate,
-                'completed' => ShopOrder::isDeliveryCompleted($order->status),
+                'completed' => $isDelivered,
             ],
         ];
     }
 
     /** @return array<string, mixed>|null */
-    private function formatTracking(?OrderTracking $tracking): ?array
+    private function formatTracking(?OrderTracking $tracking, ?ShopOrder $order = null): ?array
     {
         if ($tracking === null) {
             return null;
+        }
+
+        $deliveryDate = null;
+        if ($order !== null && $order->completed_at !== null && ShopOrder::isDeliveryCompleted($order->status)) {
+            $deliveryDate = date('Y-m-d', (int) $order->completed_at);
         }
 
         return [
@@ -344,6 +355,7 @@ class OrderService
             'current_city' => $tracking->current_city,
             'updated_at' => $tracking->updated_at !== null ? gmdate('c', $tracking->updated_at) : null,
             'expected_delivery' => $tracking->expected_delivery,
+            'delivery_date' => $deliveryDate,
         ];
     }
 

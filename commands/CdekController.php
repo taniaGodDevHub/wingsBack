@@ -10,6 +10,8 @@ use yii\console\ExitCode;
 
 /**
  * Консольные команды СДЭК.
+ *
+ * Периодическая синхронизация: `yii cdek/sync-tracking` (рекомендуется cron каждые 15–30 мин).
  */
 class CdekController extends Controller
 {

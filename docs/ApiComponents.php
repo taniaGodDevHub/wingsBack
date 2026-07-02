@@ -731,7 +731,8 @@ use OpenApi\Annotations as OA;
  *     @OA\Property(property="description", type="string", nullable=true),
  *     @OA\Property(property="current_city", type="string", nullable=true),
  *     @OA\Property(property="updated_at", type="string", nullable=true, format="date-time"),
- *     @OA\Property(property="expected_delivery", type="string", nullable=true, example="2026-04-02", description="Примерная дата доставки")
+ *     @OA\Property(property="expected_delivery", type="string", nullable=true, example="2026-04-02", description="Примерная дата доставки"),
+ *     @OA\Property(property="delivery_date", type="string", nullable=true, example="2026-04-05", description="Фактическая дата вручения; заполняется после доставки")
  * )
  *
  * @OA\Schema(

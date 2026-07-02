@@ -147,12 +147,14 @@ final class CdekClient extends Component
     public function getOrderStatus(string $uuid): array
     {
         if ($this->isMockMode()) {
-            return CdekMockData::orderStatus($uuid);
+            return CdekOrderNormalizer::normalize(CdekMockData::orderStatus($uuid));
         }
 
         $response = $this->request('GET', '/v2/orders/' . rawurlencode($uuid));
 
-        return is_array($response) ? $response : CdekMockData::orderStatus($uuid);
+        return CdekOrderNormalizer::normalize(
+            is_array($response) ? $response : CdekMockData::orderStatus($uuid),
+        );
     }
 
     public function getFromCityCode(): int
