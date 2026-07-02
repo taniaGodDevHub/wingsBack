@@ -65,7 +65,7 @@ use yii\web\UnauthorizedHttpException;
  * @OA\Get(
  *     path="/api/orders/{order_id}",
  *     summary="Получить заказ по ID",
- *     description="actionView — детальная информация о заказе",
+ *     description="actionView — детальная информация о заказе для экрана «ПОДРОБНЕЕ». Содержит те же поля карточки (статус, таймлайн, сумма) плюс полный состав позиций.",
  *     operationId="actionView",
  *     tags={"Заказы"},
  *     security={{"bearerAuth": {}}},
@@ -162,7 +162,7 @@ use yii\web\UnauthorizedHttpException;
  * @OA\Get(
  *     path="/api/orders/purchases",
  *     summary="Получить историю покупок",
- *     description="actionPurchases — список оформленных заказов пользователя",
+ *     description="actionPurchases — список заказов для раздела «Мои заказы» в личном кабинете. Возвращает карточки со статусом, таймлайном, превью товаров и суммой. Статусы: processing, completed, delivered, awaiting_payment.",
  *     operationId="actionPurchases",
  *     tags={"Заказы"},
  *     security={{"bearerAuth": {}}},
@@ -173,10 +173,9 @@ use yii\web\UnauthorizedHttpException;
  *         description="Список заказов",
  *         @OA\MediaType(
  *             mediaType="application/json",
- *             @OA\Schema(
- *                 @OA\Property(property="orders", type="array", @OA\Items(type="object")),
- *                 @OA\Property(property="available_filters", type="object")
- *             )
+ *             @OA\Schema(ref="#/components/schemas/OrderPurchasesResponse"),
+ *             @OA\Examples(example="processing", ref="#/components/examples/order-processing-card"),
+ *             @OA\Examples(example="completed", ref="#/components/examples/order-completed-card")
  *         )
  *     ),
  *     @OA\Response(response=401, ref="#/components/responses/unauthorized")
@@ -185,7 +184,7 @@ use yii\web\UnauthorizedHttpException;
  * @OA\Get(
  *     path="/api/orders/deliveries",
  *     summary="Получить заказы в доставке",
- *     description="actionDeliveries — список заказов со статусами доставки и трекингом",
+ *     description="actionDeliveries — список заказов в пути со статусами delivering, shipped, delivered. Структура карточки аналогична purchases, но items содержат только превью без цен.",
  *     operationId="actionDeliveries",
  *     tags={"Заказы"},
  *     security={{"bearerAuth": {}}},
@@ -196,9 +195,7 @@ use yii\web\UnauthorizedHttpException;
  *         description="Заказы в доставке",
  *         @OA\MediaType(
  *             mediaType="application/json",
- *             @OA\Schema(
- *                 @OA\Property(property="orders", type="array", @OA\Items(type="object"))
- *             )
+ *             @OA\Schema(ref="#/components/schemas/OrderDeliveriesResponse")
  *         )
  *     ),
  *     @OA\Response(response=401, ref="#/components/responses/unauthorized")

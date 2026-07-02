@@ -78,4 +78,38 @@ class ShopOrder extends ActiveRecord
     {
         return $this->status === self::STATUS_DRAFT && !$this->isExpired();
     }
+
+    public static function statusLabel(string $status): string
+    {
+        return match ($status) {
+            self::STATUS_PROCESSING => 'В ОБРАБОТКЕ',
+            self::STATUS_COMPLETED => 'ВЫПОЛНЕН',
+            self::STATUS_AWAITING_PAYMENT => 'ОЖИДАЕТ ОПЛАТЫ',
+            self::STATUS_DELIVERING => 'В ДОСТАВКЕ',
+            self::STATUS_SHIPPED => 'ОТПРАВЛЕН',
+            self::STATUS_DELIVERED => 'ДОСТАВЛЕН',
+            self::STATUS_CANCELLED => 'ОТМЕНЁН',
+            self::STATUS_RETURNED => 'ВОЗВРАТ',
+            self::STATUS_DRAFT => 'ЧЕРНОВИК',
+            default => mb_strtoupper($status),
+        };
+    }
+
+    public static function isAssemblyCompleted(string $status): bool
+    {
+        return in_array($status, [
+            self::STATUS_DELIVERING,
+            self::STATUS_SHIPPED,
+            self::STATUS_DELIVERED,
+            self::STATUS_COMPLETED,
+        ], true);
+    }
+
+    public static function isDeliveryCompleted(string $status): bool
+    {
+        return in_array($status, [
+            self::STATUS_DELIVERED,
+            self::STATUS_COMPLETED,
+        ], true);
+    }
 }

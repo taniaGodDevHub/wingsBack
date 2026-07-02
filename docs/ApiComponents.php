@@ -679,15 +679,169 @@ use OpenApi\Annotations as OA;
  * )
  *
  * @OA\Schema(
- *     schema="OrderDetailsResponse",
+ *     schema="OrderStatus",
+ *     type="string",
+ *     enum={"draft","awaiting_payment","processing","delivering","shipped","delivered","completed","cancelled","returned"},
+ *     example="processing"
+ * )
+ *
+ * @OA\Schema(
+ *     schema="OrderTimelineStep",
+ *     @OA\Property(property="key", type="string", enum={"ordered","assembly","delivery"}, example="ordered"),
+ *     @OA\Property(property="label", type="string", example="дата заказа"),
+ *     @OA\Property(property="date", type="string", nullable=true, description="ISO 8601 или строка даты доставки", example="2026-04-01T00:00:00+00:00"),
+ *     @OA\Property(property="completed", type="boolean", example=true)
+ * )
+ *
+ * @OA\Schema(
+ *     schema="OrderProductImage",
+ *     @OA\Property(property="url", type="string", example="https://e-wings.ru/uploads/product/1.jpg")
+ * )
+ *
+ * @OA\Schema(
+ *     schema="OrderProductInfo",
+ *     @OA\Property(property="name", type="string", example="Худи Wings"),
+ *     @OA\Property(property="brand", type="string", nullable=true, example="Wings"),
+ *     @OA\Property(property="product_code", type="string", nullable=true, example="WH-001"),
+ *     @OA\Property(
+ *         property="images",
+ *         type="array",
+ *         @OA\Items(ref="#/components/schemas/OrderProductImage")
+ *     )
+ * )
+ *
+ * @OA\Schema(
+ *     schema="OrderTracking",
+ *     @OA\Property(property="provider", type="string", example="cdek"),
+ *     @OA\Property(property="track_number", type="string", nullable=true, example="10123456789"),
+ *     @OA\Property(property="current_status", type="string", nullable=true),
+ *     @OA\Property(property="description", type="string", nullable=true),
+ *     @OA\Property(property="current_city", type="string", nullable=true),
+ *     @OA\Property(property="updated_at", type="string", nullable=true, format="date-time"),
+ *     @OA\Property(property="expected_delivery", type="string", nullable=true, example="2026-04-02", description="Примерная дата доставки")
+ * )
+ *
+ * @OA\Schema(
+ *     schema="OrderListItemBase",
+ *     description="Общие поля карточки заказа в личном кабинете",
+ *     @OA\Property(property="id", type="integer", example=123456789, description="Номер заказа"),
+ *     @OA\Property(property="status", ref="#/components/schemas/OrderStatus"),
+ *     @OA\Property(property="status_label", type="string", example="В ОБРАБОТКЕ", description="Подпись статуса для бейджа"),
+ *     @OA\Property(property="payment_status", type="string", example="pending"),
+ *     @OA\Property(property="created_at", type="string", format="date-time", description="Дата заказа"),
+ *     @OA\Property(property="completed_at", type="string", format="date-time", nullable=true),
+ *     @OA\Property(property="estimated_delivery", type="string", nullable=true, example="2026-04-02", description="Примерная дата доставки"),
+ *     @OA\Property(property="delivery_address", type="string", nullable=true),
+ *     @OA\Property(property="total_price", type="number", format="float", example=7000, description="Сумма заказа"),
+ *     @OA\Property(property="items_count", type="integer", example=2, description="Общее количество товаров (состав / N шт.)"),
+ *     @OA\Property(property="show_details", type="boolean", example=false, description="Показывать ссылку «ПОДРОБНЕЕ» (true для выполненных)"),
+ *     @OA\Property(
+ *         property="timeline_steps",
+ *         type="array",
+ *         description="Таймлайн: дата заказа → сборка → доставка",
+ *         @OA\Items(ref="#/components/schemas/OrderTimelineStep")
+ *     ),
+ *     @OA\Property(property="tracking", ref="#/components/schemas/OrderTracking", nullable=true)
+ * )
+ *
+ * @OA\Schema(
+ *     schema="OrderListItemPurchase",
+ *     description="Карточка заказа в разделе «Мои заказы»",
+ *     allOf={
+ *         @OA\Schema(ref="#/components/schemas/OrderListItemBase"),
+ *         @OA\Schema(
+ *             @OA\Property(
+ *                 property="items",
+ *                 type="array",
+ *                 @OA\Items(
+ *                     @OA\Property(property="id", type="integer"),
+ *                     @OA\Property(property="product_id", type="integer"),
+ *                     @OA\Property(property="quantity", type="integer"),
+ *                     @OA\Property(property="unit_price", type="number", format="float"),
+ *                     @OA\Property(property="total_price", type="number", format="float"),
+ *                     @OA\Property(property="product_info", ref="#/components/schemas/OrderProductInfo")
+ *                 )
+ *             )
+ *         )
+ *     }
+ * )
+ *
+ * @OA\Schema(
+ *     schema="OrderListItemDelivery",
+ *     description="Карточка заказа в разделе доставки",
+ *     allOf={
+ *         @OA\Schema(ref="#/components/schemas/OrderListItemBase"),
+ *         @OA\Schema(
+ *             @OA\Property(
+ *                 property="items",
+ *                 type="array",
+ *                 @OA\Items(
+ *                     @OA\Property(property="id", type="integer"),
+ *                     @OA\Property(property="product_id", type="integer"),
+ *                     @OA\Property(property="product_info", ref="#/components/schemas/OrderProductInfo")
+ *                 )
+ *             )
+ *         )
+ *     }
+ * )
+ *
+ * @OA\Schema(
+ *     schema="OrderPurchasesResponse",
+ *     description="Список заказов для раздела «Мои заказы»",
+ *     @OA\Property(
+ *         property="orders",
+ *         type="array",
+ *         @OA\Items(ref="#/components/schemas/OrderListItemPurchase")
+ *     ),
+ *     @OA\Property(
+ *         property="available_filters",
+ *         type="object",
+ *         @OA\Property(
+ *             property="filters",
+ *             type="array",
+ *             @OA\Items(type="object"),
+ *             example={}
+ *         )
+ *     )
+ * )
+ *
+ * @OA\Schema(
+ *     schema="OrderDeliveriesResponse",
+ *     description="Список заказов в доставке",
+ *     @OA\Property(
+ *         property="orders",
+ *         type="array",
+ *         @OA\Items(ref="#/components/schemas/OrderListItemDelivery")
+ *     )
+ * )
+ *
+ * @OA\Schema(
+ *     schema="OrderDetailsItem",
  *     @OA\Property(property="id", type="integer"),
- *     @OA\Property(property="status", type="string"),
- *     @OA\Property(property="expires_at", type="integer", nullable=true),
- *     @OA\Property(property="total_price", type="number", format="float"),
- *     @OA\Property(property="payment_status", type="string"),
- *     @OA\Property(property="delivery_provider", type="string", nullable=true),
- *     @OA\Property(property="delivery_method_code", type="string", nullable=true),
- *     @OA\Property(property="items", type="array", @OA\Items(type="object"))
+ *     @OA\Property(property="order_item_id", type="integer"),
+ *     @OA\Property(property="product_id", type="integer"),
+ *     @OA\Property(property="name", type="string"),
+ *     @OA\Property(property="quantity", type="integer"),
+ *     @OA\Property(property="unit_price", type="number", format="float"),
+ *     @OA\Property(property="delivery_label", type="string", nullable=true)
+ * )
+ *
+ * @OA\Schema(
+ *     schema="OrderDetailsResponse",
+ *     description="Детальная информация о заказе (экран «ПОДРОБНЕЕ»)",
+ *     allOf={
+ *         @OA\Schema(ref="#/components/schemas/OrderListItemBase"),
+ *         @OA\Schema(
+ *             @OA\Property(property="expires_at", type="integer", nullable=true),
+ *             @OA\Property(property="delivery_provider", type="string", nullable=true),
+ *             @OA\Property(property="delivery_method_code", type="string", nullable=true),
+ *             @OA\Property(
+ *                 property="items",
+ *                 type="array",
+ *                 @OA\Items(ref="#/components/schemas/OrderDetailsItem")
+ *             )
+ *         )
+ *     }
  * )
  *
  * @OA\Schema(
@@ -759,6 +913,88 @@ use OpenApi\Annotations as OA;
  *     example="phone-login-code-response",
  *     summary="Код входа по телефону (mock SMS)",
  *     value={"ok": true, "record_id": "550e8400-e29b-41d4-a716-446655440000", "code": "123456", "activation_code": "123456"}
+ * )
+ *
+ * @OA\Examples(
+ *     example="order-processing-card",
+ *     summary="Карточка заказа «В обработке»",
+ *     value={
+ *         "id": 123456789,
+ *         "status": "processing",
+ *         "status_label": "В ОБРАБОТКЕ",
+ *         "payment_status": "pending",
+ *         "created_at": "2026-04-01T10:00:00+00:00",
+ *         "completed_at": null,
+ *         "estimated_delivery": "2026-04-02",
+ *         "delivery_address": "г Москва, ул Тверская, д 7",
+ *         "total_price": 7000,
+ *         "items_count": 2,
+ *         "show_details": false,
+ *         "timeline_steps": {
+ *             {"key": "ordered", "label": "дата заказа", "date": "2026-04-01T10:00:00+00:00", "completed": true},
+ *             {"key": "assembly", "label": "сборка", "date": null, "completed": false},
+ *             {"key": "delivery", "label": "Примерная доставка", "date": "2026-04-02", "completed": false}
+ *         },
+ *         "items": {
+ *             {
+ *                 "id": 1,
+ *                 "product_id": 10,
+ *                 "quantity": 1,
+ *                 "unit_price": 3500,
+ *                 "total_price": 3500,
+ *                 "product_info": {"name": "Худи Wings", "brand": "Wings", "product_code": "WH-001", "images": {{"url": "https://e-wings.ru/uploads/product/10.jpg"}}}
+ *             },
+ *             {
+ *                 "id": 2,
+ *                 "product_id": 10,
+ *                 "quantity": 1,
+ *                 "unit_price": 3500,
+ *                 "total_price": 3500,
+ *                 "product_info": {"name": "Худи Wings", "brand": "Wings", "product_code": "WH-001", "images": {{"url": "https://e-wings.ru/uploads/product/10.jpg"}}}
+ *             }
+ *         }
+ *     }
+ * )
+ *
+ * @OA\Examples(
+ *     example="order-completed-card",
+ *     summary="Карточка заказа «Выполнен»",
+ *     value={
+ *         "id": 123456789,
+ *         "status": "completed",
+ *         "status_label": "ВЫПОЛНЕН",
+ *         "payment_status": "paid",
+ *         "created_at": "2026-04-01T10:00:00+00:00",
+ *         "completed_at": "2026-04-02T14:00:00+00:00",
+ *         "estimated_delivery": "2026-04-02",
+ *         "delivery_address": "г Москва, ул Тверская, д 7",
+ *         "total_price": 7000,
+ *         "items_count": 4,
+ *         "show_details": true,
+ *         "timeline_steps": {
+ *             {"key": "ordered", "label": "дата заказа", "date": "2026-04-01T10:00:00+00:00", "completed": true},
+ *             {"key": "assembly", "label": "сборка", "date": null, "completed": true},
+ *             {"key": "delivery", "label": "Выполнен", "date": "2026-04-02T14:00:00+00:00", "completed": true}
+ *         },
+ *         "items": {
+ *             {
+ *                 "id": 1,
+ *                 "product_id": 10,
+ *                 "quantity": 2,
+ *                 "unit_price": 1750,
+ *                 "total_price": 3500,
+ *                 "product_info": {"name": "Худи Wings", "brand": "Wings", "product_code": "WH-001", "images": {{"url": "https://e-wings.ru/uploads/product/10.jpg"}}}
+ *             },
+ *             {
+ *                 "id": 2,
+ *                 "product_id": 11,
+ *                 "quantity": 2,
+ *                 "unit_price": 1750,
+ *                 "total_price": 3500,
+ *                 "product_info": {"name": "Худи Wings Blue", "brand": "Wings", "product_code": "WH-002", "images": {{"url": "https://e-wings.ru/uploads/product/11.jpg"}}}
+ *             }
+ *         }
+ *     }
  * )
  *
  * @OA\Schema(

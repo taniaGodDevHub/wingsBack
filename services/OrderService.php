@@ -161,16 +161,9 @@ class OrderService
         $result = [];
         foreach ($orders as $order) {
             $order->populateRelation('items', OrderItem::find()->where(['order_id' => $order->id])->all());
-            $row = [
-                'id' => (int) $order->id,
-                'status' => $order->status,
-                'payment_status' => $order->payment_status,
-                'created_at' => gmdate('c', $order->created_at),
-                'completed_at' => $order->completed_at !== null ? gmdate('c', $order->completed_at) : null,
-                'delivery_address' => $order->delivery_address,
-                'total_price' => (float) $order->total_price,
-                'items' => [],
-            ];
+            $tracking = OrderTracking::findOne(['order_id' => $order->id]);
+            $row = $this->formatOrderCardBase($order, $tracking);
+            $row['items'] = [];
 
             $itemsCount = 0;
             foreach ($order->items as $item) {
@@ -194,22 +187,7 @@ class OrderService
                     ];
                 }
             }
-            if (!$fullItems) {
-                $row['items_count'] = $itemsCount;
-            }
-
-            $tracking = OrderTracking::findOne(['order_id' => $order->id]);
-            if ($tracking !== null) {
-                $row['tracking'] = [
-                    'provider' => $tracking->provider,
-                    'track_number' => $tracking->track_number,
-                    'current_status' => $tracking->current_status,
-                    'description' => $tracking->description,
-                    'current_city' => $tracking->current_city,
-                    'updated_at' => $tracking->updated_at !== null ? gmdate('c', $tracking->updated_at) : null,
-                    'expected_delivery' => $tracking->expected_delivery,
-                ];
-            }
+            $row['items_count'] = $itemsCount;
 
             $result[] = $row;
         }
@@ -234,8 +212,11 @@ class OrderService
 
     private function formatOrderDetails(ShopOrder $order): array
     {
+        $tracking = OrderTracking::findOne(['order_id' => $order->id]);
         $items = [];
+        $itemsCount = 0;
         foreach (OrderItem::find()->where(['order_id' => $order->id])->all() as $item) {
+            $itemsCount += $item->quantity;
             $items[] = [
                 'id' => (int) $item->id,
                 'order_item_id' => (int) $item->id,
@@ -247,15 +228,87 @@ class OrderService
             ];
         }
 
-        return [
-            'id' => (int) $order->id,
-            'status' => $order->status,
+        return array_merge($this->formatOrderCardBase($order, $tracking), [
             'expires_at' => $order->expires_at !== null ? (int) $order->expires_at : null,
-            'total_price' => (float) $order->total_price,
-            'payment_status' => $order->payment_status,
             'delivery_provider' => $order->delivery_provider,
             'delivery_method_code' => $order->delivery_method_code,
+            'items_count' => $itemsCount,
             'items' => $items,
+        ]);
+    }
+
+    /** @return array<string, mixed> */
+    private function formatOrderCardBase(ShopOrder $order, ?OrderTracking $tracking): array
+    {
+        $estimatedDelivery = $tracking?->expected_delivery;
+
+        $row = [
+            'id' => (int) $order->id,
+            'status' => $order->status,
+            'status_label' => ShopOrder::statusLabel($order->status),
+            'payment_status' => $order->payment_status,
+            'created_at' => gmdate('c', $order->created_at),
+            'completed_at' => $order->completed_at !== null ? gmdate('c', $order->completed_at) : null,
+            'estimated_delivery' => $estimatedDelivery,
+            'delivery_address' => $order->delivery_address,
+            'total_price' => (float) $order->total_price,
+            'show_details' => $order->status === ShopOrder::STATUS_COMPLETED,
+            'timeline_steps' => $this->buildTimelineSteps($order, $estimatedDelivery),
+        ];
+
+        $formattedTracking = $this->formatTracking($tracking);
+        if ($formattedTracking !== null) {
+            $row['tracking'] = $formattedTracking;
+        }
+
+        return $row;
+    }
+
+    /** @return list<array{key: string, label: string, date: string|null, completed: bool}> */
+    private function buildTimelineSteps(ShopOrder $order, ?string $estimatedDelivery): array
+    {
+        $isCompleted = $order->status === ShopOrder::STATUS_COMPLETED;
+        $deliveryDate = $isCompleted && $order->completed_at !== null
+            ? gmdate('c', $order->completed_at)
+            : $estimatedDelivery;
+
+        return [
+            [
+                'key' => 'ordered',
+                'label' => 'дата заказа',
+                'date' => gmdate('c', $order->created_at),
+                'completed' => true,
+            ],
+            [
+                'key' => 'assembly',
+                'label' => 'сборка',
+                'date' => null,
+                'completed' => ShopOrder::isAssemblyCompleted($order->status),
+            ],
+            [
+                'key' => 'delivery',
+                'label' => $isCompleted ? 'Выполнен' : 'Примерная доставка',
+                'date' => $deliveryDate,
+                'completed' => ShopOrder::isDeliveryCompleted($order->status),
+            ],
+        ];
+    }
+
+    /** @return array<string, mixed>|null */
+    private function formatTracking(?OrderTracking $tracking): ?array
+    {
+        if ($tracking === null) {
+            return null;
+        }
+
+        return [
+            'provider' => $tracking->provider,
+            'track_number' => $tracking->track_number,
+            'current_status' => $tracking->current_status,
+            'description' => $tracking->description,
+            'current_city' => $tracking->current_city,
+            'updated_at' => $tracking->updated_at !== null ? gmdate('c', $tracking->updated_at) : null,
+            'expected_delivery' => $tracking->expected_delivery,
         ];
     }
 
