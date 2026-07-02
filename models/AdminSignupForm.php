@@ -4,8 +4,7 @@ declare(strict_types=1);
 
 namespace app\models;
 
-use Yii;
-use yii\base\Model;
+use app\services\UserRoleService;
 
 class AdminSignupForm extends Model
 {
@@ -108,11 +107,7 @@ class AdminSignupForm extends Model
                 return null;
             }
 
-            $auth = Yii::$app->authManager;
-            $role = $auth->getRole('user');
-            if ($role !== null) {
-                $auth->assign($role, (string) $user->id);
-            }
+            (new UserRoleService())->assignDefaultRole($user);
 
             $transaction->commit();
         } catch (\Throwable $e) {

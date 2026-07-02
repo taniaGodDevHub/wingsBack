@@ -104,6 +104,26 @@ class User extends ActiveRecord implements IdentityInterface
         return $this->hasOne(UserProfile::class, ['user_id' => 'id']);
     }
 
+    public function getOrders(): \yii\db\ActiveQuery
+    {
+        return $this->hasMany(ShopOrder::class, ['user_id' => 'id']);
+    }
+
+    public function getAddresses(): \yii\db\ActiveQuery
+    {
+        return $this->hasMany(UserAddress::class, ['user_id' => 'id']);
+    }
+
+    public function getDisplayName(): string
+    {
+        $profile = $this->profile;
+        if ($profile === null) {
+            return $this->username;
+        }
+
+        return $profile->getDisplayName($this->username);
+    }
+
     public static function generateUsername(string $prefix): string
     {
         return $prefix . '_' . substr(Yii::$app->security->generateRandomString(8), 0, 8);

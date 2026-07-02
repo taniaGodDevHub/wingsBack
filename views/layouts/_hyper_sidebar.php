@@ -11,8 +11,7 @@ use yii\helpers\Url;
 $pageSettingsOpen = str_starts_with(Yii::$app->controller->route, 'admin/settings/banner');
 $settingsOpen = str_starts_with(Yii::$app->controller->route, 'admin/settings/')
     && !$pageSettingsOpen;
-$usersOpen = str_starts_with(Yii::$app->controller->route, 'admin/user/')
-    || str_starts_with(Yii::$app->controller->route, 'admin/rbac/');
+$usersOpen = str_starts_with(Yii::$app->controller->route, 'admin/user/');
 
 ?>
 <div class="leftside-menu menuitem-active">
@@ -95,45 +94,16 @@ $usersOpen = str_starts_with(Yii::$app->controller->route, 'admin/user/')
             </li>
             <?php endif; ?>
 
-            <?php if (!Yii::$app->user->isGuest && BaseAdminController::canAccess()): ?>
-                <?php
-                $adminItems = [];
-                if (BaseAdminController::canManageUsers()) {
-                    $adminItems[] = ['label' => Yii::t('app', 'Users list'), 'url' => ['/admin/user/index']];
-                }
-                if (BaseAdminController::canManageRbac()) {
-                    $adminItems[] = ['label' => Yii::t('app', 'Roles'), 'url' => ['/admin/rbac/roles']];
-                    $adminItems[] = ['label' => Yii::t('app', 'Permissions'), 'url' => ['/admin/rbac/permissions']];
-                    $adminItems[] = ['label' => Yii::t('app', 'Role assignments'), 'url' => ['/admin/rbac/assignments']];
-                }
-                ?>
-                <?php if ($adminItems !== []): ?>
-            <li class="side-nav-item">
-                <a class="side-nav-link" data-bs-toggle="collapse" href="#sidebarUsers" aria-expanded="<?= $usersOpen ? 'true' : 'false' ?>">
-                    <i class="ri-group-line"></i>
-                    <span> <?= Yii::t('app', 'Users') ?> </span>
-                    <span class="menu-arrow"></span>
-                </a>
-                <div class="collapse<?= $usersOpen ? ' show' : '' ?>" id="sidebarUsers">
-                    <ul class="side-nav-second-level">
-                        <?php foreach ($adminItems as $item): ?>
-                        <li class="side-nav-item">
-                            <?= Html::a($item['label'], $item['url'], ['class' => 'side-nav-link']) ?>
-                        </li>
-                        <?php endforeach ?>
-                    </ul>
-                </div>
-            </li>
-                <?php endif ?>
-            <?php endif; ?>
-
+            <?php if (!Yii::$app->user->isGuest && BaseAdminController::canManageUsers()): ?>
             <li class="side-nav-item">
                 <?= Html::a(
-                    '<i class="ri-mail-line"></i><span> ' . Yii::t('app', 'Contact') . ' </span>',
-                    ['/site/contact'],
-                    ['class' => 'side-nav-link'],
+                    '<i class="ri-group-line"></i><span> ' . Yii::t('app', 'Users') . ' </span>',
+                    ['/admin/user/index'],
+                    ['class' => 'side-nav-link' . ($usersOpen ? ' active' : '')],
                 ) ?>
             </li>
+            <?php endif; ?>
+
         </ul>
     </div>
 </div>

@@ -9,12 +9,7 @@ use yii\bootstrap5\Nav;
 use yii\bootstrap5\NavBar;
 use yii\helpers\Html;
 
-$items = [
-    [
-        'label' => Yii::t('app', 'Contact'),
-        'url' => ['/site/contact'],
-    ],
-];
+$items = [];
 
 if (BaseAdminController::canManageCatalog()) {
     $items[] = [
@@ -38,34 +33,11 @@ if (BaseAdminController::canManageCatalog()) {
     ];
 }
 
-if (BaseAdminController::canAccess()) {
-    $adminItems = [];
-    if (BaseAdminController::canManageUsers()) {
-        $adminItems[] = [
-            'label' => Yii::t('app', 'Users list'),
-            'url' => ['/admin/user/index'],
-        ];
-    }
-    if (BaseAdminController::canManageRbac()) {
-        $adminItems[] = [
-            'label' => Yii::t('app', 'Roles'),
-            'url' => ['/admin/rbac/roles'],
-        ];
-        $adminItems[] = [
-            'label' => Yii::t('app', 'Permissions'),
-            'url' => ['/admin/rbac/permissions'],
-        ];
-        $adminItems[] = [
-            'label' => Yii::t('app', 'Role assignments'),
-            'url' => ['/admin/rbac/assignments'],
-        ];
-    }
-    if ($adminItems !== []) {
-        $items[] = [
-            'label' => Yii::t('app', 'Users'),
-            'items' => $adminItems,
-        ];
-    }
+if (BaseAdminController::canManageUsers()) {
+    $items[] = [
+        'label' => Yii::t('app', 'Users'),
+        'url' => ['/admin/user/index'],
+    ];
 }
 
 $items[] = [

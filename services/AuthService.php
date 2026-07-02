@@ -348,11 +348,7 @@ class AuthService
                 throw new ServerErrorHttpException('Failed to create profile.');
             }
 
-            $auth = Yii::$app->authManager;
-            $role = $auth->getRole('user');
-            if ($role !== null) {
-                $auth->assign($role, (string) $user->id);
-            }
+            (new UserRoleService())->assignDefaultRole($user);
 
             $challenge->used_at = time();
             $challenge->save(false);

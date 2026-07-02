@@ -49,6 +49,38 @@ class UserProfile extends ActiveRecord
         return $this->hasOne(User::class, ['id' => 'user_id']);
     }
 
+    public function getDisplayName(?string $fallbackUsername = null): string
+    {
+        $parts = array_values(array_filter([
+            trim((string) ($this->f ?? '')),
+            trim((string) ($this->i ?? '')),
+            trim((string) ($this->surname ?? '')),
+        ], static fn (string $part): bool => $part !== ''));
+
+        if ($parts !== []) {
+            return implode(' ', $parts);
+        }
+
+        $name = trim((string) ($this->name ?? ''));
+        if ($name !== '') {
+            return $name;
+        }
+
+        return $fallbackUsername ?? '';
+    }
+
+    public function getGenderLabel(): ?string
+    {
+        $code = trim((string) ($this->gender ?? ''));
+        if ($code === '') {
+            return null;
+        }
+
+        $options = Gender::getDropdownOptions();
+
+        return $options[$code] ?? $code;
+    }
+
     public static function findByPhone(string $phone): ?static
     {
         return static::findOne(['phone_number' => PhoneNormalizer::normalize($phone)]);
