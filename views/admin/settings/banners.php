@@ -3,6 +3,7 @@
 /** @var yii\web\View $this */
 /** @var string $tab */
 /** @var app\models\HomeAbout $aboutModel */
+/** @var app\models\HomeBlago $blagoModel */
 /** @var app\models\HomeBottomBanner $bottomBannerModel */
 /** @var array<string, app\models\HomeGenderBlock> $genderBlocks */
 /** @var yii\data\ActiveDataProvider $dataProvider */
@@ -22,6 +23,8 @@ $this->registerJsFile('@web/js/admin-image-preview.js', ['depends' => [\yii\web\
         <?= $this->render('_tabMain', ['dataProvider' => $dataProvider]) ?>
     <?php elseif ($tab === 'about'): ?>
         <?= $this->render('_tabAbout', ['aboutModel' => $aboutModel]) ?>
+    <?php elseif ($tab === 'blago'): ?>
+        <?= $this->render('_tabBlago', ['blagoModel' => $blagoModel]) ?>
     <?php elseif ($tab === 'categories'): ?>
         <?= $this->render('_tabCategories', ['genderBlocks' => $genderBlocks]) ?>
     <?php else: ?>

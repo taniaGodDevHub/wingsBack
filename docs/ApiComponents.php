@@ -284,7 +284,7 @@ use OpenApi\Annotations as OA;
  *
  * @OA\Schema(
  *     schema="HomePageContentResponse",
- *     description="Визуальный контент главной страницы: баннеры, блок «О нас», категории по полу и нижний баннер",
+ *     description="Визуальный контент главной страницы: баннеры, блок «О нас», блок «Благо», категории по полу и нижний баннер",
  *     @OA\Property(
  *         property="banners",
  *         type="array",
@@ -296,6 +296,12 @@ use OpenApi\Annotations as OA;
  *         ref="#/components/schemas/ShowcaseAbout",
  *         nullable=true,
  *         description="Блок «О нас»; null, если не заполнены заголовок и изображение"
+ *     ),
+ *     @OA\Property(
+ *         property="blago",
+ *         ref="#/components/schemas/ShowcaseBlago",
+ *         nullable=true,
+ *         description="Блок «Благо»; null, если не заполнены заголовок, даты сбора и изображение"
  *     ),
  *     @OA\Property(
  *         property="categories",
@@ -338,6 +344,12 @@ use OpenApi\Annotations as OA;
  *         description="Блок «О нас»; присутствует только если заполнен"
  *     ),
  *     @OA\Property(
+ *         property="blago",
+ *         ref="#/components/schemas/ShowcaseBlago",
+ *         nullable=true,
+ *         description="Блок «Благо»; присутствует только если заполнен"
+ *     ),
+ *     @OA\Property(
  *         property="categories",
  *         type="array",
  *         description="Категории по полу с изображениями; присутствует только если есть загруженные изображения",
@@ -357,6 +369,16 @@ use OpenApi\Annotations as OA;
  *     @OA\Property(property="gender", type="string", enum={"male","female"}, example="male", description="Код пола"),
  *     @OA\Property(property="name", type="string", example="Мужской", description="Отображаемое название из справочника пола"),
  *     @OA\Property(property="image_url", type="string", format="uri", example="https://example.com/uploads/home-categories/category_male_a1b2c3d4.webp")
+ * )
+ *
+ * @OA\Schema(
+ *     schema="ShowcaseBlago",
+ *     description="Блок «Благо» на главной",
+ *     @OA\Property(property="title", type="string", example="Сбор на реабилитацию"),
+ *     @OA\Property(property="collection_start_at", type="integer", example=1782864000, description="Unix timestamp начала сбора"),
+ *     @OA\Property(property="collection_end_at", type="integer", example=1785542399, description="Unix timestamp конца сбора"),
+ *     @OA\Property(property="amount", type="number", format="float", example=150000),
+ *     @OA\Property(property="image_url", type="string", format="uri", example="https://example.com/uploads/blago/blago_a1b2c3d4.webp")
  * )
  *
  * @OA\Schema(

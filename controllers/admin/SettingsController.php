@@ -10,11 +10,13 @@ use app\models\Category;
 use app\models\Color;
 use app\models\HomeAbout;
 use app\models\HomeBanner;
+use app\models\HomeBlago;
 use app\models\HomeBottomBanner;
 use app\models\HomeGenderBlock;
 use app\models\Size;
 use app\services\HomeAboutUploadService;
 use app\services\HomeBannerUploadService;
+use app\services\HomeBlagoUploadService;
 use app\services\HomeBottomBannerUploadService;
 use app\services\HomeGenderBlockUploadService;
 use Yii;
@@ -248,6 +250,7 @@ class SettingsController extends BaseAdminController
         $this->view->title = Yii::t('app', 'Page settings');
         $tab = $this->pageSettingsTab();
         $aboutModel = HomeAbout::singleton();
+        $blagoModel = HomeBlago::singleton();
         $bottomBannerModel = HomeBottomBanner::singleton();
         $genderBlocks = HomeGenderBlock::blocksMap();
 
@@ -263,7 +266,7 @@ class SettingsController extends BaseAdminController
                         if ($uploadError !== null) {
                             Yii::$app->session->setFlash('error', $uploadError);
 
-                            return $this->render('banners', $this->pageSettingsViewParams($tab, $aboutModel, $bottomBannerModel, $genderBlocks));
+                            return $this->render('banners', $this->pageSettingsViewParams($tab, $aboutModel, $blagoModel, $bottomBannerModel, $genderBlocks));
                         }
                     }
 
@@ -277,6 +280,29 @@ class SettingsController extends BaseAdminController
                 $tab = 'about';
             }
 
+            if ($section === 'blago' && $blagoModel->load(Yii::$app->request->post())) {
+                $blagoModel->imageFile = UploadedFile::getInstance($blagoModel, 'imageFile');
+
+                if ($blagoModel->validate()) {
+                    if ($blagoModel->imageFile !== null) {
+                        $uploadError = (new HomeBlagoUploadService())->upload($blagoModel, $blagoModel->imageFile);
+                        if ($uploadError !== null) {
+                            Yii::$app->session->setFlash('error', $uploadError);
+
+                            return $this->render('banners', $this->pageSettingsViewParams($tab, $aboutModel, $blagoModel, $bottomBannerModel, $genderBlocks));
+                        }
+                    }
+
+                    if ($blagoModel->save()) {
+                        Yii::$app->session->setFlash('success', Yii::t('app', 'Blago block saved successfully.'));
+
+                        return $this->redirect(['/admin/settings/banners', 'tab' => 'blago']);
+                    }
+                }
+
+                $tab = 'blago';
+            }
+
             if ($section === 'bottom' && $bottomBannerModel->load(Yii::$app->request->post())) {
                 $bottomBannerModel->imageFile = UploadedFile::getInstance($bottomBannerModel, 'imageFile');
 
@@ -286,7 +312,7 @@ class SettingsController extends BaseAdminController
                         if ($uploadError !== null) {
                             Yii::$app->session->setFlash('error', $uploadError);
 
-                            return $this->render('banners', $this->pageSettingsViewParams($tab, $aboutModel, $bottomBannerModel, $genderBlocks));
+                            return $this->render('banners', $this->pageSettingsViewParams($tab, $aboutModel, $blagoModel, $bottomBannerModel, $genderBlocks));
                         }
                     }
 
@@ -332,7 +358,7 @@ class SettingsController extends BaseAdminController
                         if ($uploadError !== null) {
                             Yii::$app->session->setFlash('error', $uploadError);
 
-                            return $this->render('banners', $this->pageSettingsViewParams('categories', $aboutModel, $bottomBannerModel, $genderBlocks));
+                            return $this->render('banners', $this->pageSettingsViewParams('categories', $aboutModel, $blagoModel, $bottomBannerModel, $genderBlocks));
                         }
                     }
 
@@ -354,14 +380,14 @@ class SettingsController extends BaseAdminController
             }
         }
 
-        return $this->render('banners', $this->pageSettingsViewParams($tab, $aboutModel, $bottomBannerModel, $genderBlocks));
+        return $this->render('banners', $this->pageSettingsViewParams($tab, $aboutModel, $blagoModel, $bottomBannerModel, $genderBlocks));
     }
 
     private function pageSettingsTab(): string
     {
         $tab = (string) Yii::$app->request->get('tab', 'main');
 
-        return in_array($tab, ['main', 'about', 'categories', 'bottom'], true) ? $tab : 'main';
+        return in_array($tab, ['main', 'about', 'blago', 'categories', 'bottom'], true) ? $tab : 'main';
     }
 
     /**
@@ -371,12 +397,14 @@ class SettingsController extends BaseAdminController
     private function pageSettingsViewParams(
         string $tab,
         HomeAbout $aboutModel,
+        HomeBlago $blagoModel,
         HomeBottomBanner $bottomBannerModel,
         array $genderBlocks,
     ): array {
         return [
             'tab' => $tab,
             'aboutModel' => $aboutModel,
+            'blagoModel' => $blagoModel,
             'bottomBannerModel' => $bottomBannerModel,
             'genderBlocks' => $genderBlocks,
             'dataProvider' => new ActiveDataProvider([
