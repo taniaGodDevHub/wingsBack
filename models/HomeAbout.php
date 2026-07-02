@@ -12,6 +12,7 @@ use yii\web\UploadedFile;
 /**
  * @property int $id
  * @property string $title
+ * @property string|null $subtitle
  * @property string $image_url
  * @property int $updated_at
  */
@@ -34,6 +35,7 @@ class HomeAbout extends ActiveRecord
         return new self([
             'id' => 1,
             'title' => '',
+            'subtitle' => null,
             'image_url' => '',
             'updated_at' => time(),
         ]);
@@ -43,7 +45,7 @@ class HomeAbout extends ActiveRecord
     {
         return [
             [['title'], 'required'],
-            [['title'], 'string', 'max' => 255],
+            [['title', 'subtitle'], 'string', 'max' => 255],
             [['image_url'], 'string', 'max' => 512],
             [['updated_at'], 'integer'],
             [
@@ -63,6 +65,7 @@ class HomeAbout extends ActiveRecord
     {
         return [
             'title' => Yii::t('app', 'Title'),
+            'subtitle' => Yii::t('app', 'Subtitle'),
             'image_url' => Yii::t('app', 'Image'),
             'imageFile' => Yii::t('app', 'Image'),
         ];
@@ -109,6 +112,10 @@ class HomeAbout extends ActiveRecord
         }
 
         $this->updated_at = time();
+        $this->subtitle = trim((string) ($this->subtitle ?? ''));
+        if ($this->subtitle === '') {
+            $this->subtitle = null;
+        }
 
         return true;
     }
@@ -118,6 +125,7 @@ class HomeAbout extends ActiveRecord
     {
         return [
             'title' => $this->title,
+            'subtitle' => $this->subtitle,
             'image_url' => $this->getImagePublicUrl() ?? '',
         ];
     }

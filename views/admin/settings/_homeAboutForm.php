@@ -41,6 +41,7 @@ $hasLegacyRemoteImage = $aboutModel->image_url !== '' && !$aboutModel->hasLocalI
 
     <div class="col-lg-7 d-flex flex-column">
         <?= $form->field($aboutModel, 'title')->textInput(['maxlength' => true]) ?>
+        <?= $form->field($aboutModel, 'subtitle')->textInput(['maxlength' => true]) ?>
         <div class="mt-auto pt-2">
             <?= Html::submitButton(Yii::t('app', 'Save about block'), ['class' => 'btn btn-primary']) ?>
         </div>

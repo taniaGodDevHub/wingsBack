@@ -542,7 +542,7 @@ class CatalogService
         return $banner->toApiArray();
     }
 
-    /** @return array{title: string, image_url: string}|null */
+    /** @return array{title: string, subtitle: string|null, image_url: string}|null */
     private function homeAboutForApi(): ?array
     {
         $about = HomeAbout::findOne(1);

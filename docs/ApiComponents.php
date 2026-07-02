@@ -363,6 +363,7 @@ use OpenApi\Annotations as OA;
  *     schema="ShowcaseAbout",
  *     description="Блок «О нас» на главной",
  *     @OA\Property(property="title", type="string", example="О нас"),
+ *     @OA\Property(property="subtitle", type="string", nullable=true, example="Расширяем границы удобства"),
  *     @OA\Property(property="image_url", type="string", format="uri", example="https://example.com/uploads/about/about_a1b2c3d4.webp")
  * )
  *

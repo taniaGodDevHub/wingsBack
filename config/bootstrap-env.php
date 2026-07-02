@@ -2,6 +2,10 @@
 
 declare(strict_types=1);
 
+require_once __DIR__ . '/load-dotenv.php';
+
+loadDotEnv(dirname(__DIR__) . '/.env');
+
 $localEnv = __DIR__ . '/env-local.php';
 if (is_file($localEnv)) {
     require $localEnv;

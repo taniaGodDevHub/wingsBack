@@ -18,7 +18,9 @@ return [
     'authChallengeTtl' => 600,
     'authChallengeThrottleSeconds' => 60,
 
-    'dadataApiKey' => '',
+    // DaData: DADATA_API_KEY / DADATA_SECRET_KEY в .env или env сервера (см. .env.example)
+    'dadataApiKey' => getenv('DADATA_API_KEY') ?: '',
+    'dadataSecretKey' => getenv('DADATA_SECRET_KEY') ?: '',
     'orderDraftTtl' => 1800,
     'paymentBaseUrl' => 'https://pay.example.com',
 
