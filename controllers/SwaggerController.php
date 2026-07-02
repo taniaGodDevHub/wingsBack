@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace app\controllers;
 
+use app\components\api\CorsHeaders;
 use OpenApi\Generator;
 use Yii;
 use yii\web\Controller;
@@ -30,7 +31,7 @@ class SwaggerController extends Controller
         $response = Yii::$app->response;
         $response->format = Response::FORMAT_RAW;
         $response->headers->set('Content-Type', 'application/json; charset=UTF-8');
-        $response->headers->set('Access-Control-Allow-Origin', '*');
+        CorsHeaders::apply($response->headers);
 
         $openapi = Generator::scan([
             Yii::getAlias('@app/docs'),
