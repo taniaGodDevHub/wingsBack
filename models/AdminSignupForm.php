@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace app\models;
 
 use app\services\UserRoleService;
+use yii\base\Model;
 
 class AdminSignupForm extends Model
 {

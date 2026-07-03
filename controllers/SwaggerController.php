@@ -26,6 +26,11 @@ class SwaggerController extends Controller
         ];
     }
 
+    public function actionIndex(): string
+    {
+        return $this->render('index');
+    }
+
     public function actionJsonSchema(): Response
     {
         $response = Yii::$app->response;
