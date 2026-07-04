@@ -231,7 +231,7 @@ use OpenApi\Annotations as OA;
  *     schema="DaDataAddressSuggestion",
  *     description="Подсказка полного адреса",
  *     @OA\Property(property="value", type="string", example="г Москва, ул Тверская, д 7", description="Краткая подпись для списка подсказок"),
- *     @OA\Property(property="full_address", type="string", example="125009, г Москва, ул Тверская, д 7", description="Полный адрес с почтовым индексом"),
+ *     @OA\Property(property="full_address", type="string", example="125009, г Москва, Тверской р-н, ул Тверская, д 7", description="Полный адрес с почтовым индексом"),
  *     @OA\Property(property="postal_code", type="string", nullable=true, example="125009", description="Почтовый индекс отдельным полем"),
  *     @OA\Property(property="city_name", type="string", nullable=true, example="г Москва"),
  *     @OA\Property(property="data", ref="#/components/schemas/DaDataAddressSuggestionData")
@@ -923,6 +923,50 @@ use OpenApi\Annotations as OA;
  *         type="array",
  *         @OA\Items(ref="#/components/schemas/DeliveryCalculateItem")
  *     )
+ * )
+ *
+ * @OA\Examples(
+ *     example="dadata-suggest-address-request",
+ *     summary="Запрос подсказок адреса",
+ *     value={"query": "Москва Тверская 7", "count": 3}
+ * )
+ *
+ * @OA\Examples(
+ *     example="dadata-suggest-address-response",
+ *     summary="Подсказки адреса из DaData (production)",
+ *     value={
+ *         "status": "success",
+ *         "data": {
+ *             {
+ *                 "value": "г Москва, ул Тверская, д 7",
+ *                 "full_address": "125009, г Москва, Тверской р-н, ул Тверская, д 7",
+ *                 "postal_code": "125009",
+ *                 "city_name": "г Москва",
+ *                 "data": {
+ *                     "city_fias_id": "0c5b2444-70a0-4932-980c-b4dc0d3f02b5",
+ *                     "address_fias_id": "cb983f95-4865-4320-bba0-ab6edc396ba5",
+ *                     "house_fias_id": "cb983f95-4865-4320-bba0-ab6edc396ba5",
+ *                     "geo_lat": "55.7579795",
+ *                     "geo_lon": "37.611263"
+ *                 },
+ *                 "pvz_code": null
+ *             },
+ *             {
+ *                 "value": "г Москва, ул 1-я Тверская-Ямская, д 7",
+ *                 "full_address": "125047, г Москва, Тверской р-н, ул 1-я Тверская-Ямская, д 7",
+ *                 "postal_code": "125047",
+ *                 "city_name": "г Москва",
+ *                 "data": {
+ *                     "city_fias_id": "0c5b2444-70a0-4932-980c-b4dc0d3f02b5",
+ *                     "address_fias_id": "044a7767-7764-45eb-ba30-1adc8c8f06ad",
+ *                     "house_fias_id": "044a7767-7764-45eb-ba30-1adc8c8f06ad",
+ *                     "geo_lat": "55.773444",
+ *                     "geo_lon": "37.584725"
+ *                 },
+ *                 "pvz_code": null
+ *             }
+ *         }
+ *     }
  * )
  *
  * @OA\Examples(

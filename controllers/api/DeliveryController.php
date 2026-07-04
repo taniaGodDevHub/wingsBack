@@ -15,13 +15,13 @@ use yii\web\UnauthorizedHttpException;
 /**
  * @OA\Tag(
  *     name="Доставка",
- *     description="Checkout: способы доставки СДЭК, расчёт, ПВЗ и подсказки адреса. До подключения ЛК СДЭК работает mock-режим (cdekMockMode)."
+ *     description="Checkout: способы доставки СДЭК, расчёт, ПВЗ и подсказки адреса через DaData. До подключения ЛК СДЭК работает mock-режим (cdekMockMode)."
  * )
  *
  * @OA\Post(
  *     path="/api/delivery/suggest-address",
- *     summary="Подсказки адресов для курьерской доставки",
- *     description="Подсказки полного адреса через DaData. Для ПВЗ используйте GET /api/delivery/pvz.",
+ *     summary="Подсказки полного адреса (DaData)",
+ *     description="Основной эндпоинт подсказок адреса: поиск по одной строке (город, улица, дом). Данные из DaData (ключ dadataApiKey). Авторизация не требуется. Для списка ПВЗ после выбора города используйте GET /api/delivery/pvz с city_fias_id из поля data.city_fias_id.",
  *     operationId="DeliveryController.actionSuggestAddress",
  *     tags={"Доставка"},
  *     @OA\RequestBody(
@@ -31,14 +31,15 @@ use yii\web\UnauthorizedHttpException;
  *             @OA\Schema(
  *                 allOf={
  *                     @OA\Schema(ref="#/components/schemas/DaDataSuggestRequest"),
- *                     @OA\Schema(@OA\Property(property="delivery_method_id", type="integer", default=2, description="2 — курьер СДЭК"))
+ *                     @OA\Schema(@OA\Property(property="delivery_method_id", type="integer", default=2, description="1 — СДЭК до ПВЗ, 2 — курьер СДЭК (по умолчанию). Влияет только на проверку способа доставки."))
  *                 }
- *             )
+ *             ),
+ *             @OA\Examples(example="address", ref="#/components/examples/dadata-suggest-address-request")
  *         )
  *     ),
  *     @OA\Response(
  *         response=200,
- *         description="Подсказки адреса",
+ *         description="Список подсказок адреса",
  *         @OA\MediaType(
  *             mediaType="application/json",
  *             @OA\Schema(
@@ -48,7 +49,8 @@ use yii\web\UnauthorizedHttpException;
  *                     type="array",
  *                     @OA\Items(ref="#/components/schemas/DeliveryAddressSuggestion")
  *                 )
- *             )
+ *             ),
+ *             @OA\Examples(example="dadata", ref="#/components/examples/dadata-suggest-address-response")
  *         )
  *     )
  * )

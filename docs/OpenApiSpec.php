@@ -39,7 +39,12 @@ use OpenApi\Annotations as OA;
  * `GET /api/news/{slug}` — опубликованная статья и до 3 последних статей (кроме текущей) с полями image_url, title, slug.
  *
  * **Благо**
- * `GET /api/blago` — блок сбора блага (title, collection_start_at, collection_end_at, amount, image_url). Если блок не заполнен — 404."
+ * `GET /api/blago` — блок сбора блага (title, collection_start_at, collection_end_at, amount, image_url). Если блок не заполнен — 404.
+ *
+ * **Подсказки адреса (DaData)**
+ * `POST /api/delivery/suggest-address` — основной эндпоинт: подсказки полного адреса (город, улица, дом в одной строке) через DaData.
+ * Поля body: `query` (обязательно), `count` (1–20, по умолчанию 10), `delivery_method_id` (1 — ПВЗ, 2 — курьер, по умолчанию 2).
+ * Авторизация не требуется. Ответ: status success и массив data — value, full_address, postal_code, city_name, data (city_fias_id, geo_lat, geo_lon), pvz_code (null для курьера)."
  *     ),
  *     @OA\Server(url="/", description="API-сервер")
  * )
