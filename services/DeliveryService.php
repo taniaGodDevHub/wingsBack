@@ -19,6 +19,7 @@ final class DeliveryService
     public const CODE_CDEK_PVZ = 'cdek_pvz';
     public const CODE_CDEK_COURIER = 'cdek_courier';
     public const PROVIDER_CDEK = 'cdek';
+    public const PVZ_LIST_LIMIT = 10;
 
     /** @deprecated use METHOD_CDEK_PVZ_ID */
     public const METHOD_CDEK_ID = self::METHOD_CDEK_PVZ_ID;
@@ -129,16 +130,32 @@ final class DeliveryService
         ];
     }
 
-    /** @return array<int, array<string, mixed>> */
-    public function listPvzPoints(string $cityFiasId, int $deliveryMethodId): array
-    {
+    /** @return array{items: list<array<string, mixed>>, meta: array{page: int, count: int, has_more: bool}} */
+    public function listPvzPoints(
+        string $cityFiasId,
+        int $deliveryMethodId,
+        int $page = 1,
+        int $count = self::PVZ_LIST_LIMIT,
+        ?string $postalCode = null,
+        ?string $fiasGuid = null,
+        ?float $geoLat = null,
+        ?float $geoLon = null,
+    ): array {
         if ($deliveryMethodId !== self::METHOD_CDEK_PVZ_ID) {
             throw new \InvalidArgumentException('PVZ list is available only for cdek_pvz delivery method.');
         }
 
         $cityCode = $this->cdek->resolveCityCode($cityFiasId);
 
-        return $this->cdek->listDeliveryPoints($cityCode);
+        return $this->cdek->listDeliveryPoints(
+            $cityCode,
+            $count,
+            $page,
+            $postalCode !== '' ? $postalCode : null,
+            $fiasGuid !== '' ? $fiasGuid : null,
+            $geoLat,
+            $geoLon,
+        );
     }
 
     /** @return array<int, array<string, mixed>> */

@@ -72,40 +72,83 @@ final class CdekClient extends Component
     }
 
     /**
-     * @return list<array<string, mixed>>
+     * @return array{
+     *     items: list<array<string, mixed>>,
+     *     meta: array{page: int, count: int, has_more: bool}
+     * }
      */
-    public function listDeliveryPoints(int $cityCode): array
-    {
+    public function listDeliveryPoints(
+        int $cityCode,
+        int $limit = 10,
+        int $page = 1,
+        ?string $postalCode = null,
+        ?string $fiasGuid = null,
+        ?float $geoLat = null,
+        ?float $geoLon = null,
+    ): array {
+        $limit = max(1, min(20, $limit));
+        $page = max(1, $page);
+
         if ($this->isMockMode()) {
-            return CdekMockData::deliveryPoints($cityCode);
+            return $this->paginateDeliveryPoints(
+                $this->prepareMockDeliveryPoints($cityCode, $postalCode, $fiasGuid, $geoLat, $geoLon),
+                $page,
+                $limit,
+                $geoLat,
+                $geoLon,
+            );
         }
 
-        $response = $this->request('GET', '/v2/deliverypoints', null, [
+        $query = [
             'city_code' => (string) $cityCode,
             'type' => 'PVZ',
-        ]);
-        if ($response === null || !is_array($response)) {
-            return CdekMockData::deliveryPoints($cityCode);
+        ];
+        if ($postalCode !== null && $postalCode !== '') {
+            $query['postal_code'] = $postalCode;
+        }
+        if ($fiasGuid !== null && $fiasGuid !== '') {
+            $query['fias_guid'] = $fiasGuid;
         }
 
-        $points = [];
-        foreach ($response as $row) {
-            if (!is_array($row)) {
-                continue;
+        if ($geoLat !== null && $geoLon !== null) {
+            $query['size'] = '500';
+            $response = $this->request('GET', '/v2/deliverypoints', null, $query);
+            $points = $this->mapDeliveryPointRows(is_array($response) ? $response : [], $cityCode);
+
+            if ($points === []) {
+                $points = $this->prepareMockDeliveryPoints($cityCode, $postalCode, $fiasGuid, $geoLat, $geoLon);
             }
-            $location = is_array($row['location'] ?? null) ? $row['location'] : [];
-            $points[] = [
-                'code' => (string) ($row['code'] ?? ''),
-                'name' => (string) ($row['name'] ?? 'ПВЗ СДЭК'),
-                'address' => (string) ($location['address'] ?? $row['address'] ?? ''),
-                'work_time' => (string) ($row['work_time'] ?? ''),
-                'lat' => isset($location['latitude']) ? (float) $location['latitude'] : null,
-                'lon' => isset($location['longitude']) ? (float) $location['longitude'] : null,
-                'city_code' => $cityCode,
-            ];
+
+            return $this->paginateDeliveryPoints($points, $page, $limit, $geoLat, $geoLon);
         }
 
-        return $points !== [] ? $points : CdekMockData::deliveryPoints($cityCode);
+        $query['page'] = (string) ($page - 1);
+        $query['size'] = (string) ($limit + 1);
+
+        $response = $this->request('GET', '/v2/deliverypoints', null, $query);
+        $points = $this->mapDeliveryPointRows(is_array($response) ? $response : [], $cityCode);
+
+        if ($points === []) {
+            return $this->paginateDeliveryPoints(
+                $this->prepareMockDeliveryPoints($cityCode, $postalCode, $fiasGuid, null, null),
+                $page,
+                $limit,
+                null,
+                null,
+            );
+        }
+
+        $hasMore = count($points) > $limit;
+        $items = array_slice($points, 0, $limit);
+
+        return [
+            'items' => $items,
+            'meta' => [
+                'page' => $page,
+                'count' => count($items),
+                'has_more' => $hasMore,
+            ],
+        ];
     }
 
     public function resolveCityCode(?string $cityFiasId, ?string $cityName = null): int
@@ -210,6 +253,141 @@ final class CdekClient extends Component
         $cache->set(self::TOKEN_CACHE_KEY, (string) $decoded['access_token'], $ttl);
 
         return (string) $decoded['access_token'];
+    }
+
+    /**
+     * @param list<array<string, mixed>> $rows
+     * @return list<array<string, mixed>>
+     */
+    private function mapDeliveryPointRows(array $rows, int $cityCode): array
+    {
+        $points = [];
+        foreach ($rows as $row) {
+            if (!is_array($row)) {
+                continue;
+            }
+            $points[] = $this->mapDeliveryPointRow($row, $cityCode);
+        }
+
+        return $points;
+    }
+
+    /** @param array<string, mixed> $row */
+    private function mapDeliveryPointRow(array $row, int $cityCode, ?float $distanceKm = null): array
+    {
+        $location = is_array($row['location'] ?? null) ? $row['location'] : [];
+        $point = [
+            'code' => (string) ($row['code'] ?? ''),
+            'name' => (string) ($row['name'] ?? 'ПВЗ СДЭК'),
+            'address' => (string) ($location['address'] ?? $row['address'] ?? ''),
+            'work_time' => (string) ($row['work_time'] ?? ''),
+            'lat' => isset($location['latitude']) ? (float) $location['latitude'] : null,
+            'lon' => isset($location['longitude']) ? (float) $location['longitude'] : null,
+            'city_code' => $cityCode,
+        ];
+        if ($distanceKm !== null) {
+            $point['distance_km'] = round($distanceKm, 1);
+        }
+
+        return $point;
+    }
+
+    /**
+     * @param list<array<string, mixed>> $points
+     * @return array{
+     *     items: list<array<string, mixed>>,
+     *     meta: array{page: int, count: int, has_more: bool}
+     * }
+     */
+    private function paginateDeliveryPoints(
+        array $points,
+        int $page,
+        int $limit,
+        ?float $geoLat,
+        ?float $geoLon,
+    ): array {
+        if ($geoLat !== null && $geoLon !== null) {
+            usort($points, function (array $left, array $right) use ($geoLat, $geoLon): int {
+                $leftDistance = $this->distanceKm(
+                    $geoLat,
+                    $geoLon,
+                    isset($left['lat']) ? (float) $left['lat'] : null,
+                    isset($left['lon']) ? (float) $left['lon'] : null,
+                );
+                $rightDistance = $this->distanceKm(
+                    $geoLat,
+                    $geoLon,
+                    isset($right['lat']) ? (float) $right['lat'] : null,
+                    isset($right['lon']) ? (float) $right['lon'] : null,
+                );
+
+                return $leftDistance <=> $rightDistance;
+            });
+
+            $points = array_map(function (array $point) use ($geoLat, $geoLon): array {
+                $distanceKm = $this->distanceKm(
+                    $geoLat,
+                    $geoLon,
+                    isset($point['lat']) ? (float) $point['lat'] : null,
+                    isset($point['lon']) ? (float) $point['lon'] : null,
+                );
+                if ($distanceKm !== null) {
+                    $point['distance_km'] = round($distanceKm, 1);
+                }
+
+                return $point;
+            }, $points);
+        }
+
+        $offset = ($page - 1) * $limit;
+        $slice = array_slice($points, $offset, $limit + 1);
+        $hasMore = count($slice) > $limit;
+        $items = array_slice($slice, 0, $limit);
+
+        return [
+            'items' => $items,
+            'meta' => [
+                'page' => $page,
+                'count' => count($items),
+                'has_more' => $hasMore,
+            ],
+        ];
+    }
+
+    /**
+     * @return list<array<string, mixed>>
+     */
+    private function prepareMockDeliveryPoints(
+        int $cityCode,
+        ?string $postalCode,
+        ?string $_fiasGuid = null,
+        ?float $_geoLat = null,
+        ?float $_geoLon = null,
+    ): array {
+        $points = CdekMockData::deliveryPoints($cityCode);
+        if ($postalCode !== null && $postalCode !== '') {
+            $points = array_values(array_filter(
+                $points,
+                static fn (array $point): bool => str_contains((string) ($point['address'] ?? ''), $postalCode),
+            ));
+        }
+
+        return $points;
+    }
+
+    private function distanceKm(float $latFrom, float $lonFrom, ?float $latTo, ?float $lonTo): ?float
+    {
+        if ($latTo === null || $lonTo === null) {
+            return null;
+        }
+
+        $earthRadiusKm = 6371.0;
+        $latDelta = deg2rad($latTo - $latFrom);
+        $lonDelta = deg2rad($lonTo - $lonFrom);
+        $a = sin($latDelta / 2) ** 2
+            + cos(deg2rad($latFrom)) * cos(deg2rad($latTo)) * sin($lonDelta / 2) ** 2;
+
+        return $earthRadiusKm * 2 * atan2(sqrt($a), sqrt(1 - $a));
     }
 
     /**

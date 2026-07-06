@@ -898,7 +898,22 @@ use OpenApi\Annotations as OA;
  *     @OA\Property(property="work_time", type="string"),
  *     @OA\Property(property="lat", type="number", format="float", nullable=true),
  *     @OA\Property(property="lon", type="number", format="float", nullable=true),
- *     @OA\Property(property="city_code", type="integer")
+ *     @OA\Property(property="city_code", type="integer"),
+ *     @OA\Property(property="distance_km", type="number", format="float", nullable=true, description="Расстояние от geo_lat/geo_lon в км (если координаты переданы)")
+ * )
+ *
+ * @OA\Schema(
+ *     schema="CdekPvzListMeta",
+ *     @OA\Property(property="page", type="integer", example=1, description="Текущая страница"),
+ *     @OA\Property(property="count", type="integer", example=10, description="Количество пунктов в data"),
+ *     @OA\Property(property="has_more", type="boolean", example=true, description="Есть ли следующая страница — запросите page+1")
+ * )
+ *
+ * @OA\Schema(
+ *     schema="CdekPvzListResponse",
+ *     @OA\Property(property="status", type="string", example="success"),
+ *     @OA\Property(property="data", type="array", @OA\Items(ref="#/components/schemas/CdekPvzPoint")),
+ *     @OA\Property(property="meta", ref="#/components/schemas/CdekPvzListMeta")
  * )
  *
  * @OA\Schema(
@@ -1006,8 +1021,69 @@ use OpenApi\Annotations as OA;
  * )
  *
  * @OA\Examples(
+ *     example="cdek-pvz-page1",
+ *     summary="ПВЗ: первая страница (только город)",
+ *     value={
+ *         "status": "success",
+ *         "data": {
+ *             {
+ *                 "code": "MSK2",
+ *                 "name": "MSK2, Москва, ул. Международная",
+ *                 "address": "ул. Международная, 15",
+ *                 "work_time": "Пн-Пт 10:00-20:00",
+ *                 "lat": 55.7558,
+ *                 "lon": 37.6173,
+ *                 "city_code": 44
+ *             }
+ *         },
+ *         "meta": {"page": 1, "count": 10, "has_more": true}
+ *     }
+ * )
+ *
+ * @OA\Examples(
+ *     example="cdek-pvz-page2",
+ *     summary="ПВЗ: следующая страница (page=2)",
+ *     value={
+ *         "status": "success",
+ *         "data": {
+ *             {
+ *                 "code": "MSK29",
+ *                 "name": "MSK29, Москва",
+ *                 "address": "ул. Примерная, 1",
+ *                 "work_time": "Ежедневно 09:00-21:00",
+ *                 "lat": 55.75,
+ *                 "lon": 37.62,
+ *                 "city_code": 44
+ *             }
+ *         },
+ *         "meta": {"page": 2, "count": 10, "has_more": true}
+ *     }
+ * )
+ *
+ * @OA\Examples(
+ *     example="cdek-pvz-geo",
+ *     summary="ПВЗ рядом с уточнённым адресом (geo_lat/geo_lon из DaData)",
+ *     value={
+ *         "status": "success",
+ *         "data": {
+ *             {
+ *                 "code": "MSK11",
+ *                 "name": "СДЭК ПВЗ Тверская",
+ *                 "address": "г Москва, ул Тверская, д 7",
+ *                 "work_time": "Пн-Пт 10:00-20:00",
+ *                 "lat": 55.7641,
+ *                 "lon": 37.6054,
+ *                 "city_code": 44,
+ *                 "distance_km": 0.8
+ *             }
+ *         },
+ *         "meta": {"page": 1, "count": 10, "has_more": false}
+ *     }
+ * )
+ *
+ * @OA\Examples(
  *     example="cdek-pvz-mock",
- *     summary="Список ПВЗ СДЭК (mock до подключения ЛК)",
+ *     summary="Список ПВЗ СДЭК (устаревший формат, см. cdek-pvz-page1)",
  *     value={
  *         "status": "success",
  *         "data": {
@@ -1029,7 +1105,8 @@ use OpenApi\Annotations as OA;
  *                 "lon": 37.5925,
  *                 "city_code": 44
  *             }
- *         }
+ *         },
+ *         "meta": {"page": 1, "count": 2, "has_more": false}
  *     }
  * )
  *

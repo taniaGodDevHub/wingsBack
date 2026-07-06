@@ -55,7 +55,12 @@ use OpenApi\Annotations as OA;
  * **Подсказки адреса (DaData)**
  * `POST /api/delivery/suggest-address` — основной эндпоинт: подсказки полного адреса (город, улица, дом в одной строке) через DaData.
  * Поля body: `query` (обязательно), `count` (1–20, по умолчанию 10), `delivery_method_id` (1 — ПВЗ, 2 — курьер, по умолчанию 2).
- * Авторизация не требуется. Ответ: status success и массив data — value, full_address, postal_code, city_name, data (city_fias_id, geo_lat, geo_lon), pvz_code (null для курьера)."
+ * Авторизация не требуется. Ответ: status success и массив data — value, full_address, postal_code, city_name, data (city_fias_id, geo_lat, geo_lon), pvz_code (null для курьера).
+ *
+ * **Пункты выдачи СДЭК**
+ * `GET /api/delivery/pvz` — список ПВЗ с пагинацией (по 10, параметр `count` до 20).
+ * Обязателен `city_fias_id` (город из DaData). Если пользователь выбрал только город — `page=1`, при `meta.has_more=true` запрашивайте `page=2`, `page=3`…
+ * Если адрес уточнён через suggest-address — дополнительно `postal_code`, `geo_lat`, `geo_lon` (и при необходимости `fias_guid`) из ответа подсказки; пункты сортируются по близости, в ответе `distance_km`."
  *     ),
  *     @OA\Server(url="/", description="API-сервер")
  * )

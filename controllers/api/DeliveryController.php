@@ -21,7 +21,7 @@ use yii\web\UnauthorizedHttpException;
  * @OA\Post(
  *     path="/api/delivery/suggest-address",
  *     summary="Подсказки полного адреса (DaData)",
- *     description="Основной эндпоинт подсказок адреса: поиск по одной строке (город, улица, дом). Данные из DaData (ключ dadataApiKey). Авторизация не требуется. Для списка ПВЗ после выбора города используйте GET /api/delivery/pvz с city_fias_id из поля data.city_fias_id.",
+ *     description="Основной эндпоинт подсказок адреса: поиск по одной строке (город, улица, дом). Данные из DaData (ключ dadataApiKey). Авторизация не требуется. Для списка ПВЗ после выбора города используйте GET /api/delivery/pvz с city_fias_id из поля data.city_fias_id; при уточнении адреса также передайте postal_code, geo_lat и geo_lon из этой же подсказки.",
  *     operationId="DeliveryController.actionSuggestAddress",
  *     tags={"Доставка"},
  *     @OA\RequestBody(
@@ -58,25 +58,32 @@ use yii\web\UnauthorizedHttpException;
  * @OA\Get(
  *     path="/api/delivery/pvz",
  *     summary="Список пунктов выдачи СДЭК",
- *     description="Возвращает ПВЗ в городе по city_fias_id. В mock-режиме — тестовые пункты Москвы.",
+ *     description="Возвращает до 10 ПВЗ в городе (параметр count, макс. 20) с пагинацией.
+ *
+ * **Сценарий 1 — выбран только город** (из подсказки DaData): передайте `city_fias_id` и `page=1`. Если в ответе `meta.has_more=true`, запросите `page=2`, `page=3` и т.д. (бесконечная прокрутка / кнопка «Показать ещё»).
+ *
+ * **Сценарий 2 — пользователь уточнил адрес** через `POST /api/delivery/suggest-address`: дополнительно передайте `postal_code`, `geo_lat`, `geo_lon` (и при необходимости `fias_guid` из `data`) — список сузится и отсортируется по близости; в каждом пункте появится `distance_km`. Пагинация `page` работает так же.
+ *
+ * `city_fias_id` — обязателен (FIAS города из подсказки). `delivery_method_id=1` — доставка до ПВЗ.",
  *     operationId="DeliveryController.actionPvz",
  *     tags={"Доставка"},
- *     @OA\Parameter(name="city_fias_id", in="query", required=true, @OA\Schema(type="string")),
+ *     @OA\Parameter(name="city_fias_id", in="query", required=true, @OA\Schema(type="string", description="FIAS ID города из DaData (data.city_fias_id)")),
  *     @OA\Parameter(name="delivery_method_id", in="query", @OA\Schema(type="integer", default=1, description="1 — СДЭК до ПВЗ")),
+ *     @OA\Parameter(name="page", in="query", @OA\Schema(type="integer", default=1, minimum=1, description="Номер страницы (1 — первые 10 пунктов)")),
+ *     @OA\Parameter(name="count", in="query", @OA\Schema(type="integer", default=10, minimum=1, maximum=20, description="Пунктов на странице")),
+ *     @OA\Parameter(name="postal_code", in="query", @OA\Schema(type="string", description="Почтовый индекс из подсказки DaData — сужает список ПВЗ")),
+ *     @OA\Parameter(name="fias_guid", in="query", @OA\Schema(type="string", description="FIAS адреса из подсказки (data.address_fias_id) — дополнительное сужение")),
+ *     @OA\Parameter(name="geo_lat", in="query", @OA\Schema(type="number", format="float", description="Широта из подсказки (data.geo_lat) — сортировка по близости")),
+ *     @OA\Parameter(name="geo_lon", in="query", @OA\Schema(type="number", format="float", description="Долгота из подсказки (data.geo_lon) — сортировка по близости")),
  *     @OA\Response(
  *         response=200,
- *         description="Список ПВЗ",
+ *         description="Список ПВЗ с метаданными пагинации",
  *         @OA\MediaType(
  *             mediaType="application/json",
- *             @OA\Schema(
- *                 @OA\Property(property="status", type="string", example="success"),
- *                 @OA\Property(
- *                     property="data",
- *                     type="array",
- *                     @OA\Items(ref="#/components/schemas/CdekPvzPoint")
- *                 )
- *             ),
- *             @OA\Examples(example="mock", ref="#/components/examples/cdek-pvz-mock")
+ *             @OA\Schema(ref="#/components/schemas/CdekPvzListResponse"),
+ *             @OA\Examples(example="page1", ref="#/components/examples/cdek-pvz-page1"),
+ *             @OA\Examples(example="page2", ref="#/components/examples/cdek-pvz-page2"),
+ *             @OA\Examples(example="geo", ref="#/components/examples/cdek-pvz-geo")
  *         )
  *     )
  * )
@@ -156,14 +163,48 @@ class DeliveryController extends BaseApiController
     {
         $cityFiasId = (string) Yii::$app->request->get('city_fias_id', '');
         $deliveryMethodId = (int) Yii::$app->request->get('delivery_method_id', DeliveryService::METHOD_CDEK_PVZ_ID);
+        $page = max(1, (int) Yii::$app->request->get('page', 1));
+        $count = min(20, max(1, (int) Yii::$app->request->get('count', DeliveryService::PVZ_LIST_LIMIT)));
+        $postalCode = trim((string) Yii::$app->request->get('postal_code', ''));
+        $fiasGuid = trim((string) Yii::$app->request->get('fias_guid', ''));
+        $geoLat = $this->optionalGeoCoordinate(Yii::$app->request->get('geo_lat'), 'geo_lat');
+        $geoLon = $this->optionalGeoCoordinate(Yii::$app->request->get('geo_lon'), 'geo_lon');
+
         if ($cityFiasId === '') {
             throw new \InvalidArgumentException('city_fias_id is required.');
         }
+        if (($geoLat === null) xor ($geoLon === null)) {
+            throw new \InvalidArgumentException('geo_lat and geo_lon must be passed together.');
+        }
+
+        $result = $this->delivery->listPvzPoints(
+            $cityFiasId,
+            $deliveryMethodId,
+            $page,
+            $count,
+            $postalCode,
+            $fiasGuid,
+            $geoLat,
+            $geoLon,
+        );
 
         return [
             'status' => 'success',
-            'data' => $this->delivery->listPvzPoints($cityFiasId, $deliveryMethodId),
+            'data' => $result['items'],
+            'meta' => $result['meta'],
         ];
+    }
+
+    private function optionalGeoCoordinate(mixed $value, string $field): ?float
+    {
+        if ($value === null || $value === '') {
+            return null;
+        }
+        if (!is_numeric($value)) {
+            throw new \InvalidArgumentException("{$field} must be numeric.");
+        }
+
+        return (float) $value;
     }
 
     public function actionCalculateDelivery(): array
