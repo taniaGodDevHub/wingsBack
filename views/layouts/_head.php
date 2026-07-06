@@ -38,8 +38,8 @@ if (!empty($this->params['meta_keywords'])) {
 $this->registerLinkTag(
     [
         'rel' => 'icon',
-        'type' => 'image/x-icon',
-        'href' => Yii::getAlias('@web/favicon.ico'),
+        'type' => 'image/png',
+        'href' => Yii::getAlias('@web/img/logo.png'),
     ],
 );
 $this->registerMetaTag(['http-equiv' => 'cache-control', 'content' => 'no-cache, no-store, must-revalidate']);

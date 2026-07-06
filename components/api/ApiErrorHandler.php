@@ -56,6 +56,10 @@ class ApiErrorHandler extends ErrorHandler
             return false;
         }
 
+        if ($exception instanceof NotFoundHttpException && $this->isBenignMissingResource($request)) {
+            return false;
+        }
+
         return true;
     }
 
@@ -79,6 +83,24 @@ class ApiErrorHandler extends ErrorHandler
             'feature-values',
             'feature-value-form',
         ], true);
+    }
+
+    private function isBenignMissingResource(\yii\web\Request $request): bool
+    {
+        try {
+            $pathInfo = (string) $request->pathInfo;
+        } catch (\Throwable) {
+            $pathInfo = '';
+        }
+
+        $path = $pathInfo !== '' ? $pathInfo : (string) parse_url($request->url, PHP_URL_PATH);
+        $basename = basename($path);
+
+        if (in_array($basename, ['favicon.ico', 'robots.txt', 'apple-touch-icon.png'], true)) {
+            return true;
+        }
+
+        return (bool) preg_match('/\.(?:ico|png|jpe?g|gif|svg|webp|css|js|map|woff2?|ttf|txt|xml)$/i', $path);
     }
 
     private function renderFlashRedirect(\Throwable $exception): void

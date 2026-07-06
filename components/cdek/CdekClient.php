@@ -366,10 +366,13 @@ final class CdekClient extends Component
     ): array {
         $points = CdekMockData::deliveryPoints($cityCode);
         if ($postalCode !== null && $postalCode !== '') {
-            $points = array_values(array_filter(
+            $filtered = array_values(array_filter(
                 $points,
                 static fn (array $point): bool => str_contains((string) ($point['address'] ?? ''), $postalCode),
             ));
+            if ($filtered !== []) {
+                $points = $filtered;
+            }
         }
 
         return $points;
