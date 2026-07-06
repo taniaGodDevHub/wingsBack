@@ -22,6 +22,7 @@ $config = [
         'cache' => [
             'class' => \yii\caching\FileCache::class,
         ],
+        'mailer' => require __DIR__ . '/mailer.php',
         'log' => [
             'targets' => [
                 [

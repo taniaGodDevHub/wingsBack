@@ -42,6 +42,23 @@ class ProfileService
             $user->setPassword((string) $data['password']);
             $user->save(false);
         }
+        if (array_key_exists('news_subscribed', $data)) {
+            $subscribed = filter_var($data['news_subscribed'], FILTER_VALIDATE_BOOLEAN);
+            if ($subscribed) {
+                $email = trim((string) ($profile->email ?? ''));
+                if ($email === '') {
+                    throw ApiHttpException::validation([
+                        'news_subscribed' => [Yii::t('app', 'Add and confirm email in profile to subscribe to news.')],
+                    ]);
+                }
+                if (!$profile->email_confirmed) {
+                    throw ApiHttpException::validation([
+                        'news_subscribed' => [Yii::t('app', 'Confirm email in profile to subscribe to news.')],
+                    ]);
+                }
+            }
+            $profile->news_subscribed = $subscribed;
+        }
 
         if (!$profile->save()) {
             throw ApiHttpException::validation(\app\components\api\ApiErrorHandler::validationDetail($profile));
@@ -90,6 +107,7 @@ class ProfileService
             'phone_number_confirmed' => (bool) $profile->phone_number_confirmed,
             'email' => $profile->email,
             'email_confirmed' => (bool) $profile->email_confirmed,
+            'news_subscribed' => (bool) $profile->news_subscribed,
         ];
     }
 }

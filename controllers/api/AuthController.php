@@ -340,7 +340,7 @@ use yii\web\UnauthorizedHttpException;
  * @OA\Patch(
  *     path="/api/auth/profile",
  *     summary="Обновить: профиль пользователя",
- *     description="actionProfile — Частичное обновление данных профиля",
+ *     description="actionProfile — Частичное обновление данных профиля. Поле `news_subscribed` — подписка на рассылку новостей (требуется подтверждённый email).",
  *     operationId="actionProfilePatch",
  *     tags={"Профиль"},
  *     security={{"bearerAuth": {}}},

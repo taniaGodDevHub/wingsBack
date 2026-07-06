@@ -30,9 +30,9 @@ use OpenApi\Annotations as OA;
  * Фронтенд использует `record_id` + `code` для `verify_phone_registration` / `login_phone_with_code`.
  * После подключения SMS.ru установите `smsMockMode=false` и укажите `smsRuApiId` — код перестанет приходить в ответе API.
  *
- * **Карточка товара и группы**
- * `GET /api/catalog/product/{slug}` — детальная карточка: описание, атрибуты (`attributes`: id, name, slug, value), полная таблица размеров (`size_chart`), размеры в наличии (`sizes`) и связанная группа вариантов (`group.variants`: slug + цвет).
- * Списочные эндпоинты каталога (`/search`, `/showcase`) группу не возвращают.
+ * **Карточка товара**
+ * `GET /api/catalog/product/{slug}` — детальная карточка товара.
+ * Те же поля товара (`description`, `attributes`, `size_chart`, `sizes`, `color`, `gender`, `group` и др.) возвращаются в списках: `GET /api/catalog/showcase`, `GET /api/catalog/search`, `GET /api/catalog/search/category/{slug}`, `GET /api/catalog/search/universal` (блок `products.data`). На витрине дополнительно: `is_bestseller`, `is_featured_home`.
  *
  * **Новости**
  * `GET /api/news` — постраничный список опубликованных статей (id, title, slug, image_url).
@@ -40,6 +40,17 @@ use OpenApi\Annotations as OA;
  *
  * **Благо**
  * `GET /api/blago` — блок сбора блага (title, collection_start_at, collection_end_at, amount, image_url). Если блок не заполнен — 404.
+ * У каждого товара в каталоге есть поле `blago` (сумма в ₽ на единицу). В корзине: `summary.blago_total` и `blago_amount` у позиции. В заказе: `blago_total`.
+ *
+ * **Заказы**
+ * `POST /api/orders/create` — создаёт черновик; присваивает уникальный код `blago` + 4 цифры (например `blago2563`) и считает `blago_total` по товарам.
+ * Код и сумма благо возвращаются также в `GET /api/orders/active`, `POST /api/orders/{id}/confirm`, `GET /api/orders/{id}`, `GET /api/orders/purchases`, `GET /api/orders/deliveries`.
+ *
+ * **Контакты**
+ * `GET /api/contacts` — телефон, email, Telegram и время работы магазина.
+ *
+ * **Подписка на новости**
+ * `PATCH /api/auth/profile` с `news_subscribed: true` — подписка на рассылку (нужен подтверждённый email в профиле).
  *
  * **Подсказки адреса (DaData)**
  * `POST /api/delivery/suggest-address` — основной эндпоинт: подсказки полного адреса (город, улица, дом в одной строке) через DaData.

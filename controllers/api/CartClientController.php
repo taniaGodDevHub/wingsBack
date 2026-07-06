@@ -100,7 +100,7 @@ use yii\web\UnauthorizedHttpException;
  * @OA\Get(
  *     path="/api/cart-client/list",
  *     summary="Получить содержимое корзины",
- *     description="Список позиций корзины текущего пользователя или гостевой сессии.",
+ *     description="Список позиций корзины текущего пользователя или гостевой сессии. В `summary`: `items_count`, `total_amount`, `blago_total` (сумма благо по всем товарам). У каждой позиции — `blago_amount` (благо товара × quantity).",
  *     operationId="CartClientController.actionList",
  *     tags={"Корзина"},
  *     security={{"bearerAuth": {}}, {"sessionId": {}}},
@@ -130,7 +130,8 @@ use yii\web\UnauthorizedHttpException;
  *         description="Корзина",
  *         @OA\MediaType(
  *             mediaType="application/json",
- *             @OA\Schema(ref="#/components/schemas/CartListResponse")
+ *             @OA\Schema(ref="#/components/schemas/CartListResponse"),
+ *             @OA\Examples(example="cart-with-blago", ref="#/components/examples/cart-list-with-blago")
  *         )
  *     )
  * )
@@ -138,7 +139,7 @@ use yii\web\UnauthorizedHttpException;
  * @OA\Post(
  *     path="/api/cart-client/count",
  *     summary="Посчитать выбранные позиции",
- *     description="actionCount — подсчёт количества и суммы для указанных товаров",
+ *     description="actionCount — подсчёт количества, суммы и благо для указанных товаров. Ответ: `selected_items_count`, `selected_total_amount`, `selected_blago_total`.",
  *     operationId="CartClientController.actionCount",
  *     tags={"Корзина"},
  *     security={{"bearerAuth": {}}, {"sessionId": {}}},

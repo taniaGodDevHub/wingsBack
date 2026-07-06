@@ -13,7 +13,7 @@ use yii\db\Expression;
 
 final class AdminUserService
 {
-    /** @return array<int, array{orders_count: int, orders_total: float, last_order_at: int|null, last_order_status: string|null, city: string|null}> */
+    /** @return array<int, array{orders_count: int, orders_total: float, last_order_at: int|null, last_order_status: string|null}> */
     public function listStatsForUsers(array $userIds): array
     {
         if ($userIds === []) {
@@ -27,7 +27,6 @@ final class AdminUserService
                 'orders_total' => 0.0,
                 'last_order_at' => null,
                 'last_order_status' => null,
-                'city' => null,
             ];
         }
 
@@ -72,21 +71,6 @@ final class AdminUserService
             $userId = (int) $row['user_id'];
             if (isset($stats[$userId])) {
                 $stats[$userId]['last_order_status'] = (string) $row['status'];
-            }
-        }
-
-        $addresses = UserAddress::find()
-            ->select(['user_id', 'city_name'])
-            ->where(['user_id' => $userIds])
-            ->orderBy(['updated_at' => SORT_DESC])
-            ->asArray()
-            ->all();
-
-        foreach ($addresses as $row) {
-            $userId = (int) $row['user_id'];
-            if ($stats[$userId]['city'] === null) {
-                $city = trim((string) ($row['city_name'] ?? ''));
-                $stats[$userId]['city'] = $city !== '' ? $city : null;
             }
         }
 

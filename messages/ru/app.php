@@ -353,4 +353,19 @@ return [
     'Create new product group' => 'Создать новую группу',
     'Colors in group' => 'Цвета в группе',
     'Fill in to create a new group if none is selected above.' => 'Заполните, чтобы создать новую группу, если выше ничего не выбрано.',
+
+    'Telegram' => 'Telegram',
+    'Working hours from' => 'Время работы с',
+    'Working hours to' => 'Время работы до',
+    'End time must be later than start time.' => 'Время окончания должно быть позже времени начала.',
+    'Contact details shown to customers on the site and in the app.' => 'Контактные данные, которые видят покупатели на сайте и в приложении.',
+
+    'New article on Wings' => 'Новая статья на Wings',
+    'A new article has been published on Wings:' => 'На сайте Wings опубликована новая статья:',
+    'Read the article' => 'Читать статью',
+    'You received this email because you subscribed to Wings news.' => 'Вы получили это письмо, потому что подписаны на новости Wings.',
+    'Add and confirm email in profile to subscribe to news.' => 'Добавьте и подтвердите email в профиле, чтобы подписаться на новости.',
+    'Confirm email in profile to subscribe to news.' => 'Подтвердите email в профиле, чтобы подписаться на новости.',
+    'Newsletter sent to {count} subscribers.' => 'Рассылка отправлена {count} подписчикам.',
+    'News subscription' => 'Подписка на новости',
 ];

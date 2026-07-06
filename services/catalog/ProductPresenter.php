@@ -18,8 +18,7 @@ final class ProductPresenter
 
     public static function showcaseItem(Product $product): array
     {
-        $item = self::baseItem($product);
-        $item['images'] = self::imagesDetailed($product);
+        $item = self::detailItem($product);
         $item['is_bestseller'] = (bool) $product->is_bestseller;
         $item['is_featured_home'] = (bool) $product->is_featured_home;
 
@@ -31,15 +30,7 @@ final class ProductPresenter
      */
     public static function searchItems(array $products): array
     {
-        return array_map(static function (Product $product): array {
-            $item = self::baseItem($product);
-            $item['images'] = self::imagesDetailed($product);
-            $item['sizes'] = $product->getSizeValues();
-            $item['color'] = $product->getColorData();
-            $item['gender'] = $product->gender;
-
-            return $item;
-        }, $products);
+        return array_map([self::class, 'detailItem'], $products);
     }
 
     public static function detailItem(Product $product): array
@@ -85,15 +76,7 @@ final class ProductPresenter
 
     public static function universalProduct(Product $product): array
     {
-        return [
-            'id' => (int) $product->id,
-            'slug' => $product->slug,
-            'name' => $product->name,
-            'images' => self::imagesUrls($product),
-            'categories' => self::categories($product),
-            'price' => (float) $product->price,
-            'is_available' => (bool) $product->is_available,
-        ];
+        return self::detailItem($product);
     }
 
     private static function baseItem(Product $product): array

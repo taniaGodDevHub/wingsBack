@@ -14,12 +14,7 @@ $config = [
     'bootstrap' => ['log', \app\components\api\CorsPreflightBootstrap::class],
     'container' => [
         'singletons' => [
-            \yii\mail\MailerInterface::class => [
-                'class' => \yii\symfonymailer\Mailer::class,
-                // send all mails to a file by default.
-                'useFileTransport' => true,
-                'viewPath' => '@app/mail',
-            ],
+            \yii\mail\MailerInterface::class => require __DIR__ . '/mailer.php',
         ],
     ],
     'aliases' => require __DIR__ . '/aliases.php',
@@ -105,6 +100,7 @@ $config = [
                 'GET api/news' => 'api/news/index',
                 'GET api/news/<slug>' => 'api/news/view',
                 'GET api/blago' => 'api/blago/index',
+                'GET api/contacts' => 'api/contacts/index',
                 'POST api/favorites/add' => 'api/favorites/add',
                 'POST api/favorites/remove' => 'api/favorites/remove',
                 'POST api/favorites/check' => 'api/favorites/check',
@@ -125,6 +121,7 @@ $config = [
         'api/catalog' => \app\controllers\api\CatalogController::class,
         'api/news' => \app\controllers\api\NewsController::class,
         'api/blago' => \app\controllers\api\BlagoController::class,
+        'api/contacts' => \app\controllers\api\ContactsController::class,
         'api/cart-client' => \app\controllers\api\CartClientController::class,
         'api/favorites' => \app\controllers\api\FavoritesController::class,
         'api/orders' => \app\controllers\api\OrdersController::class,
@@ -137,6 +134,7 @@ $config = [
         'admin/settings' => \app\controllers\admin\SettingsController::class,
         'admin/product' => \app\controllers\admin\ProductController::class,
         'admin/news' => \app\controllers\admin\NewsController::class,
+        'admin/contacts' => \app\controllers\admin\ContactsController::class,
     ],
 ];
 

@@ -37,7 +37,7 @@ use yii\filters\VerbFilter;
  * @OA\Get(
  *     path="/api/catalog/showcase",
  *     summary="Получить витрину главной страницы",
- *     description="Постраничный список товаров для главной. В ответе также могут присутствовать `banners`, `about` и `categories` — см. схему `ShowcaseResponse`. Только визуальный контент главной: `GET /api/catalog/home`.",
+ *     description="Постраничный список товаров для главной. Каждый товар в `items` содержит полную карточку (как GET /api/catalog/product/{slug}) плюс `is_bestseller` и `is_featured_home`. В ответе также могут присутствовать `banners`, `about` и `categories` — см. схему `ShowcaseResponse`. Только визуальный контент главной: `GET /api/catalog/home`.",
  *     operationId="actionShowcase",
  *     tags={"Каталог"},
  *     @OA\Parameter(
@@ -67,7 +67,7 @@ use yii\filters\VerbFilter;
  * @OA\Get(
  *     path="/api/catalog/search/universal",
  *     summary="Универсальный поиск",
- *     description="actionUniversal — поиск товаров и категорий по строке (минимум 2 символа)",
+ *     description="actionUniversal — поиск товаров и категорий по строке (минимум 2 символа). Товары в `products.data` — полная карточка, как GET /api/catalog/product/{slug}.",
  *     operationId="actionUniversal",
  *     tags={"Каталог"},
  *     @OA\Parameter(
@@ -102,7 +102,7 @@ use yii\filters\VerbFilter;
  *                     property="products",
  *                     type="object",
  *                     @OA\Property(property="total", type="integer"),
- *                     @OA\Property(property="data", type="array", @OA\Items(type="object"))
+ *                     @OA\Property(property="data", type="array", @OA\Items(ref="#/components/schemas/CatalogProductDetail"))
  *                 ),
  *                 @OA\Property(
  *                     property="categories",
@@ -196,7 +196,7 @@ use yii\filters\VerbFilter;
  * @OA\Get(
  *     path="/api/catalog/search",
  *     summary="Каталог с фильтрами",
- *     description="actionSearch — поиск товаров с фильтрами, сортировкой и доступными значениями фильтров",
+ *     description="actionSearch — поиск товаров с фильтрами, сортировкой и доступными значениями фильтров. Каждый товар в `items` — полная карточка, как GET /api/catalog/product/{slug}.",
  *     operationId="actionSearch",
  *     tags={"Каталог"},
  *     @OA\Parameter(name="page", in="query", description="Номер страницы", @OA\Schema(type="integer", default=1)),
@@ -233,7 +233,7 @@ use yii\filters\VerbFilter;
  * @OA\Get(
  *     path="/api/catalog/search/category/{slug}",
  *     summary="Товары категории",
- *     description="actionSearchCategory — поиск товаров внутри категории по slug с фильтрами",
+ *     description="actionSearchCategory — поиск товаров внутри категории по slug с фильтрами. Каждый товар в `items` — полная карточка, как GET /api/catalog/product/{slug}.",
  *     operationId="actionSearchCategory",
  *     tags={"Каталог"},
  *     @OA\Parameter(

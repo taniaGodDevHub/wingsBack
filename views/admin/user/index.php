@@ -3,7 +3,7 @@
 /** @var yii\web\View $this */
 /** @var app\models\search\AdminUserSearch $searchModel */
 /** @var yii\data\ActiveDataProvider $dataProvider */
-/** @var array<int, array{orders_count: int, orders_total: float, last_order_at: int|null, last_order_status: string|null, city: string|null}> $userStats */
+/** @var array<int, array{orders_count: int, orders_total: float, last_order_at: int|null, last_order_status: string|null}> $userStats */
 
 use app\models\ShopOrder;
 use app\models\User;
@@ -76,9 +76,21 @@ use yii\widgets\ActiveForm;
                 'value' => static fn (User $model): string => $model->profile?->email ?? '—',
             ],
             [
-                'label' => Yii::t('app', 'City'),
-                'value' => static function (User $model) use ($userStats): string {
-                    return $userStats[(int) $model->id]['city'] ?? '—';
+                'label' => Yii::t('app', 'News subscription'),
+                'format' => 'raw',
+                'contentOptions' => ['class' => 'text-center'],
+                'headerOptions' => ['class' => 'text-center text-nowrap'],
+                'value' => static function (User $model): string {
+                    $profile = $model->profile;
+                    if ($profile === null) {
+                        return Html::tag('span', '—', ['class' => 'text-muted']);
+                    }
+
+                    $subscribed = (bool) $profile->news_subscribed;
+                    $label = $subscribed ? Yii::t('app', 'Yes') : Yii::t('app', 'No');
+                    $class = $subscribed ? 'bg-success-subtle text-success' : 'bg-secondary-subtle text-secondary';
+
+                    return Html::tag('span', Html::encode($label), ['class' => 'badge ' . $class]);
                 },
             ],
             [

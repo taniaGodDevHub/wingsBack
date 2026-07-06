@@ -10,10 +10,12 @@ use yii\db\ActiveRecord;
 /**
  * @property int $id
  * @property int $user_id
+ * @property string|null $code
  * @property string $status
  * @property string $payment_status
  * @property int|null $expires_at
  * @property float $total_price
+ * @property float $blago_total
  * @property float|null $delivery_cost
  * @property string|null $delivery_provider
  * @property string|null $delivery_method_code

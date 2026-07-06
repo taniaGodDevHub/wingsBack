@@ -12,6 +12,7 @@ $pageSettingsOpen = str_starts_with(Yii::$app->controller->route, 'admin/setting
 $settingsOpen = str_starts_with(Yii::$app->controller->route, 'admin/settings/')
     && !$pageSettingsOpen;
 $usersOpen = str_starts_with(Yii::$app->controller->route, 'admin/user/');
+$contactsOpen = str_starts_with(Yii::$app->controller->route, 'admin/contacts/');
 
 ?>
 <div class="leftside-menu menuitem-active">
@@ -100,6 +101,16 @@ $usersOpen = str_starts_with(Yii::$app->controller->route, 'admin/user/');
                     '<i class="ri-group-line"></i><span> ' . Yii::t('app', 'Users') . ' </span>',
                     ['/admin/user/index'],
                     ['class' => 'side-nav-link' . ($usersOpen ? ' active' : '')],
+                ) ?>
+            </li>
+            <?php endif; ?>
+
+            <?php if (!Yii::$app->user->isGuest && BaseAdminController::canManageCatalog()): ?>
+            <li class="side-nav-item">
+                <?= Html::a(
+                    '<i class="ri-contacts-line"></i><span> ' . Yii::t('app', 'Contact') . ' </span>',
+                    ['/admin/contacts/index'],
+                    ['class' => 'side-nav-link' . ($contactsOpen ? ' active' : '')],
                 ) ?>
             </li>
             <?php endif; ?>

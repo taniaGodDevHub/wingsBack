@@ -113,7 +113,8 @@ use OpenApi\Annotations as OA;
  *     @OA\Property(property="phone_number", type="string", nullable=true),
  *     @OA\Property(property="phone_number_confirmed", type="boolean"),
  *     @OA\Property(property="email", type="string", nullable=true),
- *     @OA\Property(property="email_confirmed", type="boolean")
+ *     @OA\Property(property="email_confirmed", type="boolean"),
+ *     @OA\Property(property="news_subscribed", type="boolean", description="Подписка на рассылку новостей на email из профиля")
  * )
  *
  * @OA\Schema(
@@ -122,7 +123,8 @@ use OpenApi\Annotations as OA;
  *     @OA\Property(property="surname", type="string"),
  *     @OA\Property(property="gender", type="string"),
  *     @OA\Property(property="birth_date", type="string", format="date"),
- *     @OA\Property(property="password", type="string", format="password")
+ *     @OA\Property(property="password", type="string", format="password"),
+ *     @OA\Property(property="news_subscribed", type="boolean", description="Подписка на рассылку новостей. Требуется подтверждённый email в профиле.")
  * )
  *
  * @OA\Schema(
@@ -196,18 +198,22 @@ use OpenApi\Annotations as OA;
  * @OA\Schema(
  *     schema="OrderCreateResponse",
  *     @OA\Property(property="order_id", type="integer"),
+ *     @OA\Property(property="code", type="string", example="blago2563", description="Уникальный код заказа"),
  *     @OA\Property(property="expires_at", type="integer", description="Unix timestamp"),
- *     @OA\Property(property="status", type="string", example="draft")
+ *     @OA\Property(property="status", type="string", example="draft"),
+ *     @OA\Property(property="blago_total", type="number", format="float", description="Сумма благо по товарам заказа")
  * )
  *
  * @OA\Schema(
  *     schema="OrderConfirmResponse",
  *     @OA\Property(property="order_id", type="integer"),
+ *     @OA\Property(property="code", type="string", example="blago2563"),
  *     @OA\Property(property="status", type="string"),
  *     @OA\Property(property="payment_status", type="string"),
  *     @OA\Property(property="delivery_provider", type="string"),
  *     @OA\Property(property="delivery_cost", type="number", format="float"),
  *     @OA\Property(property="total_price", type="number", format="float"),
+ *     @OA\Property(property="blago_total", type="number", format="float"),
  *     @OA\Property(property="payment_url", type="string")
  * )
  *
@@ -270,16 +276,14 @@ use OpenApi\Annotations as OA;
  *
  * @OA\Schema(
  *     schema="CatalogProductShowcase",
- *     @OA\Property(property="id", type="integer"),
- *     @OA\Property(property="slug", type="string"),
- *     @OA\Property(property="name", type="string"),
- *     @OA\Property(property="price", type="number", format="float"),
- *     @OA\Property(property="old_price", type="number", format="float", nullable=true),
- *     @OA\Property(property="is_available", type="boolean"),
- *     @OA\Property(property="is_bestseller", type="boolean"),
- *     @OA\Property(property="is_featured_home", type="boolean"),
- *     @OA\Property(property="images", type="array", @OA\Items(ref="#/components/schemas/ProductImageShowcase")),
- *     @OA\Property(property="categories", type="array", @OA\Items(ref="#/components/schemas/CategoryRef"))
+ *     description="Товар на витрине главной: полная карточка + флаги витрины",
+ *     allOf={
+ *         @OA\Schema(ref="#/components/schemas/CatalogSearchProduct"),
+ *         @OA\Schema(
+ *             @OA\Property(property="is_bestseller", type="boolean"),
+ *             @OA\Property(property="is_featured_home", type="boolean")
+ *         )
+ *     }
  * )
  *
  * @OA\Schema(
@@ -370,6 +374,22 @@ use OpenApi\Annotations as OA;
  * )
  *
  * @OA\Schema(
+ *     schema="ContactWorkHours",
+ *     @OA\Property(property="from", type="string", example="10:00"),
+ *     @OA\Property(property="to", type="string", example="22:00")
+ * )
+ *
+ * @OA\Schema(
+ *     schema="ContactInfoResponse",
+ *     description="Контактные данные магазина",
+ *     @OA\Property(property="phone", type="string", nullable=true, example="+7 (999) 123-45-67"),
+ *     @OA\Property(property="email", type="string", format="email", nullable=true, example="info@wings.ru"),
+ *     @OA\Property(property="telegram", type="string", nullable=true, example="@wings_shop"),
+ *     @OA\Property(property="work_hours", ref="#/components/schemas/ContactWorkHours"),
+ *     @OA\Property(property="work_hours_label", type="string", example="10:00–22:00")
+ * )
+ *
+ * @OA\Schema(
  *     schema="ShowcaseAbout",
  *     description="Блок «О нас» на главной",
  *     @OA\Property(property="title", type="string", example="О нас"),
@@ -408,6 +428,7 @@ use OpenApi\Annotations as OA;
  *
  * @OA\Schema(
  *     schema="CatalogSearchProduct",
+ *     description="Товар в каталоге, поиске и на витрине — полная карточка",
  *     @OA\Property(property="id", type="integer", example=101),
  *     @OA\Property(property="slug", type="string", example="oversize-hoodie-black"),
  *     @OA\Property(property="name", type="string", example="Oversize Hoodie"),
@@ -419,7 +440,25 @@ use OpenApi\Annotations as OA;
  *     @OA\Property(property="categories", type="array", @OA\Items(ref="#/components/schemas/CategoryRef")),
  *     @OA\Property(property="gender", type="string", enum={"male","female","unisex"}, example="unisex"),
  *     @OA\Property(property="sizes", type="array", @OA\Items(type="string"), example={"S","M","L"}, description="Размеры в наличии (INT), только is_in_stock=true"),
- *     @OA\Property(property="color", ref="#/components/schemas/CatalogProductColor", nullable=true)
+ *     @OA\Property(property="color", ref="#/components/schemas/CatalogProductColor", nullable=true),
+ *     @OA\Property(
+ *         property="attributes",
+ *         type="array",
+ *         description="Атрибуты товара и выбранные значения (цвет — в поле color)",
+ *         @OA\Items(ref="#/components/schemas/CatalogProductAttribute")
+ *     ),
+ *     @OA\Property(
+ *         property="size_chart",
+ *         type="array",
+ *         description="Полная таблица размеров товара (все строки справочника с флагом наличия)",
+ *         @OA\Items(ref="#/components/schemas/CatalogProductSizeChartRow")
+ *     ),
+ *     @OA\Property(
+ *         property="group",
+ *         ref="#/components/schemas/CatalogProductGroup",
+ *         nullable=true,
+ *         description="Связанная группа вариантов; null, если товар не в группе"
+ *     )
  * )
  *
  * @OA\Schema(
@@ -472,31 +511,8 @@ use OpenApi\Annotations as OA;
  *
  * @OA\Schema(
  *     schema="CatalogProductDetail",
- *     description="Детальная карточка товара. Возвращается только эндпоинтом GET /api/catalog/product/{slug}",
- *     allOf={
- *         @OA\Schema(ref="#/components/schemas/CatalogSearchProduct"),
- *         @OA\Schema(
- *             @OA\Property(property="description", type="string", nullable=true, description="Текстовое описание товара"),
- *             @OA\Property(
- *                 property="size_chart",
- *                 type="array",
- *                 description="Полная таблица размеров товара (все строки справочника с флагом наличия)",
- *                 @OA\Items(ref="#/components/schemas/CatalogProductSizeChartRow")
- *             ),
- *             @OA\Property(
- *                 property="group",
- *                 ref="#/components/schemas/CatalogProductGroup",
- *                 nullable=true,
- *                 description="Связанная группа вариантов; null, если товар не в группе"
- *             ),
- *             @OA\Property(
- *                 property="attributes",
- *                 type="array",
- *                 description="Атрибуты товара и выбранные значения (цвет — в поле color)",
- *                 @OA\Items(ref="#/components/schemas/CatalogProductAttribute")
- *             )
- *         )
- *     },
+ *     description="Карточка товара. Используется в GET /api/catalog/product/{slug}, поиске, витрине и универсальном поиске",
+ *     ref="#/components/schemas/CatalogSearchProduct",
  *     example={
  *         "id": 101,
  *         "slug": "oversize-hoodie-black",
@@ -634,6 +650,7 @@ use OpenApi\Annotations as OA;
  *     @OA\Property(property="quantity", type="integer"),
  *     @OA\Property(property="unit_price", type="number", format="float"),
  *     @OA\Property(property="price_show", type="number", format="float"),
+ *     @OA\Property(property="blago_amount", type="number", format="float", description="Благо по позиции (product.blago × quantity)"),
  *     @OA\Property(property="product_info", ref="#/components/schemas/CartProductInfo")
  * )
  *
@@ -645,23 +662,22 @@ use OpenApi\Annotations as OA;
  *         property="summary",
  *         type="object",
  *         @OA\Property(property="items_count", type="integer"),
- *         @OA\Property(property="total_amount", type="number", format="float")
+ *         @OA\Property(property="total_amount", type="number", format="float"),
+ *         @OA\Property(property="blago_total", type="number", format="float", description="Сумма благо по всем товарам корзины")
  *     )
  * )
  *
  * @OA\Schema(
  *     schema="CartCountResponse",
  *     @OA\Property(property="selected_items_count", type="integer"),
- *     @OA\Property(property="selected_total_amount", type="number", format="float")
+ *     @OA\Property(property="selected_total_amount", type="number", format="float"),
+ *     @OA\Property(property="selected_blago_total", type="number", format="float")
  * )
  *
  * @OA\Schema(
  *     schema="FavoriteProduct",
- *     @OA\Property(property="id", type="integer"),
- *     @OA\Property(property="slug", type="string"),
- *     @OA\Property(property="name", type="string"),
- *     @OA\Property(property="images", type="array", @OA\Items(type="string")),
- *     @OA\Property(property="price", type="number", format="float")
+ *     description="Товар в избранном — полная карточка, как GET /api/catalog/product/{slug}",
+ *     ref="#/components/schemas/CatalogProductDetail"
  * )
  *
  * @OA\Schema(
@@ -688,7 +704,9 @@ use OpenApi\Annotations as OA;
  * @OA\Schema(
  *     schema="OrderActiveResponse",
  *     @OA\Property(property="order_id", type="integer"),
- *     @OA\Property(property="expires_at", type="integer")
+ *     @OA\Property(property="code", type="string", example="blago2563"),
+ *     @OA\Property(property="expires_at", type="integer"),
+ *     @OA\Property(property="blago_total", type="number", format="float")
  * )
  *
  * @OA\Schema(
@@ -739,6 +757,7 @@ use OpenApi\Annotations as OA;
  *     schema="OrderListItemBase",
  *     description="Общие поля карточки заказа в личном кабинете",
  *     @OA\Property(property="id", type="integer", example=123456789, description="Номер заказа"),
+ *     @OA\Property(property="code", type="string", example="blago2563", description="Уникальный код заказа"),
  *     @OA\Property(property="status", ref="#/components/schemas/OrderStatus"),
  *     @OA\Property(property="status_label", type="string", example="В ОБРАБОТКЕ", description="Подпись статуса для бейджа"),
  *     @OA\Property(property="payment_status", type="string", example="pending"),
@@ -747,6 +766,7 @@ use OpenApi\Annotations as OA;
  *     @OA\Property(property="estimated_delivery", type="string", nullable=true, example="2026-04-02", description="Примерная дата доставки"),
  *     @OA\Property(property="delivery_address", type="string", nullable=true),
  *     @OA\Property(property="total_price", type="number", format="float", example=7000, description="Сумма заказа"),
+ *     @OA\Property(property="blago_total", type="number", format="float", example=350, description="Сумма благо по товарам"),
  *     @OA\Property(property="items_count", type="integer", example=2, description="Общее количество товаров (состав / N шт.)"),
  *     @OA\Property(property="show_details", type="boolean", example=false, description="Показывать ссылку «ПОДРОБНЕЕ» (true для выполненных)"),
  *     @OA\Property(
@@ -1085,10 +1105,54 @@ use OpenApi\Annotations as OA;
  * )
  *
  * @OA\Examples(
+ *     example="order-create-response",
+ *     summary="Создание черновика заказа",
+ *     value={
+ *         "order_id": 42,
+ *         "code": "blago2563",
+ *         "expires_at": 1751800000,
+ *         "status": "draft",
+ *         "blago_total": 350
+ *     }
+ * )
+ *
+ * @OA\Examples(
+ *     example="cart-list-with-blago",
+ *     summary="Корзина с суммой благо",
+ *     value={
+ *         "cart_id": 7,
+ *         "items": {
+ *             {
+ *                 "product_id": 10,
+ *                 "size_value": "M",
+ *                 "cart_id": 7,
+ *                 "quantity": 2,
+ *                 "unit_price": 3500,
+ *                 "price_show": 3500,
+ *                 "blago_amount": 350,
+ *                 "product_info": {
+ *                     "id": 10,
+ *                     "slug": "oversize-hoodie-black",
+ *                     "name": "Худи Wings",
+ *                     "brand": "Wings",
+ *                     "images": {{"url": "https://e-wings.ru/uploads/product/10.jpg"}}
+ *                 }
+ *             }
+ *         },
+ *         "summary": {
+ *             "items_count": 2,
+ *             "total_amount": 7000,
+ *             "blago_total": 350
+ *         }
+ *     }
+ * )
+ *
+ * @OA\Examples(
  *     example="order-processing-card",
  *     summary="Карточка заказа «В обработке»",
  *     value={
  *         "id": 123456789,
+ *         "code": "blago2563",
  *         "status": "processing",
  *         "status_label": "В ОБРАБОТКЕ",
  *         "payment_status": "pending",
@@ -1097,6 +1161,7 @@ use OpenApi\Annotations as OA;
  *         "estimated_delivery": "2026-04-02",
  *         "delivery_address": "г Москва, ул Тверская, д 7",
  *         "total_price": 7000,
+ *         "blago_total": 350,
  *         "items_count": 2,
  *         "show_details": false,
  *         "timeline_steps": {
@@ -1130,6 +1195,7 @@ use OpenApi\Annotations as OA;
  *     summary="Карточка заказа «Выполнен»",
  *     value={
  *         "id": 123456789,
+ *         "code": "blago4821",
  *         "status": "completed",
  *         "status_label": "ВЫПОЛНЕН",
  *         "payment_status": "paid",
@@ -1138,6 +1204,7 @@ use OpenApi\Annotations as OA;
  *         "estimated_delivery": "2026-04-02",
  *         "delivery_address": "г Москва, ул Тверская, д 7",
  *         "total_price": 7000,
+ *         "blago_total": 420,
  *         "items_count": 4,
  *         "show_details": true,
  *         "timeline_steps": {

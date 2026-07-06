@@ -251,7 +251,13 @@ class CatalogService
         return Product::find()
             ->alias('p')
             ->where(['p.is_available' => true])
-            ->with(['images', 'categories', 'sizes', 'featureValues.feature']);
+            ->with([
+                'images',
+                'categories',
+                'sizes.size',
+                'featureValues.feature',
+                'productGroup.products.featureValues.feature',
+            ]);
     }
 
     /** @param array<string, mixed> $params */

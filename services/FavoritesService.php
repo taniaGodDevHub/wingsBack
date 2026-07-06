@@ -75,7 +75,13 @@ class FavoritesService
         $productIds = array_map(static fn (FavoriteItem $i): int => (int) $i->product_id, $items);
         $products = Product::find()
             ->where(['id' => $productIds])
-            ->with(['images', 'categories'])
+            ->with([
+                'images',
+                'categories',
+                'sizes.size',
+                'featureValues.feature',
+                'productGroup.products.featureValues.feature',
+            ])
             ->indexBy('id')
             ->all();
 
@@ -87,7 +93,7 @@ class FavoritesService
             }
             $resultItems[] = [
                 'id' => (int) $item->id,
-                'product' => ProductPresenter::compact($product),
+                'product' => ProductPresenter::detailItem($product),
             ];
         }
 

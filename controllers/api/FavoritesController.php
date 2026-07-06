@@ -106,7 +106,7 @@ use yii\web\UnauthorizedHttpException;
  * @OA\Get(
  *     path="/api/favorites/list",
  *     summary="Получить список избранного",
- *     description="Постраничный список избранного текущего пользователя или гостевой сессии.",
+ *     description="Постраничный список избранного текущего пользователя или гостевой сессии. Поле `product` в каждом элементе — полная карточка товара, как GET /api/catalog/product/{slug}.",
  *     operationId="FavoritesController.actionList",
  *     tags={"Избранное"},
  *     security={{"bearerAuth": {}}, {"sessionId": {}}},

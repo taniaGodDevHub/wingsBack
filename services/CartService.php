@@ -115,6 +115,7 @@ class CartService
                 'summary' => [
                     'items_count' => 0,
                     'total_amount' => 0,
+                    'blago_total' => 0,
                 ],
             ];
         }
@@ -130,6 +131,7 @@ class CartService
         $responseItems = [];
         $totalQty = 0;
         $totalAmount = 0.0;
+        $blagoTotal = 0.0;
         foreach ($items as $item) {
             $product = $products[$item->product_id] ?? null;
             if ($product === null) {
@@ -137,6 +139,8 @@ class CartService
             }
             $totalQty += $item->quantity;
             $totalAmount += (float) $product->price * $item->quantity;
+            $lineBlago = (float) $product->blago * $item->quantity;
+            $blagoTotal += $lineBlago;
             $unitPrice = (float) $product->price;
             $responseItems[] = [
                 'product_id' => (int) $item->product_id,
@@ -145,6 +149,7 @@ class CartService
                 'quantity' => (int) $item->quantity,
                 'unit_price' => $unitPrice,
                 'price_show' => $unitPrice,
+                'blago_amount' => round($lineBlago, 2),
                 'product_info' => ProductPresenter::cartProductInfo($product),
             ];
         }
@@ -157,6 +162,7 @@ class CartService
             'summary' => [
                 'items_count' => $totalQty,
                 'total_amount' => round($totalAmount, 2),
+                'blago_total' => round($blagoTotal, 2),
             ],
         ];
     }
@@ -169,11 +175,13 @@ class CartService
             return [
                 'selected_items_count' => 0,
                 'selected_total_amount' => 0,
+                'selected_blago_total' => 0,
             ];
         }
 
         $count = 0;
         $total = 0.0;
+        $blagoTotal = 0.0;
 
         foreach ($itemsInput as $row) {
             if (is_array($row)) {
@@ -196,6 +204,7 @@ class CartService
                 }
                 $count += $quantity;
                 $total += $unitPrice * $quantity;
+                $blagoTotal += (float) $product->blago * $quantity;
                 continue;
             }
 
@@ -213,12 +222,14 @@ class CartService
             foreach ($cartItems as $cartItem) {
                 $count += $cartItem->quantity;
                 $total += (float) $product->price * $cartItem->quantity;
+                $blagoTotal += (float) $product->blago * $cartItem->quantity;
             }
         }
 
         return [
             'selected_items_count' => $count,
             'selected_total_amount' => round($total, 2),
+            'selected_blago_total' => round($blagoTotal, 2),
         ];
     }
 

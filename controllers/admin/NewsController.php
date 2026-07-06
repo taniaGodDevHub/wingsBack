@@ -6,6 +6,7 @@ namespace app\controllers\admin;
 
 use app\models\News;
 use app\services\NewsImageUploadService;
+use app\services\NewsNewsletterService;
 use Yii;
 use yii\data\ActiveDataProvider;
 use yii\filters\VerbFilter;
@@ -112,7 +113,23 @@ class NewsController extends BaseAdminController
                 }
             }
 
-            return $model->save();
+            $wasPublished = !$model->isNewRecord && (bool) $model->getOldAttribute('is_published');
+
+            if (!$model->save()) {
+                return false;
+            }
+
+            if ($model->is_published && !$wasPublished) {
+                $sentCount = (new NewsNewsletterService())->sendForArticle($model);
+                if ($sentCount > 0) {
+                    Yii::$app->session->setFlash(
+                        'info',
+                        Yii::t('app', 'Newsletter sent to {count} subscribers.', ['count' => $sentCount]),
+                    );
+                }
+            }
+
+            return true;
         } catch (\Throwable $e) {
             Yii::error([
                 'message' => $e->getMessage(),

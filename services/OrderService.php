@@ -30,14 +30,17 @@ class OrderService
 
         $order = new ShopOrder();
         $order->user_id = (int) $user->id;
+        $order->code = (new OrderCodeGenerator())->generate();
         $order->status = ShopOrder::STATUS_DRAFT;
         $order->payment_status = 'pending';
         $order->expires_at = time() + (int) (Yii::$app->params['orderDraftTtl'] ?? 1800);
         $order->comment = $comment;
         $order->total_price = 0;
+        $order->blago_total = 0;
         $order->save(false);
 
         $total = 0.0;
+        $blagoTotal = 0.0;
         foreach ($items as $row) {
             $productId = (int) ($row['product_id'] ?? 0);
             $quantity = max(1, (int) ($row['quantity'] ?? 1));
@@ -53,6 +56,7 @@ class OrderService
 
             $lineTotal = $unitPrice * $quantity;
             $total += $lineTotal;
+            $blagoTotal += (float) $product->blago * $quantity;
 
             $orderItem = new OrderItem();
             $orderItem->order_id = (int) $order->id;
@@ -65,12 +69,15 @@ class OrderService
         }
 
         $order->total_price = $total;
+        $order->blago_total = round($blagoTotal, 2);
         $order->save(false);
 
         return [
             'order_id' => (int) $order->id,
+            'code' => (string) $order->code,
             'expires_at' => (int) $order->expires_at,
             'status' => $order->status,
+            'blago_total' => (float) $order->blago_total,
         ];
     }
 
@@ -83,7 +90,9 @@ class OrderService
 
         return [
             'order_id' => (int) $order->id,
+            'code' => (string) $order->code,
             'expires_at' => (int) $order->expires_at,
+            'blago_total' => (float) $order->blago_total,
         ];
     }
 
@@ -154,11 +163,13 @@ class OrderService
 
         return [
             'order_id' => (int) $order->id,
+            'code' => (string) $order->code,
             'status' => $order->status,
             'payment_status' => $order->payment_status,
             'delivery_provider' => $order->delivery_provider,
             'delivery_cost' => $deliveryCost,
             'total_price' => (float) $order->total_price,
+            'blago_total' => (float) $order->blago_total,
             'payment_url' => $order->payment_url,
         ];
     }
@@ -285,6 +296,7 @@ class OrderService
 
         $row = [
             'id' => (int) $order->id,
+            'code' => $order->code,
             'status' => $order->status,
             'status_label' => ShopOrder::statusLabel($order->status),
             'payment_status' => $order->payment_status,
@@ -293,6 +305,7 @@ class OrderService
             'estimated_delivery' => $estimatedDelivery,
             'delivery_address' => $order->delivery_address,
             'total_price' => (float) $order->total_price,
+            'blago_total' => (float) $order->blago_total,
             'show_details' => $order->status === ShopOrder::STATUS_COMPLETED,
             'timeline_steps' => $this->buildTimelineSteps($order, $estimatedDelivery),
         ];

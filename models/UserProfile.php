@@ -19,6 +19,7 @@ use yii\db\ActiveRecord;
  * @property string|null $birth_date
  * @property bool $phone_number_confirmed
  * @property bool $email_confirmed
+ * @property bool $news_subscribed
  */
 class UserProfile extends ActiveRecord
 {
@@ -40,7 +41,7 @@ class UserProfile extends ActiveRecord
             [['f', 'i', 'surname'], 'trim'],
             [['gender'], 'string', 'max' => 16],
             [['birth_date'], 'date', 'format' => 'php:Y-m-d'],
-            [['phone_number_confirmed', 'email_confirmed'], 'boolean'],
+            [['phone_number_confirmed', 'email_confirmed', 'news_subscribed'], 'boolean'],
         ];
     }
 

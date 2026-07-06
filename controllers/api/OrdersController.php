@@ -22,7 +22,7 @@ use yii\web\UnauthorizedHttpException;
  * @OA\Post(
  *     path="/api/orders/create",
  *     summary="Создать черновик заказа",
- *     description="actionCreate — создаёт новый черновик заказа, предыдущий черновик пользователя удаляется",
+ *     description="actionCreate — создаёт новый черновик заказа, предыдущий черновик пользователя удаляется. Присваивается уникальный код формата `blago` + 4 цифры (например `blago2563`) и рассчитывается `blago_total` — сумма благо по товарам (product.blago × quantity).",
  *     operationId="actionCreate",
  *     tags={"Заказы"},
  *     security={{"bearerAuth": {}}},
@@ -38,7 +38,8 @@ use yii\web\UnauthorizedHttpException;
  *         description="Созданный заказ",
  *         @OA\MediaType(
  *             mediaType="application/json",
- *             @OA\Schema(ref="#/components/schemas/OrderCreateResponse")
+ *             @OA\Schema(ref="#/components/schemas/OrderCreateResponse"),
+ *             @OA\Examples(example="order-create", ref="#/components/examples/order-create-response")
  *         )
  *     ),
  *     @OA\Response(response=401, ref="#/components/responses/unauthorized")
@@ -47,7 +48,7 @@ use yii\web\UnauthorizedHttpException;
  * @OA\Get(
  *     path="/api/orders/active",
  *     summary="Получить активный черновик заказа",
- *     description="actionActive — возвращает текущий неоформленный заказ пользователя",
+ *     description="actionActive — возвращает текущий неоформленный заказ пользователя: `order_id`, `code`, `expires_at`, `blago_total`.",
  *     operationId="actionActive",
  *     tags={"Заказы"},
  *     security={{"bearerAuth": {}}},
@@ -90,7 +91,7 @@ use yii\web\UnauthorizedHttpException;
  * @OA\Post(
  *     path="/api/orders/{order_id}/confirm",
  *     summary="Подтвердить оформление заказа",
- *     description="actionConfirm — переводит черновик в статус ожидания оплаты и возвращает ссылку на оплату",
+ *     description="actionConfirm — переводит черновик в статус ожидания оплаты и возвращает ссылку на оплату. В ответе: `code`, `blago_total`, `total_price`, `payment_url`.",
  *     operationId="actionConfirm",
  *     tags={"Заказы"},
  *     security={{"bearerAuth": {}}},
