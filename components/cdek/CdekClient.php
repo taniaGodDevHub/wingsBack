@@ -115,7 +115,7 @@ final class CdekClient extends Component
             $response = $this->request('GET', '/v2/deliverypoints', null, $query);
             $points = $this->mapDeliveryPointRows(is_array($response) ? $response : [], $cityCode);
 
-            if ($points === []) {
+            if ($points === [] && $this->isMockMode()) {
                 $points = $this->prepareMockDeliveryPoints($cityCode, $postalCode, $fiasGuid, $geoLat, $geoLon);
             }
 
@@ -129,13 +129,24 @@ final class CdekClient extends Component
         $points = $this->mapDeliveryPointRows(is_array($response) ? $response : [], $cityCode);
 
         if ($points === []) {
-            return $this->paginateDeliveryPoints(
-                $this->prepareMockDeliveryPoints($cityCode, $postalCode, $fiasGuid, null, null),
-                $page,
-                $limit,
-                null,
-                null,
-            );
+            if ($this->isMockMode()) {
+                return $this->paginateDeliveryPoints(
+                    $this->prepareMockDeliveryPoints($cityCode, $postalCode, $fiasGuid, null, null),
+                    $page,
+                    $limit,
+                    null,
+                    null,
+                );
+            }
+
+            return [
+                'items' => [],
+                'meta' => [
+                    'page' => $page,
+                    'count' => 0,
+                    'has_more' => false,
+                ],
+            ];
         }
 
         $hasMore = count($points) > $limit;
@@ -151,27 +162,39 @@ final class CdekClient extends Component
         ];
     }
 
-    public function resolveCityCode(?string $cityFiasId, ?string $cityName = null): int
+    public function resolveCityCode(?string $cityFiasId, ?string $cityName = null, ?string $postalCode = null): int
     {
         if ($this->isMockMode()) {
             return CdekMockData::resolveCityCode($cityFiasId);
         }
 
-        $query = [];
+        foreach ($this->cityLookupQueries($cityFiasId, $cityName, $postalCode) as $query) {
+            $response = $this->request('GET', '/v2/location/cities', null, $query);
+            if (is_array($response) && isset($response[0]['code'])) {
+                return (int) $response[0]['code'];
+            }
+        }
+
+        throw new \InvalidArgumentException(
+            'Unable to resolve CDEK city code. Pass a valid city_fias_id from DaData or postal_code.',
+        );
+    }
+
+    /** @return list<array<string, string>> */
+    private function cityLookupQueries(?string $cityFiasId, ?string $cityName, ?string $postalCode): array
+    {
+        $queries = [];
         if ($cityFiasId !== null && $cityFiasId !== '') {
-            $query['fias_guid'] = $cityFiasId;
-        } elseif ($cityName !== null && $cityName !== '') {
-            $query['city'] = $cityName;
-        } else {
-            return (int) (Yii::$app->params['cdekFromCityCode'] ?? 44);
+            $queries[] = ['fias_guid' => $cityFiasId];
+        }
+        if ($postalCode !== null && $postalCode !== '') {
+            $queries[] = ['postal_code' => $postalCode];
+        }
+        if ($cityName !== null && $cityName !== '') {
+            $queries[] = ['city' => $cityName];
         }
 
-        $response = $this->request('GET', '/v2/location/cities', null, $query);
-        if (is_array($response) && isset($response[0]['code'])) {
-            return (int) $response[0]['code'];
-        }
-
-        return CdekMockData::resolveCityCode($cityFiasId);
+        return $queries;
     }
 
     /** @param array<string, mixed> $payload */

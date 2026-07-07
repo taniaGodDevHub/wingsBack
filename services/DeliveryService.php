@@ -145,7 +145,11 @@ final class DeliveryService
             throw new \InvalidArgumentException('PVZ list is available only for cdek_pvz delivery method.');
         }
 
-        $cityCode = $this->cdek->resolveCityCode($cityFiasId);
+        $cityCode = $this->cdek->resolveCityCode(
+            $cityFiasId,
+            null,
+            $postalCode !== '' ? $postalCode : null,
+        );
 
         return $this->cdek->listDeliveryPoints(
             $cityCode,

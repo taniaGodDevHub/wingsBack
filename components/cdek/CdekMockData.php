@@ -154,11 +154,12 @@ final class CdekMockData
 
     public static function resolveCityCode(?string $cityFiasId): int
     {
-        if ($cityFiasId === '0c5b2444-70a3-4b20-878f-b0f2b8daecf0') {
-            return 44;
-        }
-
-        return 137;
+        return match ($cityFiasId) {
+            '0c5b2444-70a3-4b20-878f-b0f2b8daecf0' => 44,
+            'c2deb16a-0330-4f05-821f-1d09c93331e6' => 137,
+            'f073f850-6c3b-4329-90ba-3c1489d457a1' => 435,
+            default => 44,
+        };
     }
 
     /** @return array<string, mixed> */

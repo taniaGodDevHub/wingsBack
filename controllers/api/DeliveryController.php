@@ -15,7 +15,7 @@ use yii\web\UnauthorizedHttpException;
 /**
  * @OA\Tag(
  *     name="Доставка",
- *     description="Checkout: способы доставки СДЭК, расчёт, ПВЗ и подсказки адреса через DaData. До подключения ЛК СДЭК работает mock-режим (cdekMockMode)."
+ *     description="Checkout: способы доставки СДЭК, расчёт, ПВЗ и подсказки адреса через DaData. При cdekMockMode=true или без ключей СДЭК возвращаются тестовые данные."
  * )
  *
  * @OA\Post(
@@ -60,18 +60,18 @@ use yii\web\UnauthorizedHttpException;
  *     summary="Список пунктов выдачи СДЭК",
  *     description="Возвращает до 10 ПВЗ в городе (параметр count, макс. 20) с пагинацией.
  *
- * **Сценарий 1 — выбран только город** (из подсказки DaData): передайте `city_fias_id` и `page=1`. Если в ответе `meta.has_more=true`, запросите `page=2`, `page=3` и т.д. (бесконечная прокрутка / кнопка «Показать ещё»).
+ * **Сценарий 1 — выбран только город** (из `POST /api/dadata/suggest/city` или `POST /api/delivery/suggest-address`): передайте `city_fias_id` из `data.city_fias_id` и `page=1`. Рекомендуется также передать `postal_code` из подсказки — он используется для определения кода города в СДЭК. Если в ответе `meta.has_more=true`, запросите `page=2`, `page=3` и т.д.
  *
- * **Сценарий 2 — пользователь уточнил адрес** через `POST /api/delivery/suggest-address`: дополнительно передайте `postal_code`, `geo_lat`, `geo_lon` (и при необходимости `fias_guid` из `data`) — список сузится и отсортируется по близости; в каждом пункте появится `distance_km`. Пагинация `page` работает так же.
+ * **Сценарий 2 — пользователь уточнил адрес** через подсказку: дополнительно передайте `postal_code`, `geo_lat`, `geo_lon` (и при необходимости `fias_guid` из `data.address_fias_id`) — список сузится и отсортируется по близости; в каждом пункте появится `distance_km`. Пагинация `page` работает так же.
  *
- * `city_fias_id` — обязателен (FIAS города из подсказки). `delivery_method_id=1` — доставка до ПВЗ.",
+ * `city_fias_id` — обязателен (FIAS города из DaData). `delivery_method_id=1` — доставка до ПВЗ. В production ответ содержит реальные ПВЗ СДЭК выбранного города.",
  *     operationId="DeliveryController.actionPvz",
  *     tags={"Доставка"},
- *     @OA\Parameter(name="city_fias_id", in="query", required=true, @OA\Schema(type="string", description="FIAS ID города из DaData (data.city_fias_id)")),
+ *     @OA\Parameter(name="city_fias_id", in="query", required=true, @OA\Schema(type="string", description="FIAS ID города из DaData (data.city_fias_id). Получите через POST /api/dadata/suggest/city")),
  *     @OA\Parameter(name="delivery_method_id", in="query", @OA\Schema(type="integer", default=1, description="1 — СДЭК до ПВЗ")),
  *     @OA\Parameter(name="page", in="query", @OA\Schema(type="integer", default=1, minimum=1, description="Номер страницы (1 — первые 10 пунктов)")),
  *     @OA\Parameter(name="count", in="query", @OA\Schema(type="integer", default=10, minimum=1, maximum=20, description="Пунктов на странице")),
- *     @OA\Parameter(name="postal_code", in="query", @OA\Schema(type="string", description="Почтовый индекс из подсказки DaData — сужает список ПВЗ")),
+ *     @OA\Parameter(name="postal_code", in="query", @OA\Schema(type="string", description="Почтовый индекс из DaData — помогает определить код города в СДЭК и сузить список ПВЗ")),
  *     @OA\Parameter(name="fias_guid", in="query", @OA\Schema(type="string", description="FIAS адреса из подсказки (data.address_fias_id) — дополнительное сужение")),
  *     @OA\Parameter(name="geo_lat", in="query", @OA\Schema(type="number", format="float", description="Широта из подсказки (data.geo_lat) — сортировка по близости")),
  *     @OA\Parameter(name="geo_lon", in="query", @OA\Schema(type="number", format="float", description="Долгота из подсказки (data.geo_lon) — сортировка по близости")),
