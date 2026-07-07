@@ -130,6 +130,8 @@ use OpenApi\Annotations as OA;
  * @OA\Schema(
  *     schema="UserAddress",
  *     @OA\Property(property="id", type="integer"),
+ *     @OA\Property(property="is_pvz", type="boolean", description="ПВЗ СДЭК"),
+ *     @OA\Property(property="pvz_code", type="string", nullable=true, description="Код ПВЗ (для is_pvz=true)"),
  *     @OA\Property(property="city_id", type="integer", nullable=true),
  *     @OA\Property(property="city_fias_id", type="string", nullable=true),
  *     @OA\Property(property="fias_id", type="string", nullable=true),
@@ -145,6 +147,8 @@ use OpenApi\Annotations as OA;
  * @OA\Schema(
  *     schema="UserAddressShort",
  *     @OA\Property(property="id", type="integer"),
+ *     @OA\Property(property="is_pvz", type="boolean"),
+ *     @OA\Property(property="pvz_code", type="string", nullable=true),
  *     @OA\Property(property="city_name", type="string", nullable=true),
  *     @OA\Property(property="full_address", type="string")
  * )

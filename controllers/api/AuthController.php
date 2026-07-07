@@ -454,6 +454,8 @@ use yii\web\UnauthorizedHttpException;
  *             mediaType="application/json",
  *             @OA\Schema(
  *                 required={"full_address"},
+ *                 @OA\Property(property="is_pvz", type="boolean", description="ПВЗ СДЭК"),
+ *                 @OA\Property(property="pvz_code", type="string", description="Код ПВЗ (обязателен при is_pvz=true)"),
  *                 @OA\Property(property="city_id", type="integer"),
  *                 @OA\Property(property="city_fias_id", type="string"),
  *                 @OA\Property(property="fias_id", type="string"),
@@ -497,6 +499,8 @@ use yii\web\UnauthorizedHttpException;
  *         @OA\MediaType(
  *             mediaType="application/json",
  *             @OA\Schema(
+ *                 @OA\Property(property="is_pvz", type="boolean"),
+ *                 @OA\Property(property="pvz_code", type="string"),
  *                 @OA\Property(property="city_id", type="integer"),
  *                 @OA\Property(property="city_fias_id", type="string"),
  *                 @OA\Property(property="fias_id", type="string"),

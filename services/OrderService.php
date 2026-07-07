@@ -155,6 +155,8 @@ class OrderService
         $order->payment_url = "{$baseUrl}/invoice/{$order->id}";
         $order->save(false);
 
+        (new AddressService())->saveFromOrder($userId, $order, $isPvz);
+
         OrderTrackingWriter::upsertEstimatedDelivery($order);
 
         if ((bool) (Yii::$app->params['cdekCreateOnConfirm'] ?? false)) {

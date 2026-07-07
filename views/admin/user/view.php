@@ -170,7 +170,12 @@ $currentRole = $roles[0] ?? 'user';
                         <div class="list-group list-group-flush">
                             <?php foreach ($addresses as $address): ?>
                                 <div class="list-group-item px-0">
-                                    <div class="fw-semibold"><?= Html::encode($address->city_name ?? Yii::t('app', 'Not specified')) ?></div>
+                                    <div class="fw-semibold">
+                                        <?= Html::encode($address->city_name ?? Yii::t('app', 'Not specified')) ?>
+                                        <?php if ($address->is_pvz): ?>
+                                            <span class="badge text-bg-secondary ms-1">ПВЗ <?= Html::encode($address->pvz_code) ?></span>
+                                        <?php endif ?>
+                                    </div>
                                     <div class="text-muted"><?= Html::encode($address->full_address) ?></div>
                                     <div class="small text-muted mt-1">
                                         <?= Yii::t('app', 'Updated at') ?>:
