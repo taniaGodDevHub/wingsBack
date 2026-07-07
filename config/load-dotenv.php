@@ -43,5 +43,24 @@ function loadDotEnv(string $path): void
 
         putenv("{$name}={$value}");
         $_ENV[$name] = $value;
+        $_SERVER[$name] = $value;
     }
+}
+
+function env(string $name, string $default = ''): string
+{
+    $value = getenv($name);
+    if (is_string($value) && $value !== '') {
+        return $value;
+    }
+
+    if (isset($_ENV[$name]) && is_string($_ENV[$name]) && $_ENV[$name] !== '') {
+        return $_ENV[$name];
+    }
+
+    if (isset($_SERVER[$name]) && is_string($_SERVER[$name]) && $_SERVER[$name] !== '') {
+        return $_SERVER[$name];
+    }
+
+    return $default;
 }

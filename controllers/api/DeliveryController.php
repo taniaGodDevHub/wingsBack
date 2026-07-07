@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace app\controllers\api;
 
 use app\components\api\BaseApiController;
+use app\components\dadata\DaDataClient;
+use app\components\dadata\DaDataSuggestionFormatter;
 use app\services\DeliveryService;
 use OpenApi\Annotations as OA;
 use Yii;
@@ -16,6 +18,52 @@ use yii\web\UnauthorizedHttpException;
  * @OA\Tag(
  *     name="Доставка",
  *     description="Checkout: способы доставки СДЭК, расчёт, ПВЗ и подсказки адреса через DaData. При cdekMockMode=true или без ключей СДЭК возвращаются тестовые данные."
+ * )
+ *
+ * @OA\Post(
+ *     path="/api/dadata/suggest/city",
+ *     summary="Подсказки города (DaData, алиас)",
+ *     description="Алиас для `POST /api/delivery/suggest-city`.",
+ *     operationId="DeliveryController.actionSuggestCityAlias",
+ *     tags={"Доставка"},
+ *     @OA\RequestBody(
+ *         required=true,
+ *         @OA\MediaType(
+ *             mediaType="application/json",
+ *             @OA\Schema(ref="#/components/schemas/DaDataSuggestRequest")
+ *         )
+ *     ),
+ *     @OA\Response(
+ *         response=200,
+ *         description="Список городов",
+ *         @OA\MediaType(
+ *             mediaType="application/json",
+ *             @OA\Schema(ref="#/components/schemas/DaDataSuggestResponse")
+ *         )
+ *     )
+ * )
+ *
+ * @OA\Post(
+ *     path="/api/delivery/suggest-city",
+ *     summary="Подсказки города (DaData)",
+ *     description="Поиск населённого пункта по названию. Используйте `data.city_fias_id` и `postal_code` в `GET /api/delivery/pvz`. Алиас: `POST /api/dadata/suggest/city`.",
+ *     operationId="DeliveryController.actionSuggestCity",
+ *     tags={"Доставка"},
+ *     @OA\RequestBody(
+ *         required=true,
+ *         @OA\MediaType(
+ *             mediaType="application/json",
+ *             @OA\Schema(ref="#/components/schemas/DaDataSuggestRequest")
+ *         )
+ *     ),
+ *     @OA\Response(
+ *         response=200,
+ *         description="Список городов",
+ *         @OA\MediaType(
+ *             mediaType="application/json",
+ *             @OA\Schema(ref="#/components/schemas/DaDataSuggestResponse")
+ *         )
+ *     )
  * )
  *
  * @OA\Post(
@@ -129,11 +177,13 @@ class DeliveryController extends BaseApiController
         $behaviors = parent::behaviors();
         $behaviors['authenticator'] = [
             'class' => HttpBearerAuth::class,
-            'optional' => ['suggest-address', 'pvz'],
+            'optional' => ['suggest-address', 'suggest-city', 'dadata-suggest-address', 'pvz'],
         ];
         $behaviors['verbs'] = [
             'class' => VerbFilter::class,
             'actions' => [
+                'suggest-city' => ['POST'],
+                'dadata-suggest-address' => ['POST'],
                 'suggest-address' => ['POST'],
                 'pvz' => ['GET'],
                 'calculate-delivery' => ['POST'],
@@ -141,6 +191,36 @@ class DeliveryController extends BaseApiController
         ];
 
         return $behaviors;
+    }
+
+    public function actionSuggestCity(): array
+    {
+        $body = Yii::$app->request->bodyParams;
+        $query = (string) ($body['query'] ?? '');
+        $count = min(20, max(1, (int) ($body['count'] ?? 10)));
+        if ($query === '') {
+            throw new \InvalidArgumentException('query is required.');
+        }
+
+        return [
+            'data' => $this->delivery->suggestCity($query, $count),
+        ];
+    }
+
+    public function actionDadataSuggestAddress(): array
+    {
+        $body = Yii::$app->request->bodyParams;
+        $query = (string) ($body['query'] ?? '');
+        $count = min(20, max(1, (int) ($body['count'] ?? 10)));
+        if ($query === '') {
+            throw new \InvalidArgumentException('query is required.');
+        }
+
+        $suggestions = (new DaDataClient())->suggestFullAddress($query, $count);
+
+        return [
+            'data' => DaDataSuggestionFormatter::formatMany($suggestions),
+        ];
     }
 
     public function actionSuggestAddress(): array

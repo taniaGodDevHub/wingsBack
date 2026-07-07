@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace app\components\cdek;
 
+use app\components\api\CheckoutApiException;
 use Yii;
 use yii\base\Component;
 
@@ -89,7 +90,7 @@ final class CdekClient extends Component
         $limit = max(1, min(20, $limit));
         $page = max(1, $page);
 
-        if ($this->isMockMode()) {
+        if ($this->shouldUseMockData()) {
             return $this->paginateDeliveryPoints(
                 $this->prepareMockDeliveryPoints($cityCode, $postalCode, $fiasGuid, $geoLat, $geoLon),
                 $page,
@@ -115,8 +116,8 @@ final class CdekClient extends Component
             $response = $this->request('GET', '/v2/deliverypoints', null, $query);
             $points = $this->mapDeliveryPointRows(is_array($response) ? $response : [], $cityCode);
 
-            if ($points === [] && $this->isMockMode()) {
-                $points = $this->prepareMockDeliveryPoints($cityCode, $postalCode, $fiasGuid, $geoLat, $geoLon);
+            if ($points === []) {
+                $this->assertCdekApiResponded('/v2/deliverypoints', $response);
             }
 
             return $this->paginateDeliveryPoints($points, $page, $limit, $geoLat, $geoLon);
@@ -129,15 +130,7 @@ final class CdekClient extends Component
         $points = $this->mapDeliveryPointRows(is_array($response) ? $response : [], $cityCode);
 
         if ($points === []) {
-            if ($this->isMockMode()) {
-                return $this->paginateDeliveryPoints(
-                    $this->prepareMockDeliveryPoints($cityCode, $postalCode, $fiasGuid, null, null),
-                    $page,
-                    $limit,
-                    null,
-                    null,
-                );
-            }
+            $this->assertCdekApiResponded('/v2/deliverypoints', $response);
 
             return [
                 'items' => [],
@@ -164,7 +157,7 @@ final class CdekClient extends Component
 
     public function resolveCityCode(?string $cityFiasId, ?string $cityName = null, ?string $postalCode = null): int
     {
-        if ($this->isMockMode()) {
+        if ($this->shouldUseMockData()) {
             return CdekMockData::resolveCityCode($cityFiasId);
         }
 
@@ -226,6 +219,45 @@ final class CdekClient extends Component
     public function getFromCityCode(): int
     {
         return (int) (Yii::$app->params['cdekFromCityCode'] ?? 44);
+    }
+
+    /** @return array{mock_mode: bool, credentials_configured: bool, token_available: bool, api_base_url: string} */
+    public function diagnostics(): array
+    {
+        $clientId = (string) (Yii::$app->params['cdekClientId'] ?? '');
+        $clientSecret = (string) (Yii::$app->params['cdekClientSecret'] ?? '');
+        $credentialsConfigured = $clientId !== '' && $clientSecret !== '';
+
+        return [
+            'mock_mode' => $this->isMockMode(),
+            'credentials_configured' => $credentialsConfigured,
+            'token_available' => !$this->isMockMode() && $this->getAccessToken() !== null,
+            'api_base_url' => (string) (Yii::$app->params['cdekApiBaseUrl'] ?? 'https://api.edu.cdek.ru'),
+        ];
+    }
+
+    private function shouldUseMockData(): bool
+    {
+        if (!$this->isMockMode()) {
+            return false;
+        }
+
+        if (YII_ENV === 'prod' && !(bool) (Yii::$app->params['cdekMockMode'] ?? false)) {
+            throw CheckoutApiException::serviceUnavailable(
+                'СДЭК API не настроен: задайте CDEK_CLIENT_ID и CDEK_CLIENT_SECRET в .env на сервере.',
+            );
+        }
+
+        return true;
+    }
+
+    private function assertCdekApiResponded(string $path, mixed $response): void
+    {
+        if ($response === null) {
+            throw CheckoutApiException::serviceUnavailable(
+                'СДЭК API недоступен: не удалось получить OAuth-токен или выполнить запрос ' . $path . '.',
+            );
+        }
     }
 
     public function getAccessToken(): ?string

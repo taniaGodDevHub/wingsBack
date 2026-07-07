@@ -224,7 +224,7 @@ use OpenApi\Annotations as OA;
  * @OA\Schema(
  *     schema="DaDataSuggestRequest",
  *     required={"query"},
- *     @OA\Property(property="query", type="string", example="Москва Тверская 7", description="Полный адрес в одной строке: город, улица, дом"),
+ *     @OA\Property(property="query", type="string", example="Краснодар", description="Название города или полный адрес в одной строке"),
  *     @OA\Property(property="count", type="integer", default=10, description="Количество подсказок (1–20)")
  * )
  *

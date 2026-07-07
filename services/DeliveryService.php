@@ -163,6 +163,14 @@ final class DeliveryService
     }
 
     /** @return array<int, array<string, mixed>> */
+    public function suggestCity(string $query, int $count): array
+    {
+        $suggestions = (new \app\components\dadata\DaDataClient())->suggestCity($query, $count);
+
+        return \app\components\dadata\DaDataSuggestionFormatter::formatMany($suggestions);
+    }
+
+    /** @return array<int, array<string, mixed>> */
     public function suggestAddressForCheckout(string $query, int $deliveryMethodId, int $count): array
     {
         if (!in_array($deliveryMethodId, [self::METHOD_CDEK_PVZ_ID, self::METHOD_CDEK_COURIER_ID], true)) {

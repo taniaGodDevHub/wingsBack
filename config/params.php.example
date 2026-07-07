@@ -32,8 +32,8 @@ return [
     // 4. Протестировать на api.edu.cdek.ru, затем cdekMockMode => false
     // 5. На prod: cdekApiBaseUrl => https://api.cdek.ru
     'cdekMockMode' => false,
-    'cdekClientId' => getenv('CDEK_CLIENT_ID') ?: '',
-    'cdekClientSecret' => getenv('CDEK_CLIENT_SECRET') ?: '',
+    'cdekClientId' => env('CDEK_CLIENT_ID'),
+    'cdekClientSecret' => env('CDEK_CLIENT_SECRET'),
     'cdekApiBaseUrl' => 'https://api.cdek.ru',
     'cdekFromCityCode' => 424,
     'cdekDefaultTariffCode' => 136,
