@@ -803,3 +803,26 @@ a.desc:after {
 .app-flash-toasts .alert {
     pointer-events: auto;
 }
+
+/* Sidebar: uniform item color; white highlight only for the active page */
+.side-nav .menuitem-active > a:not(.active) {
+    color: var(--ct-menu-item-color);
+    font-weight: normal;
+}
+
+.side-nav .menuitem-active > a:not(.active):hover,
+.side-nav .menuitem-active > a:not(.active):focus,
+.side-nav .menuitem-active > a:not(.active):active {
+    color: var(--ct-menu-item-hover-color);
+}
+
+.side-nav .side-nav-link.active {
+    color: var(--ct-menu-item-active-color);
+    font-weight: 500;
+}
+
+.side-nav .side-nav-link.active:hover,
+.side-nav .side-nav-link.active:focus,
+.side-nav .side-nav-link.active:active {
+    color: var(--ct-menu-item-active-color);
+}

@@ -47,20 +47,10 @@ use yii\helpers\Html;
         ],
         [
             'class' => yii\grid\ActionColumn::class,
-            'template' => '{view} {update} {copy} {delete}',
+            'template' => '{update} {copy} {delete}',
             'contentOptions' => ['class' => 'text-center text-nowrap'],
             'headerOptions' => ['class' => 'text-center'],
             'buttons' => [
-                'view' => static fn ($url) => Html::a(
-                    '<i class="ri-eye-line"></i>',
-                    $url,
-                    [
-                        'class' => 'text-primary me-2',
-                        'title' => Yii::t('app', 'View'),
-                        'aria-label' => Yii::t('app', 'View'),
-                        'style' => 'text-decoration: none; font-size: 18px;',
-                    ],
-                ),
                 'update' => static fn ($url) => Html::a(
                     '<i class="ri-edit-line"></i>',
                     $url,

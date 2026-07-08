@@ -41,6 +41,15 @@
         let currentUrl = window.location.pathname + window.location.search; // /web/index.php?r=stat/default/index
 
         $(".side-nav a").each(function () {
+            if (this.dataset.bsToggle === "collapse") {
+                return;
+            }
+
+            let href = this.getAttribute("href") || "";
+            if (href.charAt(0) === "#") {
+                return;
+            }
+
             let linkUrl = this.pathname + this.search; // /web/index.php?r=stat/default/index
 
             if (linkUrl === currentUrl) {

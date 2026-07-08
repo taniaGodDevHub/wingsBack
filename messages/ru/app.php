@@ -352,6 +352,8 @@ return [
     'No product group' => 'Без группы',
     'Create new product group' => 'Создать новую группу',
     'Colors in group' => 'Цвета в группе',
+    'Product groups link color variants of the same model. Select a group or create a new one.' => 'Группа объединяет варианты одного товара в разных цветах. Выберите группу или создайте новую.',
+    'Product group card help' => 'Объединяет одинаковые модели в разных цветах. Выберите группу из списка или создайте новую.',
     'Fill in to create a new group if none is selected above.' => 'Заполните, чтобы создать новую группу, если выше ничего не выбрано.',
 
     'Telegram' => 'Telegram',
