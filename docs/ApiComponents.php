@@ -728,10 +728,11 @@ use OpenApi\Annotations as OA;
  *         type="array",
  *         @OA\Items(
  *             type="object",
+ *             required={"product_id","size_value"},
  *             @OA\Property(property="product_id", type="integer"),
  *             @OA\Property(property="quantity", type="integer", example=1),
  *             @OA\Property(property="unit_price", type="number", format="float", nullable=true),
- *             @OA\Property(property="size_value", type="string", nullable=true, example="M", description="Размер товара. Если не передан, backend попробует взять из активной корзины пользователя при единственном размере по товару.")
+ *             @OA\Property(property="size_value", type="string", example="M", description="Размер товара (обязателен для каждой позиции).")
  *         )
  *     ),
  *     @OA\Property(property="comment", type="string", nullable=true)

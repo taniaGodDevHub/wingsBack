@@ -6,13 +6,18 @@ namespace app\services\admin;
 
 use app\models\OrderItem;
 use app\models\OrderTracking;
+use app\models\ProductSize;
 use app\models\ShopOrder;
+use app\models\Size;
 use app\models\User;
 use app\models\UserAddress;
 use yii\db\Expression;
 
 final class AdminUserService
 {
+    /** @var array<int, string|null> */
+    private static array $productSingleSizeCache = [];
+
     /** @return array<int, array{orders_count: int, orders_total: float, last_order_at: int|null, last_order_status: string|null}> */
     public function listStatsForUsers(array $userIds): array
     {
@@ -181,10 +186,13 @@ final class AdminUserService
             if (!$item instanceof OrderItem) {
                 continue;
             }
+            $sizeValue = $item->size_value !== null && $item->size_value !== ''
+                ? (string) $item->size_value
+                : self::resolveProductSingleSizeValue((int) $item->product_id);
             $items[] = [
                 'id' => (int) $item->id,
                 'name' => (string) $item->name,
-                'size_value' => $item->size_value !== null && $item->size_value !== '' ? (string) $item->size_value : null,
+                'size_value' => $sizeValue,
                 'quantity' => (int) $item->quantity,
                 'unit_price' => (float) $item->unit_price,
                 'total_price' => (float) $item->total_price,
@@ -192,6 +200,29 @@ final class AdminUserService
         }
 
         return $items;
+    }
+
+    private static function resolveProductSingleSizeValue(int $productId): ?string
+    {
+        if ($productId <= 0) {
+            return null;
+        }
+        if (array_key_exists($productId, self::$productSingleSizeCache)) {
+            return self::$productSingleSizeCache[$productId];
+        }
+
+        $sizes = ProductSize::find()
+            ->alias('ps')
+            ->innerJoin(['s' => Size::tableName()], 's.id = ps.size_id')
+            ->where(['ps.product_id' => $productId])
+            ->select('s.size_value')
+            ->distinct()
+            ->column();
+
+        $resolved = count($sizes) === 1 ? (string) $sizes[0] : null;
+        self::$productSingleSizeCache[$productId] = $resolved;
+
+        return $resolved;
     }
 
     public static function orderDeliveryLabel(ShopOrder $order, ?OrderTracking $tracking): string

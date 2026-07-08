@@ -6,7 +6,7 @@ return [
     'Toggle menu' => 'Меню',
     'Switch theme' => 'Сменить тему',
     'Show Full Sidebar' => 'Развернуть меню',
-    'Guest' => 'Гость',
+    'Guest' => 'Вход',
     'Logout' => 'Выход',
     'About' => 'О проекте',
     'Contact' => 'Контакты',

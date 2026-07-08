@@ -39,7 +39,7 @@ use yii\helpers\Url;
                     <span class="d-lg-flex flex-column gap-1 d-none">
                         <h5 class="my-0">
                             <?php if (Yii::$app->user->isGuest): ?>
-                                <?= Yii::t('app', 'Guest') ?>
+                                <?= Yii::t('app', 'Login') ?>
                             <?php else: ?>
                                 <?= Html::encode(Yii::$app->user->identity->username) ?>
                             <?php endif ?>

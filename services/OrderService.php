@@ -65,7 +65,10 @@ class OrderService
             $orderItem->order_id = (int) $order->id;
             $orderItem->product_id = $productId;
             $sizeValue = $this->resolveOrderItemSizeValue(is_array($row) ? $row : [], $productId, $sizeByProduct);
-            $orderItem->size_value = $sizeValue !== '' ? $sizeValue : null;
+            if ($sizeValue === null || $sizeValue === '') {
+                throw new \InvalidArgumentException('size_value is required for each order item.');
+            }
+            $orderItem->size_value = $sizeValue;
             $orderItem->name = $product->name;
             $orderItem->quantity = $quantity;
             $orderItem->unit_price = $unitPrice;
