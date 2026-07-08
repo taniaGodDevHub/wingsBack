@@ -340,7 +340,7 @@ use yii\web\UnauthorizedHttpException;
  * @OA\Patch(
  *     path="/api/auth/profile",
  *     summary="Обновить: профиль пользователя",
- *     description="actionProfile — Частичное обновление данных профиля. Поле `news_subscribed` — подписка на рассылку новостей (требуется подтверждённый email).",
+ *     description="actionProfile — Частичное обновление данных профиля. Поле `news_subscribed` — подписка на рассылку новостей (нужен email в профиле).",
  *     operationId="actionProfilePatch",
  *     tags={"Профиль"},
  *     security={{"bearerAuth": {}}},
@@ -357,6 +357,31 @@ use yii\web\UnauthorizedHttpException;
  *         @OA\MediaType(
  *             mediaType="application/json",
  *             @OA\Schema(ref="#/components/schemas/ProfileResponse")
+ *         )
+ *     ),
+ *     @OA\Response(response=401, ref="#/components/responses/unauthorized")
+ * )
+ *
+ * @OA\Post(
+ *     path="/api/auth/news_subscription",
+ *     summary="Подписка на рассылку новостей",
+ *     description="actionNewsSubscription — Отдельный метод для включения/выключения подписки на новости. При `news_subscribed=true` требуется, чтобы email был заполнен в профиле.",
+ *     operationId="actionNewsSubscription",
+ *     tags={"Профиль"},
+ *     security={{"bearerAuth": {}}},
+ *     @OA\RequestBody(
+ *         required=true,
+ *         @OA\MediaType(
+ *             mediaType="application/json",
+ *             @OA\Schema(ref="#/components/schemas/NewsSubscriptionRequest")
+ *         )
+ *     ),
+ *     @OA\Response(
+ *         response=200,
+ *         description="Подписка обновлена",
+ *         @OA\MediaType(
+ *             mediaType="application/json",
+ *             @OA\Schema(ref="#/components/schemas/NewsSubscriptionResponse")
  *         )
  *     ),
  *     @OA\Response(response=401, ref="#/components/responses/unauthorized")
@@ -593,6 +618,7 @@ class AuthController extends BaseApiController
                 'refresh-token' => ['POST'],
                 'my' => ['GET'],
                 'profile' => ['GET', 'PATCH'],
+                'news-subscription' => ['POST'],
                 'send-email-confirmation' => ['POST'],
                 'verify-email-confirmation' => ['POST'],
                 'my-addresses' => ['GET'],
@@ -752,6 +778,20 @@ class AuthController extends BaseApiController
         }
 
         return $this->profileService->getProfile($user);
+    }
+
+    public function actionNewsSubscription(): array
+    {
+        $user = $this->requireUser();
+        $body = Yii::$app->request->bodyParams;
+
+        if (!array_key_exists('news_subscribed', $body)) {
+            throw new BadRequestHttpException('news_subscribed is required.');
+        }
+
+        $subscribed = filter_var($body['news_subscribed'], FILTER_VALIDATE_BOOLEAN);
+
+        return $this->profileService->setNewsSubscription($user, $subscribed);
     }
 
     public function actionSendEmailConfirmation(): array

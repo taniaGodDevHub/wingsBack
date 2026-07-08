@@ -61,6 +61,8 @@ class OrderService
             $orderItem = new OrderItem();
             $orderItem->order_id = (int) $order->id;
             $orderItem->product_id = $productId;
+            $sizeValue = trim((string) ($row['size_value'] ?? ''));
+            $orderItem->size_value = $sizeValue !== '' ? $sizeValue : null;
             $orderItem->name = $product->name;
             $orderItem->quantity = $quantity;
             $orderItem->unit_price = $unitPrice;

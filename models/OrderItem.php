@@ -10,6 +10,7 @@ use yii\db\ActiveRecord;
  * @property int $id
  * @property int $order_id
  * @property int $product_id
+ * @property string|null $size_value
  * @property string $name
  * @property int $quantity
  * @property float $unit_price

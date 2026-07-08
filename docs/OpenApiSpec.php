@@ -51,7 +51,8 @@ use OpenApi\Annotations as OA;
  * `GET /api/contacts` — телефон, email, Telegram и время работы магазина.
  *
  * **Подписка на новости**
- * `PATCH /api/auth/profile` с `news_subscribed: true` — подписка на рассылку (нужен подтверждённый email в профиле).
+ * `POST /api/auth/news_subscription` — отдельный метод подписки/отписки от рассылки (`news_subscribed: true|false`).
+ * `PATCH /api/auth/profile` также поддерживает `news_subscribed`, но рекомендуется использовать отдельный endpoint подписки.
  *
  * **Подсказки адреса (DaData)**
  * `POST /api/dadata/suggest/city` или `POST /api/delivery/suggest-city` — подсказки населённого пункта (город). Используйте `data.city_fias_id` и `postal_code` для `GET /api/delivery/pvz`.

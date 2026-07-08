@@ -44,20 +44,7 @@ class ProfileService
         }
         if (array_key_exists('news_subscribed', $data)) {
             $subscribed = filter_var($data['news_subscribed'], FILTER_VALIDATE_BOOLEAN);
-            if ($subscribed) {
-                $email = trim((string) ($profile->email ?? ''));
-                if ($email === '') {
-                    throw ApiHttpException::validation([
-                        'news_subscribed' => [Yii::t('app', 'Add and confirm email in profile to subscribe to news.')],
-                    ]);
-                }
-                if (!$profile->email_confirmed) {
-                    throw ApiHttpException::validation([
-                        'news_subscribed' => [Yii::t('app', 'Confirm email in profile to subscribe to news.')],
-                    ]);
-                }
-            }
-            $profile->news_subscribed = $subscribed;
+            $this->applyNewsSubscription($profile, $subscribed);
         }
 
         if (!$profile->save()) {
@@ -65,6 +52,21 @@ class ProfileService
         }
 
         return $this->formatProfile($user, $profile);
+    }
+
+    public function setNewsSubscription(User $user, bool $subscribed): array
+    {
+        $profile = $this->requireProfile($user);
+        $this->applyNewsSubscription($profile, $subscribed);
+
+        if (!$profile->save()) {
+            throw ApiHttpException::validation(\app\components\api\ApiErrorHandler::validationDetail($profile));
+        }
+
+        return [
+            'ok' => true,
+            'news_subscribed' => (bool) $profile->news_subscribed,
+        ];
     }
 
     public function sendEmailConfirmation(User $user, string $email): array
@@ -109,5 +111,19 @@ class ProfileService
             'email_confirmed' => (bool) $profile->email_confirmed,
             'news_subscribed' => (bool) $profile->news_subscribed,
         ];
+    }
+
+    private function applyNewsSubscription(UserProfile $profile, bool $subscribed): void
+    {
+        if ($subscribed) {
+            $email = trim((string) ($profile->email ?? ''));
+            if ($email === '') {
+                throw ApiHttpException::validation([
+                    'news_subscribed' => [Yii::t('app', 'Add and confirm email in profile to subscribe to news.')],
+                ]);
+            }
+        }
+
+        $profile->news_subscribed = $subscribed;
     }
 }

@@ -173,7 +173,7 @@ final class AdminUserService
         };
     }
 
-    /** @return list<array{id: int, name: string, quantity: int, unit_price: float, total_price: float}> */
+    /** @return list<array{id: int, name: string, size_value: string|null, quantity: int, unit_price: float, total_price: float}> */
     public static function orderItemsSummary(ShopOrder $order): array
     {
         $items = [];
@@ -184,6 +184,7 @@ final class AdminUserService
             $items[] = [
                 'id' => (int) $item->id,
                 'name' => (string) $item->name,
+                'size_value' => $item->size_value !== null && $item->size_value !== '' ? (string) $item->size_value : null,
                 'quantity' => (int) $item->quantity,
                 'unit_price' => (float) $item->unit_price,
                 'total_price' => (float) $item->total_price,

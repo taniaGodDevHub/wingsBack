@@ -70,6 +70,7 @@ $config = [
                 'GET api/auth/my' => 'api/auth/my',
                 'GET api/auth/profile' => 'api/auth/profile',
                 'PATCH api/auth/profile' => 'api/auth/profile',
+                'POST api/auth/news_subscription' => 'api/auth/news-subscription',
                 'POST api/auth/send_email_confirmation' => 'api/auth/send-email-confirmation',
                 'POST api/auth/verify_email_confirmation' => 'api/auth/verify-email-confirmation',
                 'GET api/auth/my_addresses' => 'api/auth/my-addresses',

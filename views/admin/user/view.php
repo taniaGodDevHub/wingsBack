@@ -218,7 +218,10 @@ $currentRole = $roles[0] ?? 'user';
                             $collapseId = 'order-items-' . (int) $order->id;
                             ?>
                             <tr>
-                                <td class="text-nowrap">#<?= (int) $order->id ?></td>
+                                <td class="text-nowrap">
+                                    <div>#<?= (int) $order->id ?></div>
+                                    <div class="small text-muted"><?= Html::encode($order->code !== null && $order->code !== '' ? (string) $order->code : '—') ?></div>
+                                </td>
                                 <td class="text-nowrap"><?= Html::encode(AdminUserService::formatDateTime((int) $order->created_at)) ?></td>
                                 <td>
                                     <span class="badge <?= AdminUserService::orderStatusBadgeClass((string) $order->status) ?>">
@@ -234,7 +237,12 @@ $currentRole = $roles[0] ?? 'user';
                                 <td class="text-nowrap">
                                     <?= Html::encode($tracking?->track_number ?? $order->cdek_track_number ?? '—') ?>
                                 </td>
-                                <td class="text-end text-nowrap"><?= Html::encode(AdminUserService::formatMoney((float) $order->total_price)) ?></td>
+                                <td class="text-end text-nowrap">
+                                    <div><?= Html::encode(AdminUserService::formatMoney((float) $order->total_price)) ?></div>
+                                    <div class="small text-muted">
+                                        <?= Yii::t('app', 'Blago') ?>: <?= Html::encode(AdminUserService::formatMoney((float) $order->blago_total)) ?>
+                                    </div>
+                                </td>
                             </tr>
                             <?php if ($items !== []): ?>
                                 <tr>
@@ -252,6 +260,7 @@ $currentRole = $roles[0] ?? 'user';
                                                 <?php foreach ($items as $item): ?>
                                                     <li>
                                                         <?= Html::encode($item['name']) ?>
+                                                        · <?= Yii::t('app', 'Size') ?>: <?= Html::encode($item['size_value'] ?? '—') ?>
                                                         · <?= (int) $item['quantity'] ?> <?= Yii::t('app', 'pcs.') ?>
                                                         · <?= Html::encode(AdminUserService::formatMoney((float) $item['total_price'])) ?>
                                                     </li>

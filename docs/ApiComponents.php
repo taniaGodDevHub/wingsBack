@@ -124,7 +124,19 @@ use OpenApi\Annotations as OA;
  *     @OA\Property(property="gender", type="string"),
  *     @OA\Property(property="birth_date", type="string", format="date"),
  *     @OA\Property(property="password", type="string", format="password"),
- *     @OA\Property(property="news_subscribed", type="boolean", description="Подписка на рассылку новостей. Требуется подтверждённый email в профиле.")
+ *     @OA\Property(property="news_subscribed", type="boolean", description="Подписка на рассылку новостей. Требуется email в профиле.")
+ * )
+ *
+ * @OA\Schema(
+ *     schema="NewsSubscriptionRequest",
+ *     required={"news_subscribed"},
+ *     @OA\Property(property="news_subscribed", type="boolean", description="true — подписать на рассылку, false — отписать")
+ * )
+ *
+ * @OA\Schema(
+ *     schema="NewsSubscriptionResponse",
+ *     @OA\Property(property="ok", type="boolean", example=true),
+ *     @OA\Property(property="news_subscribed", type="boolean", example=true)
  * )
  *
  * @OA\Schema(
