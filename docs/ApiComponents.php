@@ -378,6 +378,16 @@ use OpenApi\Annotations as OA;
  * )
  *
  * @OA\Schema(
+ *     schema="BlagoOrderInfoResponse",
+ *     description="Данные заказа по коду благо",
+ *     @OA\Property(property="order_id", type="integer", example=27, description="Номер заказа"),
+ *     @OA\Property(property="code", type="string", example="blago7418"),
+ *     @OA\Property(property="created_at", type="string", format="date-time", example="2026-07-08T08:00:00+00:00", description="Дата создания заказа"),
+ *     @OA\Property(property="total_price", type="number", format="float", example=5660),
+ *     @OA\Property(property="blago_total", type="number", format="float", example=200)
+ * )
+ *
+ * @OA\Schema(
  *     schema="ContactWorkHours",
  *     @OA\Property(property="from", type="string", example="10:00"),
  *     @OA\Property(property="to", type="string", example="22:00")

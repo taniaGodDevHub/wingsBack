@@ -101,6 +101,7 @@ $config = [
                 'GET api/news' => 'api/news/index',
                 'GET api/news/<slug>' => 'api/news/view',
                 'GET api/blago' => 'api/blago/index',
+                'GET api/blago/order/<code:[A-Za-z0-9_-]+>' => 'api/blago/order',
                 'GET api/contacts' => 'api/contacts/index',
                 'POST api/favorites/add' => 'api/favorites/add',
                 'POST api/favorites/remove' => 'api/favorites/remove',

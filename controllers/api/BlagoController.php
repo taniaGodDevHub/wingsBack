@@ -41,6 +41,37 @@ use yii\filters\VerbFilter;
  *         )
  *     )
  * )
+ *
+ * @OA\Get(
+ *     path="/api/blago/order/{code}",
+ *     summary="Информация о заказе по коду благо",
+ *     description="Возвращает номер заказа, дату, сумму заказа и сумму благо по коду `blagoXXXX`.",
+ *     operationId="blagoOrderByCode",
+ *     tags={"Благо"},
+ *     @OA\Parameter(
+ *         name="code",
+ *         in="path",
+ *         required=true,
+ *         description="Код заказа вида blagoXXXX",
+ *         @OA\Schema(type="string", example="blago7418")
+ *     ),
+ *     @OA\Response(
+ *         response=200,
+ *         description="Данные заказа по коду благо",
+ *         @OA\MediaType(
+ *             mediaType="application/json",
+ *             @OA\Schema(ref="#/components/schemas/BlagoOrderInfoResponse")
+ *         )
+ *     ),
+ *     @OA\Response(
+ *         response=404,
+ *         description="Заказ с указанным кодом не найден",
+ *         @OA\MediaType(
+ *             mediaType="application/json",
+ *             @OA\Schema(@OA\Property(property="detail", type="string", example="Order not found"))
+ *         )
+ *     )
+ * )
  */
 class BlagoController extends BaseApiController
 {
@@ -60,6 +91,7 @@ class BlagoController extends BaseApiController
             'class' => VerbFilter::class,
             'actions' => [
                 'index' => ['GET'],
+                'order' => ['GET'],
             ],
         ];
 
@@ -72,6 +104,17 @@ class BlagoController extends BaseApiController
         $data = $this->blago->getForApi();
         if ($data === null) {
             throw ApiHttpException::notFound('Blago not found');
+        }
+
+        return $data;
+    }
+
+    /** @return array{order_id: int, code: string, created_at: string, total_price: float, blago_total: float} */
+    public function actionOrder(string $code): array
+    {
+        $data = $this->blago->getOrderByBlagoCode($code);
+        if ($data === null) {
+            throw ApiHttpException::notFound('Order not found');
         }
 
         return $data;

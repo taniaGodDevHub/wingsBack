@@ -40,6 +40,7 @@ use OpenApi\Annotations as OA;
  *
  * **Благо**
  * `GET /api/blago` — блок сбора блага (title, collection_start_at, collection_end_at, amount, image_url). Если блок не заполнен — 404.
+ * `GET /api/blago/order/{code}` — информация о заказе по коду благо: номер заказа, дата, сумма заказа и сумма благо.
  * У каждого товара в каталоге есть поле `blago` (сумма в ₽ на единицу). В корзине: `summary.blago_total` и `blago_amount` у позиции. В заказе: `blago_total`.
  *
  * **Заказы**
