@@ -7,61 +7,12 @@ namespace app\controllers\api;
 use app\components\api\BaseApiController;
 use app\components\dadata\DaDataClient;
 use app\components\dadata\DaDataSuggestionFormatter;
-use OpenApi\Annotations as OA;
 use Yii;
 use yii\filters\VerbFilter;
 
 /**
- * @OA\Tag(
- *     name="DaData",
- *     description="Подсказки города и адреса через DaData. Для checkout также доступен POST /api/delivery/suggest-address."
- * )
- *
- * @OA\Post(
- *     path="/api/dadata/suggest/city",
- *     summary="Подсказки города (DaData)",
- *     description="Поиск населённого пункта по названию. Используйте `data.city_fias_id` из ответа в `GET /api/delivery/pvz` и при расчёте доставки. Авторизация не требуется.",
- *     operationId="DaDataController.actionSuggestCity",
- *     tags={"DaData"},
- *     @OA\RequestBody(
- *         required=true,
- *         @OA\MediaType(
- *             mediaType="application/json",
- *             @OA\Schema(ref="#/components/schemas/DaDataSuggestRequest")
- *         )
- *     ),
- *     @OA\Response(
- *         response=200,
- *         description="Список городов",
- *         @OA\MediaType(
- *             mediaType="application/json",
- *             @OA\Schema(ref="#/components/schemas/DaDataSuggestResponse")
- *         )
- *     )
- * )
- *
- * @OA\Post(
- *     path="/api/dadata/suggest/address",
- *     summary="Подсказки полного адреса (DaData)",
- *     description="Поиск по строке адреса (город, улица, дом). Для checkout предпочтительнее POST /api/delivery/suggest-address.",
- *     operationId="DaDataController.actionSuggestAddress",
- *     tags={"DaData"},
- *     @OA\RequestBody(
- *         required=true,
- *         @OA\MediaType(
- *             mediaType="application/json",
- *             @OA\Schema(ref="#/components/schemas/DaDataSuggestRequest")
- *         )
- *     ),
- *     @OA\Response(
- *         response=200,
- *         description="Список подсказок",
- *         @OA\MediaType(
- *             mediaType="application/json",
- *             @OA\Schema(ref="#/components/schemas/DaDataSuggestResponse")
- *         )
- *     )
- * )
+ * Legacy controller for DaData endpoints.
+ * OpenAPI annotations are defined in DeliveryController to avoid duplicates.
  */
 class DaDataController extends BaseApiController
 {
