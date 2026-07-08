@@ -892,6 +892,7 @@ use OpenApi\Annotations as OA;
  *     @OA\Property(property="order_item_id", type="integer"),
  *     @OA\Property(property="product_id", type="integer"),
  *     @OA\Property(property="name", type="string"),
+ *     @OA\Property(property="size_value", type="string", nullable=true, example="M"),
  *     @OA\Property(property="quantity", type="integer"),
  *     @OA\Property(property="unit_price", type="number", format="float"),
  *     @OA\Property(property="delivery_label", type="string", nullable=true)

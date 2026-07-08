@@ -323,6 +323,7 @@ class OrderService
                 'order_item_id' => (int) $item->id,
                 'product_id' => (int) $item->product_id,
                 'name' => $item->name,
+                'size_value' => $item->size_value !== null ? (string) $item->size_value : null,
                 'quantity' => (int) $item->quantity,
                 'unit_price' => (float) $item->unit_price,
                 'delivery_label' => $item->delivery_label,
