@@ -50,7 +50,6 @@ final class NewsNewsletterService
             ->select('p.email')
             ->where([
                 'p.news_subscribed' => true,
-                'p.email_confirmed' => true,
                 'u.status' => User::STATUS_ACTIVE,
             ])
             ->andWhere(['not', ['p.email' => null]])
