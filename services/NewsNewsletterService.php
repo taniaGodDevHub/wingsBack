@@ -6,8 +6,8 @@ namespace app\services;
 
 use app\components\mail\NewsNewsletterMailer;
 use app\models\News;
+use app\models\NewsSubscriptionEmail;
 use app\models\User;
-use app\models\UserProfile;
 use Yii;
 
 final class NewsNewsletterService
@@ -22,12 +22,7 @@ final class NewsNewsletterService
         $mailer = new NewsNewsletterMailer();
         $sent = 0;
 
-        foreach ($this->findSubscribers() as $profile) {
-            $email = mb_strtolower(trim((string) $profile->email));
-            if ($email === '') {
-                continue;
-            }
-
+        foreach ($this->findSubscriberEmails() as $email) {
             try {
                 if ($mailer->sendArticleNotification($email, $news, $articleUrl)) {
                     ++$sent;
@@ -46,12 +41,13 @@ final class NewsNewsletterService
         return $sent;
     }
 
-    /** @return UserProfile[] */
-    private function findSubscribers(): array
+    /** @return string[] */
+    private function findSubscriberEmails(): array
     {
-        return UserProfile::find()
+        $profileEmails = \app\models\UserProfile::find()
             ->alias('p')
             ->innerJoin(['u' => User::tableName()], 'u.id = p.user_id')
+            ->select('p.email')
             ->where([
                 'p.news_subscribed' => true,
                 'p.email_confirmed' => true,
@@ -59,7 +55,25 @@ final class NewsNewsletterService
             ])
             ->andWhere(['not', ['p.email' => null]])
             ->andWhere(['<>', 'p.email', ''])
-            ->all();
+            ->asArray()
+            ->column();
+
+        $externalEmails = NewsSubscriptionEmail::find()
+            ->select('email')
+            ->asArray()
+            ->column();
+
+        $allEmails = array_map(
+            static fn (string $email): string => mb_strtolower(trim($email)),
+            array_merge($profileEmails, $externalEmails),
+        );
+
+        $allEmails = array_values(array_unique(array_filter(
+            $allEmails,
+            static fn (string $email): bool => $email !== '',
+        )));
+
+        return $allEmails;
     }
 
     private function buildArticleUrl(News $news): string

@@ -51,7 +51,10 @@ use OpenApi\Annotations as OA;
  * `GET /api/contacts` — телефон, email, Telegram и время работы магазина.
  *
  * **Подписка на новости**
- * `POST /api/auth/news_subscription` — отдельный метод подписки/отписки от рассылки (`news_subscribed: true|false`).
+ * `POST /api/auth/news_subscription` — подписка email на рассылку новостей.
+ * `POST /api/auth/news_unsubscribe` — отмена подписки по email.
+ * Если email найден в `user_profile`, обновляется `news_subscribed` в профиле.
+ * Если email не привязан к пользователю, он хранится в отдельной таблице рассылки.
  * `PATCH /api/auth/profile` также поддерживает `news_subscribed`, но рекомендуется использовать отдельный endpoint подписки.
  *
  * **Подсказки адреса (DaData)**

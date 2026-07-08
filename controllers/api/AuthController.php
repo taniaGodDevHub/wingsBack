@@ -9,6 +9,7 @@ use yii\filters\auth\HttpBearerAuth;
 use app\components\auth\JwtService;
 use app\services\AddressService;
 use app\services\AuthService;
+use app\services\NewsSubscriptionService;
 use app\services\ProfileService;
 use OpenApi\Annotations as OA;
 use Yii;
@@ -365,10 +366,9 @@ use yii\web\UnauthorizedHttpException;
  * @OA\Post(
  *     path="/api/auth/news_subscription",
  *     summary="Подписка на рассылку новостей",
- *     description="actionNewsSubscription — Отдельный метод для включения/выключения подписки на новости. При `news_subscribed=true` требуется, чтобы email был заполнен в профиле.",
+ *     description="actionNewsSubscription — Подписывает email на новости. Если email найден в профиле, обновляется профильная подписка. Если профиль не найден, email сохраняется в отдельной таблице рассылки.",
  *     operationId="actionNewsSubscription",
  *     tags={"Профиль"},
- *     security={{"bearerAuth": {}}},
  *     @OA\RequestBody(
  *         required=true,
  *         @OA\MediaType(
@@ -383,8 +383,30 @@ use yii\web\UnauthorizedHttpException;
  *             mediaType="application/json",
  *             @OA\Schema(ref="#/components/schemas/NewsSubscriptionResponse")
  *         )
+ *     )
+ * )
+ *
+ * @OA\Post(
+ *     path="/api/auth/news_unsubscribe",
+ *     summary="Отмена подписки на рассылку новостей",
+ *     description="actionNewsUnsubscribe — Отписывает email от новостей. Если email найден в профиле, отключается профильная подписка. Если профиля нет, email удаляется из отдельной таблицы рассылки.",
+ *     operationId="actionNewsUnsubscribe",
+ *     tags={"Профиль"},
+ *     @OA\RequestBody(
+ *         required=true,
+ *         @OA\MediaType(
+ *             mediaType="application/json",
+ *             @OA\Schema(ref="#/components/schemas/NewsUnsubscribeRequest")
+ *         )
  *     ),
- *     @OA\Response(response=401, ref="#/components/responses/unauthorized")
+ *     @OA\Response(
+ *         response=200,
+ *         description="Подписка отменена",
+ *         @OA\MediaType(
+ *             mediaType="application/json",
+ *             @OA\Schema(ref="#/components/schemas/NewsSubscriptionResponse")
+ *         )
+ *     )
  * )
  *
  * @OA\Post(
@@ -601,6 +623,8 @@ class AuthController extends BaseApiController
                 'login-phone-with-code',
                 'login-email-with-code',
                 'refresh-token',
+                'news-subscription',
+                'news-unsubscribe',
             ],
         ];
         $behaviors['verbs'] = [
@@ -619,6 +643,7 @@ class AuthController extends BaseApiController
                 'my' => ['GET'],
                 'profile' => ['GET', 'PATCH'],
                 'news-subscription' => ['POST'],
+                'news-unsubscribe' => ['POST'],
                 'send-email-confirmation' => ['POST'],
                 'verify-email-confirmation' => ['POST'],
                 'my-addresses' => ['GET'],
@@ -782,16 +807,24 @@ class AuthController extends BaseApiController
 
     public function actionNewsSubscription(): array
     {
-        $user = $this->requireUser();
         $body = Yii::$app->request->bodyParams;
-
-        if (!array_key_exists('news_subscribed', $body)) {
-            throw new BadRequestHttpException('news_subscribed is required.');
+        $email = (string) ($body['email'] ?? '');
+        if ($email === '') {
+            throw new BadRequestHttpException('email is required.');
         }
 
-        $subscribed = filter_var($body['news_subscribed'], FILTER_VALIDATE_BOOLEAN);
+        return (new NewsSubscriptionService())->subscribeByEmail($email);
+    }
 
-        return $this->profileService->setNewsSubscription($user, $subscribed);
+    public function actionNewsUnsubscribe(): array
+    {
+        $body = Yii::$app->request->bodyParams;
+        $email = (string) ($body['email'] ?? '');
+        if ($email === '') {
+            throw new BadRequestHttpException('email is required.');
+        }
+
+        return (new NewsSubscriptionService())->unsubscribeByEmail($email);
     }
 
     public function actionSendEmailConfirmation(): array

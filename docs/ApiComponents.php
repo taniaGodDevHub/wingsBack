@@ -123,20 +123,29 @@ use OpenApi\Annotations as OA;
  *     @OA\Property(property="surname", type="string"),
  *     @OA\Property(property="gender", type="string"),
  *     @OA\Property(property="birth_date", type="string", format="date"),
+ *     @OA\Property(property="email", type="string", format="email", nullable=true, description="Email профиля. При изменении флаг email_confirmed сбрасывается до повторного подтверждения."),
  *     @OA\Property(property="password", type="string", format="password"),
  *     @OA\Property(property="news_subscribed", type="boolean", description="Подписка на рассылку новостей. Требуется email в профиле.")
  * )
  *
  * @OA\Schema(
  *     schema="NewsSubscriptionRequest",
- *     required={"news_subscribed"},
- *     @OA\Property(property="news_subscribed", type="boolean", description="true — подписать на рассылку, false — отписать")
+ *     required={"email"},
+ *     @OA\Property(property="email", type="string", format="email", example="user@example.com")
+ * )
+ *
+ * @OA\Schema(
+ *     schema="NewsUnsubscribeRequest",
+ *     required={"email"},
+ *     @OA\Property(property="email", type="string", format="email", example="user@example.com")
  * )
  *
  * @OA\Schema(
  *     schema="NewsSubscriptionResponse",
  *     @OA\Property(property="ok", type="boolean", example=true),
- *     @OA\Property(property="news_subscribed", type="boolean", example=true)
+ *     @OA\Property(property="email", type="string", format="email", example="user@example.com"),
+ *     @OA\Property(property="news_subscribed", type="boolean", example=true),
+ *     @OA\Property(property="source", type="string", enum={"profile","newsletter"}, example="profile", description="Источник, в котором обновлена подписка")
  * )
  *
  * @OA\Schema(

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace app\services;
 
 use app\components\api\ApiHttpException;
+use app\components\api\ApiErrorHandler;
 use app\models\User;
 use app\models\UserProfile;
 use Yii;
@@ -23,6 +24,7 @@ class ProfileService
     public function updateProfile(User $user, array $data): array
     {
         $profile = $this->requireProfile($user);
+        $subscriptionService = new NewsSubscriptionService();
 
         if (isset($data['name'])) {
             $profile->name = (string) $data['name'];
@@ -38,6 +40,19 @@ class ProfileService
         if (isset($data['birth_date']) && $data['birth_date'] !== '') {
             $profile->birth_date = (string) $data['birth_date'];
         }
+        if (array_key_exists('email', $data)) {
+            $email = mb_strtolower(trim((string) $data['email']));
+            if ($email !== '' && !filter_var($email, FILTER_VALIDATE_EMAIL)) {
+                throw ApiHttpException::validation(['email' => ['Invalid email.']]);
+            }
+
+            if ($profile->email !== $email) {
+                $profile->email = $email !== '' ? $email : null;
+                $profile->email_confirmed = false;
+            }
+
+            $subscriptionService->syncProfileEmail($profile);
+        }
         if (!empty($data['password'])) {
             $user->setPassword((string) $data['password']);
             $user->save(false);
@@ -48,7 +63,7 @@ class ProfileService
         }
 
         if (!$profile->save()) {
-            throw ApiHttpException::validation(\app\components\api\ApiErrorHandler::validationDetail($profile));
+            throw ApiHttpException::validation(ApiErrorHandler::validationDetail($profile));
         }
 
         return $this->formatProfile($user, $profile);
@@ -60,7 +75,7 @@ class ProfileService
         $this->applyNewsSubscription($profile, $subscribed);
 
         if (!$profile->save()) {
-            throw ApiHttpException::validation(\app\components\api\ApiErrorHandler::validationDetail($profile));
+            throw ApiHttpException::validation(ApiErrorHandler::validationDetail($profile));
         }
 
         return [
