@@ -7,6 +7,8 @@ namespace app\services;
 use app\components\api\ApiHttpException;
 use app\components\api\CheckoutApiException;
 use app\components\cdek\OrderTrackingWriter;
+use app\models\Cart;
+use app\models\CartItem;
 use app\models\OrderItem;
 use app\models\OrderTracking;
 use app\models\Product;
@@ -41,6 +43,7 @@ class OrderService
 
         $total = 0.0;
         $blagoTotal = 0.0;
+        $sizeByProduct = $this->activeCartSingleSizeMap((int) $user->id);
         foreach ($items as $row) {
             $productId = (int) ($row['product_id'] ?? 0);
             $quantity = max(1, (int) ($row['quantity'] ?? 1));
@@ -61,7 +64,7 @@ class OrderService
             $orderItem = new OrderItem();
             $orderItem->order_id = (int) $order->id;
             $orderItem->product_id = $productId;
-            $sizeValue = trim((string) ($row['size_value'] ?? ''));
+            $sizeValue = $this->resolveOrderItemSizeValue(is_array($row) ? $row : [], $productId, $sizeByProduct);
             $orderItem->size_value = $sizeValue !== '' ? $sizeValue : null;
             $orderItem->name = $product->name;
             $orderItem->quantity = $quantity;
@@ -81,6 +84,48 @@ class OrderService
             'status' => $order->status,
             'blago_total' => (float) $order->blago_total,
         ];
+    }
+
+    /**
+     * @param array<string, mixed> $row
+     * @param array<int, string> $sizeByProduct
+     */
+    private function resolveOrderItemSizeValue(array $row, int $productId, array $sizeByProduct): ?string
+    {
+        $sizeValue = trim((string) ($row['size_value'] ?? ''));
+        if ($sizeValue !== '') {
+            return $sizeValue;
+        }
+
+        return $sizeByProduct[$productId] ?? null;
+    }
+
+    /** @return array<int, string> */
+    private function activeCartSingleSizeMap(int $userId): array
+    {
+        $cart = Cart::findActiveForUser($userId);
+        if ($cart === null) {
+            return [];
+        }
+
+        $grouped = [];
+        foreach (CartItem::find()->where(['cart_id' => (int) $cart->id])->all() as $item) {
+            $productId = (int) $item->product_id;
+            $sizeValue = trim((string) $item->size_value);
+            if ($sizeValue === '') {
+                continue;
+            }
+            $grouped[$productId][$sizeValue] = true;
+        }
+
+        $result = [];
+        foreach ($grouped as $productId => $sizes) {
+            if (count($sizes) === 1) {
+                $result[(int) $productId] = (string) array_key_first($sizes);
+            }
+        }
+
+        return $result;
     }
 
     public function getActive(int $userId): array
