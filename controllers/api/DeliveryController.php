@@ -112,6 +112,8 @@ use yii\web\UnauthorizedHttpException;
  *
  * **Сценарий 2 — пользователь уточнил адрес** через подсказку: дополнительно передайте `postal_code`, `geo_lat`, `geo_lon` (и при необходимости `fias_guid` из `data.address_fias_id`) — список сузится и отсортируется по близости; в каждом пункте появится `distance_km`. Пагинация `page` работает так же.
  *
+ * **Сценарий 3 — карта ПВЗ** (`all=true`): вернуть все пункты города одним запросом для отображения на карте. `page` и `count` игнорируются. В `meta` приходит `total`; если город очень большой и достигнут лимит `cdekPvzMapMaxPoints`, в `meta.truncated=true`.
+ *
  * `city_fias_id` — обязателен (FIAS города из DaData). `delivery_method_id=1` — доставка до ПВЗ. В production ответ содержит реальные ПВЗ СДЭК выбранного города.",
  *     operationId="DeliveryController.actionPvz",
  *     tags={"Доставка"},
@@ -123,6 +125,7 @@ use yii\web\UnauthorizedHttpException;
  *     @OA\Parameter(name="fias_guid", in="query", @OA\Schema(type="string", description="FIAS адреса из подсказки (data.address_fias_id) — дополнительное сужение")),
  *     @OA\Parameter(name="geo_lat", in="query", @OA\Schema(type="number", format="float", description="Широта из подсказки (data.geo_lat) — сортировка по близости")),
  *     @OA\Parameter(name="geo_lon", in="query", @OA\Schema(type="number", format="float", description="Долгота из подсказки (data.geo_lon) — сортировка по близости")),
+ *     @OA\Parameter(name="all", in="query", @OA\Schema(type="boolean", default=false, description="true — вернуть все ПВЗ города для карты (без пагинации). Параметры page и count игнорируются.")),
  *     @OA\Response(
  *         response=200,
  *         description="Список ПВЗ с метаданными пагинации",
@@ -131,7 +134,8 @@ use yii\web\UnauthorizedHttpException;
  *             @OA\Schema(ref="#/components/schemas/CdekPvzListResponse"),
  *             @OA\Examples(example="page1", ref="#/components/examples/cdek-pvz-page1"),
  *             @OA\Examples(example="page2", ref="#/components/examples/cdek-pvz-page2"),
- *             @OA\Examples(example="geo", ref="#/components/examples/cdek-pvz-geo")
+ *             @OA\Examples(example="geo", ref="#/components/examples/cdek-pvz-geo"),
+ *             @OA\Examples(example="all", ref="#/components/examples/cdek-pvz-all")
  *         )
  *     )
  * )
@@ -249,6 +253,7 @@ class DeliveryController extends BaseApiController
         $fiasGuid = trim((string) Yii::$app->request->get('fias_guid', ''));
         $geoLat = $this->optionalGeoCoordinate(Yii::$app->request->get('geo_lat'), 'geo_lat');
         $geoLon = $this->optionalGeoCoordinate(Yii::$app->request->get('geo_lon'), 'geo_lon');
+        $all = $this->parseBooleanQuery(Yii::$app->request->get('all'));
 
         if ($cityFiasId === '') {
             throw new \InvalidArgumentException('city_fias_id is required.');
@@ -266,6 +271,7 @@ class DeliveryController extends BaseApiController
             $fiasGuid,
             $geoLat,
             $geoLon,
+            $all,
         );
 
         return [
@@ -285,6 +291,18 @@ class DeliveryController extends BaseApiController
         }
 
         return (float) $value;
+    }
+
+    private function parseBooleanQuery(mixed $value): bool
+    {
+        if ($value === null || $value === '') {
+            return false;
+        }
+        if (is_bool($value)) {
+            return $value;
+        }
+
+        return in_array(strtolower((string) $value), ['1', 'true', 'yes', 'on'], true);
     }
 
     public function actionCalculateDelivery(): array

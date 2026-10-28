@@ -42,10 +42,22 @@ $showHex = $colorFeatureId !== null
     if (!select || !hexField) {
         return;
     }
-    var colorFeatureId = String(select.dataset.colorFeatureId || '');
+    var colorFeatureId = String(select.dataset.colorFeatureId || select.getAttribute('data-color-feature-id') || '');
+    var hexInput = hexField.querySelector('.hex-color-field__text');
+    var hexPicker = hexField.querySelector('.hex-color-field__picker');
+
     function toggleHex() {
-        var show = select.value === colorFeatureId;
+        var show = colorFeatureId !== '' && String(select.value) === colorFeatureId;
         hexField.classList.toggle('d-none', !show);
+        if (hexInput) {
+            hexInput.disabled = !show;
+            if (!show) {
+                hexInput.value = '';
+            }
+        }
+        if (hexPicker) {
+            hexPicker.disabled = !show;
+        }
         if (show && window.initHexColorFields) {
             window.initHexColorFields();
         }

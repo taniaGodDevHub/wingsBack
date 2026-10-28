@@ -38,5 +38,6 @@ return [
     'cdekFromCityCode' => 424,
     'cdekDefaultTariffCode' => 136,
     'cdekDefaultPackageWeightGrams' => 500,
+    'cdekPvzMapMaxPoints' => 2000,
     'cdekCreateOnConfirm' => false,
 ];

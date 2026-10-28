@@ -29,18 +29,42 @@ class CatalogFeatureValue extends ActiveRecord
             [['name'], 'string', 'max' => 255],
             [['slug'], 'string', 'max' => 255],
             [['hex'], 'string', 'max' => 7],
-            [['hex'], 'required', 'when' => static function (self $model): bool {
-                $feature = $model->feature ?? CatalogFeature::findOne($model->feature_id);
-
-                return $feature !== null && $feature->isColor();
-            }],
+            [['hex'], 'required',
+                'when' => static function (self $model): bool {
+                    return $model->isColorFeatureSelected();
+                },
+                // Без whenClient ActiveForm всегда требует hex, даже если поле скрыто — форма «ничего не делает».
+                'whenClient' => 'function (attribute, value) {'
+                    . 'var select = document.querySelector(\'#feature-value-form select[name="CatalogFeatureValue[feature_id]"]\');'
+                    . 'if (!select) { return false; }'
+                    . 'var colorFeatureId = String(select.getAttribute("data-color-feature-id") || "");'
+                    . 'return colorFeatureId !== "" && String(select.value) === colorFeatureId;'
+                    . '}',
+            ],
         ];
+    }
+
+    public function beforeValidate(): bool
+    {
+        if (!parent::beforeValidate()) {
+            return false;
+        }
+
+        if (!$this->isColorFeatureSelected()) {
+            $this->hex = null;
+        }
+
+        return true;
     }
 
     public function beforeSave($insert): bool
     {
         if (!parent::beforeSave($insert)) {
             return false;
+        }
+
+        if (!$this->isColorFeatureSelected()) {
+            $this->hex = null;
         }
 
         if ($this->hasAttribute('slug') && ($this->slug === '' || $this->slug === null)) {
@@ -51,6 +75,16 @@ class CatalogFeatureValue extends ActiveRecord
         }
 
         return true;
+    }
+
+    public function isColorFeatureSelected(): bool
+    {
+        $feature = $this->feature;
+        if ($feature === null && $this->feature_id !== null && (int) $this->feature_id > 0) {
+            $feature = CatalogFeature::findOne((int) $this->feature_id);
+        }
+
+        return $feature !== null && $feature->isColor();
     }
 
     public static function ensureForColor(Color $color): ?self

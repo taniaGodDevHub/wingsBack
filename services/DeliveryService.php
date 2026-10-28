@@ -130,7 +130,7 @@ final class DeliveryService
         ];
     }
 
-    /** @return array{items: list<array<string, mixed>>, meta: array{page: int, count: int, has_more: bool}} */
+    /** @return array{items: list<array<string, mixed>>, meta: array{page: int, count: int, has_more: bool, total?: int, truncated?: bool}} */
     public function listPvzPoints(
         string $cityFiasId,
         int $deliveryMethodId,
@@ -140,6 +140,7 @@ final class DeliveryService
         ?string $fiasGuid = null,
         ?float $geoLat = null,
         ?float $geoLon = null,
+        bool $all = false,
     ): array {
         if ($deliveryMethodId !== self::METHOD_CDEK_PVZ_ID) {
             throw new \InvalidArgumentException('PVZ list is available only for cdek_pvz delivery method.');
@@ -150,6 +151,16 @@ final class DeliveryService
             null,
             $postalCode !== '' ? $postalCode : null,
         );
+
+        if ($all) {
+            return $this->cdek->listAllDeliveryPoints(
+                $cityCode,
+                $postalCode !== '' ? $postalCode : null,
+                $fiasGuid !== '' ? $fiasGuid : null,
+                $geoLat,
+                $geoLon,
+            );
+        }
 
         return $this->cdek->listDeliveryPoints(
             $cityCode,

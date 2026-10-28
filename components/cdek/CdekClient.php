@@ -75,6 +75,33 @@ final class CdekClient extends Component
     /**
      * @return array{
      *     items: list<array<string, mixed>>,
+     *     meta: array{page: int, count: int, has_more: bool, total: int, truncated?: bool}
+     * }
+     */
+    public function listAllDeliveryPoints(
+        int $cityCode,
+        ?string $postalCode = null,
+        ?string $fiasGuid = null,
+        ?float $geoLat = null,
+        ?float $geoLon = null,
+    ): array {
+        if ($this->shouldUseMockData()) {
+            $points = $this->prepareMockDeliveryPoints($cityCode, $postalCode, $fiasGuid, $geoLat, $geoLon);
+
+            return $this->allDeliveryPointsResult(
+                $this->sortDeliveryPointsByGeo($points, $geoLat, $geoLon),
+            );
+        }
+
+        $fetchResult = $this->fetchAllDeliveryPointRows($cityCode, $postalCode, $fiasGuid);
+        $points = $this->sortDeliveryPointsByGeo($fetchResult['points'], $geoLat, $geoLon);
+
+        return $this->allDeliveryPointsResult($points, $fetchResult['truncated']);
+    }
+
+    /**
+     * @return array{
+     *     items: list<array<string, mixed>>,
      *     meta: array{page: int, count: int, has_more: bool}
      * }
      */
@@ -92,11 +119,13 @@ final class CdekClient extends Component
 
         if ($this->shouldUseMockData()) {
             return $this->paginateDeliveryPoints(
-                $this->prepareMockDeliveryPoints($cityCode, $postalCode, $fiasGuid, $geoLat, $geoLon),
+                $this->sortDeliveryPointsByGeo(
+                    $this->prepareMockDeliveryPoints($cityCode, $postalCode, $fiasGuid, $geoLat, $geoLon),
+                    $geoLat,
+                    $geoLon,
+                ),
                 $page,
                 $limit,
-                $geoLat,
-                $geoLon,
             );
         }
 
@@ -120,7 +149,11 @@ final class CdekClient extends Component
                 $this->assertCdekApiResponded('/v2/deliverypoints', $response);
             }
 
-            return $this->paginateDeliveryPoints($points, $page, $limit, $geoLat, $geoLon);
+            return $this->paginateDeliveryPoints(
+                $this->sortDeliveryPointsByGeo($points, $geoLat, $geoLon),
+                $page,
+                $limit,
+            );
         }
 
         $query['page'] = (string) ($page - 1);
@@ -358,42 +391,7 @@ final class CdekClient extends Component
         array $points,
         int $page,
         int $limit,
-        ?float $geoLat,
-        ?float $geoLon,
     ): array {
-        if ($geoLat !== null && $geoLon !== null) {
-            usort($points, function (array $left, array $right) use ($geoLat, $geoLon): int {
-                $leftDistance = $this->distanceKm(
-                    $geoLat,
-                    $geoLon,
-                    isset($left['lat']) ? (float) $left['lat'] : null,
-                    isset($left['lon']) ? (float) $left['lon'] : null,
-                );
-                $rightDistance = $this->distanceKm(
-                    $geoLat,
-                    $geoLon,
-                    isset($right['lat']) ? (float) $right['lat'] : null,
-                    isset($right['lon']) ? (float) $right['lon'] : null,
-                );
-
-                return $leftDistance <=> $rightDistance;
-            });
-
-            $points = array_map(function (array $point) use ($geoLat, $geoLon): array {
-                $distanceKm = $this->distanceKm(
-                    $geoLat,
-                    $geoLon,
-                    isset($point['lat']) ? (float) $point['lat'] : null,
-                    isset($point['lon']) ? (float) $point['lon'] : null,
-                );
-                if ($distanceKm !== null) {
-                    $point['distance_km'] = round($distanceKm, 1);
-                }
-
-                return $point;
-            }, $points);
-        }
-
         $offset = ($page - 1) * $limit;
         $slice = array_slice($points, $offset, $limit + 1);
         $hasMore = count($slice) > $limit;
@@ -406,6 +404,140 @@ final class CdekClient extends Component
                 'count' => count($items),
                 'has_more' => $hasMore,
             ],
+        ];
+    }
+
+    /**
+     * @param list<array<string, mixed>> $points
+     * @return list<array<string, mixed>>
+     */
+    private function sortDeliveryPointsByGeo(array $points, ?float $geoLat, ?float $geoLon): array
+    {
+        if ($geoLat === null || $geoLon === null) {
+            return $points;
+        }
+
+        usort($points, function (array $left, array $right) use ($geoLat, $geoLon): int {
+            $leftDistance = $this->distanceKm(
+                $geoLat,
+                $geoLon,
+                isset($left['lat']) ? (float) $left['lat'] : null,
+                isset($left['lon']) ? (float) $left['lon'] : null,
+            );
+            $rightDistance = $this->distanceKm(
+                $geoLat,
+                $geoLon,
+                isset($right['lat']) ? (float) $right['lat'] : null,
+                isset($right['lon']) ? (float) $right['lon'] : null,
+            );
+
+            return $leftDistance <=> $rightDistance;
+        });
+
+        return array_map(function (array $point) use ($geoLat, $geoLon): array {
+            $distanceKm = $this->distanceKm(
+                $geoLat,
+                $geoLon,
+                isset($point['lat']) ? (float) $point['lat'] : null,
+                isset($point['lon']) ? (float) $point['lon'] : null,
+            );
+            if ($distanceKm !== null) {
+                $point['distance_km'] = round($distanceKm, 1);
+            }
+
+            return $point;
+        }, $points);
+    }
+
+    /**
+     * @param list<array<string, mixed>> $points
+     * @return array{
+     *     items: list<array<string, mixed>>,
+     *     meta: array{page: int, count: int, has_more: bool, total: int, truncated?: bool}
+     * }
+     */
+    private function allDeliveryPointsResult(array $points, bool $truncated = false): array
+    {
+        $total = count($points);
+        $meta = [
+            'page' => 1,
+            'count' => $total,
+            'has_more' => false,
+            'total' => $total,
+        ];
+        if ($truncated) {
+            $meta['truncated'] = true;
+        }
+
+        return [
+            'items' => $points,
+            'meta' => $meta,
+        ];
+    }
+
+    /**
+     * @return array{points: list<array<string, mixed>>, truncated: bool}
+     */
+    private function fetchAllDeliveryPointRows(int $cityCode, ?string $postalCode, ?string $fiasGuid): array
+    {
+        $maxPoints = max(1, (int) (Yii::$app->params['cdekPvzMapMaxPoints'] ?? 2000));
+        $pageSize = 500;
+        $page = 0;
+        $points = [];
+        $seenCodes = [];
+        $truncated = false;
+
+        $query = [
+            'city_code' => (string) $cityCode,
+            'type' => 'PVZ',
+        ];
+        if ($postalCode !== null && $postalCode !== '') {
+            $query['postal_code'] = $postalCode;
+        }
+        if ($fiasGuid !== null && $fiasGuid !== '') {
+            $query['fias_guid'] = $fiasGuid;
+        }
+
+        while (count($points) < $maxPoints) {
+            $query['page'] = (string) $page;
+            $query['size'] = (string) $pageSize;
+
+            $response = $this->request('GET', '/v2/deliverypoints', null, $query);
+            $batch = $this->mapDeliveryPointRows(is_array($response) ? $response : [], $cityCode);
+
+            if ($batch === []) {
+                if ($page === 0) {
+                    $this->assertCdekApiResponded('/v2/deliverypoints', $response);
+                }
+                break;
+            }
+
+            foreach ($batch as $point) {
+                $code = (string) ($point['code'] ?? '');
+                if ($code !== '' && isset($seenCodes[$code])) {
+                    continue;
+                }
+                if ($code !== '') {
+                    $seenCodes[$code] = true;
+                }
+
+                $points[] = $point;
+                if (count($points) >= $maxPoints) {
+                    $truncated = count($batch) >= $pageSize;
+                    break 2;
+                }
+            }
+
+            if (count($batch) < $pageSize) {
+                break;
+            }
+
+            $page++;
+        }
+
+        return [
+            'points' => $points,
+            'truncated' => $truncated,
         ];
     }
 

@@ -953,7 +953,9 @@ use OpenApi\Annotations as OA;
  *     schema="CdekPvzListMeta",
  *     @OA\Property(property="page", type="integer", example=1, description="Текущая страница"),
  *     @OA\Property(property="count", type="integer", example=10, description="Количество пунктов в data"),
- *     @OA\Property(property="has_more", type="boolean", example=true, description="Есть ли следующая страница — запросите page+1")
+ *     @OA\Property(property="has_more", type="boolean", example=true, description="Есть ли следующая страница — запросите page+1"),
+ *     @OA\Property(property="total", type="integer", example=312, description="Общее число пунктов при all=true"),
+ *     @OA\Property(property="truncated", type="boolean", example=false, description="true, если достигнут лимит cdekPvzMapMaxPoints и часть ПВЗ не включена")
  * )
  *
  * @OA\Schema(
@@ -1125,6 +1127,26 @@ use OpenApi\Annotations as OA;
  *             }
  *         },
  *         "meta": {"page": 1, "count": 10, "has_more": false}
+ *     }
+ * )
+ *
+ * @OA\Examples(
+ *     example="cdek-pvz-all",
+ *     summary="Все ПВЗ города для карты (all=true)",
+ *     value={
+ *         "status": "success",
+ *         "data": {
+ *             {
+ *                 "code": "MSK1",
+ *                 "name": "СДЭК ПВЗ Тверская",
+ *                 "address": "г Москва, ул Тверская, д 7",
+ *                 "work_time": "Пн-Пт 10:00-20:00",
+ *                 "lat": 55.7641,
+ *                 "lon": 37.6054,
+ *                 "city_code": 44
+ *             }
+ *         },
+ *         "meta": {"page": 1, "count": 12, "has_more": false, "total": 12}
  *     }
  * )
  *

@@ -64,8 +64,8 @@ use OpenApi\Annotations as OA;
  * Авторизация не требуется. Ответ: status success и массив data — value, full_address, postal_code, city_name, data (city_fias_id, geo_lat, geo_lon), pvz_code (null для курьера).
  *
  * **Пункты выдачи СДЭК**
- * `GET /api/delivery/pvz` — список ПВЗ с пагинацией (по 10, параметр `count` до 20).
- * Обязателен `city_fias_id` (город из DaData, см. `POST /api/dadata/suggest/city`). Рекомендуется также `postal_code` из подсказки — для определения кода города в СДЭК. Если пользователь выбрал только город — `page=1`, при `meta.has_more=true` запрашивайте `page=2`, `page=3`…
+ * `GET /api/delivery/pvz` — список ПВЗ с пагинацией (по 10, параметр `count` до 20) или все пункты города (`all=true` для карты).
+ * Обязателен `city_fias_id` (город из DaData, см. `POST /api/dadata/suggest/city`). Рекомендуется также `postal_code` из подсказки — для определения кода города в СДЭК. Если пользователь выбрал только город — `page=1`, при `meta.has_more=true` запрашивайте `page=2`, `page=3`… Для карты передайте `all=true` — вернутся все ПВЗ города в `data`, в `meta.total` их количество.
  * Если адрес уточнён через suggest-address — дополнительно `postal_code`, `geo_lat`, `geo_lon` (и при необходимости `fias_guid`) из ответа подсказки; пункты сортируются по близости, в ответе `distance_km`."
  *     ),
  *     @OA\Server(url="/", description="API-сервер")
